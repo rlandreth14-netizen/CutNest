@@ -4,26 +4,13 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>CutNest App — Sheet Metal Nesting</title>
-<meta name="description" content="CutNest sheet metal nesting app. Optimise your cut list, minimise waste and material cost."/>
+<meta name="description" content="CutNest sheet metal nesting app. Optimise your cut list, minimise waste and cost."/>
 <meta name="robots" content="noindex"/>
-<link rel="canonical" href="https://cutnest.co.uk/app.html"/>
-
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230f4c5c'/><rect x='4' y='4' width='11' height='8' rx='1' fill='%23f59e0b'/><rect x='17' y='4' width='11' height='13' rx='1' fill='white' opacity='.9'/><rect x='4' y='14' width='11' height='14' rx='1' fill='white' opacity='.9'/><rect x='17' y='19' width='11' height='9' rx='1' fill='%23f59e0b' opacity='.8'/></svg>"/>
-<link rel="sitemap" type="application/xml" href="/sitemap.xml"/>
-<meta name="robots" content="index, follow"/>
-<meta name="keywords" content="sheet metal nesting software, cut list optimiser, CNC punch press nesting, guillotine cut optimiser, sheet metal waste reduction, panel nesting software, free nesting software"/>
-<meta property="og:title" content="CutNest — Sheet Metal Nesting Software"/>
-<meta property="og:description" content="Professional sheet metal nesting. Free placement for punch/laser. Guillotine mode for shear. Cost-aware optimisation. Free to try."/>
-<meta property="og:type" content="website"/>
-<meta property="og:url" content="https://cutnest.co.uk"/>
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="CutNest — Sheet Metal Nesting Software"/>
-<meta name="twitter:description" content="Professional sheet metal nesting built for fabricators. Free to try. Pro from £15/month."/>
-<link rel="canonical" href="https://cutnest.co.uk/"/>
-<script>if(location.protocol!=='https:'&&location.hostname!=='localhost')location.replace('https://'+location.hostname+location.pathname+location.search);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
+
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   /* Brand */
@@ -412,28 +399,24 @@ tr:last-child td{border-bottom:none}
 .cut-method-btn.active{background:var(--teal);color:#fff}
 .cut-method-btn:first-child{border-right:1px solid var(--bdr2)}
 .guillotine-note{font-size:11px;color:var(--muted);margin-top:5px;font-style:italic}
+
 </style>
 </head>
 <body>
-
-<!-- ══ LOADING OVERLAY ══ -->
+<!-- LOADING OVERLAY -->
 <div class="calc-overlay hidden" id="calc-overlay">
   <div class="spinner"></div>
   <div class="calc-overlay-text">Optimising layouts…</div>
   <div class="calc-overlay-sub">Finding the most cost-effective arrangement</div>
 </div>
 
-
-
-<!-- ══════════════════════════════════════════════════════════════ -->
-<!-- APP                                                            -->
-<!-- ══════════════════════════════════════════════════════════════ -->
-<div class="app-view" id="app-view" style="display:block">
+<!-- APP — always visible on app.html -->
+<div id="app-view" style="display:block">
 
   <!-- App header -->
   <header class="app-hdr no-print">
-    <a class="app-brand" href="/">
-      <svg class="app-brand-logo" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <a class="app-brand" href="/index.html">
+      <svg class="app-brand-logo" viewBox="0 0 36 36" fill="none">
         <rect width="36" height="36" rx="8" fill="#0f4c5c"/>
         <rect x="4" y="4" width="13" height="9" rx="2" fill="#f59e0b"/>
         <rect x="19" y="4" width="13" height="15" rx="2" fill="white" opacity=".9"/>
@@ -455,10 +438,10 @@ tr:last-child td{border-bottom:none}
     </div>
   </header>
 
-  <!-- Pro upgrade banner (free users) -->
+  <!-- Pro upgrade banner -->
   <div class="pro-banner no-print" id="pro-banner" style="display:none">
-    <div class="pro-banner-txt">You're on the <b>Free plan</b> — 1 material per job. Upgrade to Pro for unlimited materials, shared library and job history.</div>
-    <a class="btn-upgrade" href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center">Upgrade to Pro — £15/mo →</a>
+    <div class="pro-banner-txt">You're on the <b>Free plan</b> — 1 material per job. Upgrade to Pro for unlimited materials, master library and job history.</div>
+    <a class="btn-upgrade" href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank">Upgrade to Pro — £15/mo →</a>
   </div>
 
   <div class="app-main">
@@ -467,22 +450,20 @@ tr:last-child td{border-bottom:none}
     <div class="no-print" style="background:var(--white);border:1px solid var(--bdr);border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:14px;box-shadow:var(--sh);flex-wrap:wrap">
       <div style="flex:2;min-width:160px">
         <label class="lbl">Job Reference / Quote No.</label>
-        <input type="text" id="job-ref" placeholder="e.g. JOB-001 or Quote #42" style="margin-top:4px" oninput="saveState()"/>
+        <input type="text" id="job-ref" placeholder="e.g. JOB-001" style="margin-top:4px" oninput="saveState()"/>
       </div>
-      <div id="qty-wrap" style="min-width:100px">
+      <div id="qty-wrap" style="min-width:100px;display:none">
         <label class="lbl">No. of Units</label>
-        <input type="number" id="job-qty" value="1" min="1" max="999" style="margin-top:4px" oninput="saveState()" title="Multiply all quantities by this number"/>
+        <input type="number" id="job-qty" value="1" min="1" max="999" style="margin-top:4px" oninput="saveState()"/>
       </div>
-      <div style="display:flex;gap:8px;align-items:flex-end;padding-bottom:1px;flex-shrink:0">
-        <button class="btn btn-out" onclick="newJob()" style="white-space:nowrap;color:var(--red);border-color:var(--red)">🗑 New Job</button>
-      </div>
+      <button class="btn btn-out" onclick="newJob()" style="white-space:nowrap;color:var(--red);border-color:var(--red);margin-top:18px;flex-shrink:0">🗑 New Job</button>
     </div>
 
     <!-- Material blocks -->
     <div id="mat-blocks"></div>
 
     <!-- Add material -->
-    <div class="add-mat-wrap no-print" id="add-mat-wrap">
+    <div class="add-mat-wrap no-print" id="add-mat-wrap" style="display:none">
       <button class="add-mat-btn" onclick="addMat()">
         <div class="add-mat-icon">+</div>
         Add Another Material to This Job
@@ -500,7 +481,7 @@ tr:last-child td{border-bottom:none}
     <!-- Calculate -->
     <div class="calc-bar no-print">
       <button class="btn-calc" onclick="calculate()">✂ CALCULATE LAYOUTS</button>
-      <div class="calc-note">Each material calculated independently. Results show exact sheets and cost.</div>
+      <div class="calc-note">Each material calculated independently. Ctrl+Enter to calculate.</div>
     </div>
 
     <div class="err no-print" id="err-box" style="display:none"></div>
@@ -518,7 +499,7 @@ tr:last-child td{border-bottom:none}
         <div class="pricing-wrap">
           <div class="pricing-ttl">Sheets required per material</div>
           <div id="pricing-cards"></div>
-          <div id="total-cost-bar" style="display:none" class="total-cost-bar">
+          <div id="total-cost-bar" style="display:none;background:linear-gradient(135deg,var(--teal2),var(--teal));border-radius:10px;padding:12px 18px;margin-top:12px;display:flex;align-items:center;justify-content:space-between">
             <div style="color:rgba(255,255,255,.7);font-size:13px;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px;text-transform:uppercase">Total Material Cost</div>
             <div id="total-cost-val" style="color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800"></div>
           </div>
@@ -537,15 +518,15 @@ tr:last-child td{border-bottom:none}
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--teal);margin-bottom:12px">Full Placement Table</div>
           <div style="overflow-x:auto">
             <table>
-              <thead><tr><th>Material</th><th>Sheet #</th><th>Size</th><th>Part</th><th>W</th><th>H</th><th>X</th><th>Y</th><th>Rotated</th></tr></thead>
+              <thead><tr><th>Material</th><th>Sheet#</th><th>Size</th><th>Part</th><th>W</th><th>H</th><th>X</th><th>Y</th><th>Rotated</th></tr></thead>
               <tbody id="placement-body"></tbody>
             </table>
           </div>
         </div>
       </div>
     </div>
-  </div><!-- end app-main -->
-</div><!-- end app-view -->
+  </div>
+</div>
 
 <!-- ══ HISTORY MODAL ══ -->
 <div class="overlay" id="history-modal" style="display:none">
@@ -1760,30 +1741,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 });
+
 </script>
 
-<footer style="text-align:center;padding:14px;font-size:11px;color:var(--muted);border-top:1px solid var(--bdr)" class="no-print">
-  CutNest v1.0 · <a href="/" style="color:var(--teal3)">cutnest.co.uk</a>
-  · <a href="#" onclick="openLegal('terms')" style="color:var(--muted)">Terms</a>
-  · <a href="#" onclick="openLegal('privacy')" style="color:var(--muted)">Privacy</a>
-  · <a href="mailto:hello@cutnest.co.uk" style="color:var(--muted)">hello@cutnest.co.uk</a>
-</footer>
 
-<!-- ══ LEGAL MODAL ══ -->
-<div class="overlay" id="legal-modal" style="display:none">
-  <div class="modal" style="max-width:740px">
-    <div class="modal-hdr">
-      <div class="modal-title" id="legal-modal-title">Terms of Service</div>
-      <button class="modal-x" onclick="document.getElementById('legal-modal').style.display='none'">✕</button>
-    </div>
-    <div class="modal-body" id="legal-modal-body" style="font-size:13px;line-height:1.8;color:var(--text2)"></div>
-  </div>
-</div>
-
-<!-- ══ COOKIE BANNER ══ -->
-<div id="cookie-banner" class="cookie-hidden" style="position:fixed;bottom:0;left:0;right:0;background:var(--teal2);color:rgba(255,255,255,.85);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;z-index:500;flex-wrap:wrap;font-size:13px">
-  <span>🍪 We use localStorage to save your jobs and settings locally on your device. No tracking cookies. <a href="#" onclick="openLegal('privacy');return false;" style="color:var(--amber)">Privacy Policy</a></span>
-  <button onclick="acceptCookies()" style="background:var(--amber);border:none;color:var(--teal2);font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;padding:8px 20px;border-radius:7px;cursor:pointer;white-space:nowrap">Got it</button>
-</div>
 </body>
 </html>
