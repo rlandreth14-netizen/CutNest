@@ -835,11 +835,11 @@ function buyPro(plan) {
 }
 
 // ══ PAGE NAVIGATION ════════════════════════════════════════════
-function showLanding() {
+function showLanding(){window.location.href='/';}nction showLanding() {
   window.location.hash = '';
   setTimeout(() => window.scrollTo(0, 0), 10);
 }
-function showApp() {
+function showApp(){}nction showApp() {
   window.location.hash = 'app';
   setTimeout(() => window.scrollTo(0, 0), 10);
 }
@@ -1615,7 +1615,7 @@ document.addEventListener('keydown',function(e){
 });
 
 // ══ HASH ROUTING (landing vs app) ════════════════════════════════
-function handleRoute(){
+function handleRoute(){var a=document.getElementById('app-view');if(a)a.style.display='block';}nction handleRoute(){
   const onApp = window.location.hash === '#app';
   const landing = document.getElementById('landing');
   const appView = document.getElementById('app-view');
@@ -1711,7 +1711,15 @@ const LEGAL_CONTENT = {
   }
 };
 
-function openLegal(type) {
+function openLegal(type){
+  var lm=document.getElementById('legal-modal');
+  var lt=document.getElementById('legal-modal-title');
+  var lb=document.getElementById('legal-modal-body');
+  if(!lm||!LEGAL_CONTENT||!LEGAL_CONTENT[type])return;
+  lt.textContent=LEGAL_CONTENT[type].title;
+  lb.innerHTML=LEGAL_CONTENT[type].body;
+  lm.style.display='flex';
+}nction openLegal(type) {
   const content = LEGAL_CONTENT[type];
   if (!content) return;
   document.getElementById('legal-modal-title').textContent = content.title;
@@ -1719,13 +1727,22 @@ function openLegal(type) {
   document.getElementById('legal-modal').style.display = 'flex';
 }
 
-function acceptCookies() {
+function acceptCookies(){localStorage.setItem('cutnest-cookies','1');}nction acceptCookies() {
   localStorage.setItem('cutnest-cookies', '1');
   document.getElementById('cookie-banner').classList.add('cookie-hidden');
 }
 
 // ── INIT ─────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
+  checkLicence();
+  loadSettings();
+  loadLib().then(function() {
+    restoreState();
+    updateProUI();
+    var a = document.getElementById('app-view');
+    if (a) a.style.display = 'block';
+  });
+});cument.addEventListener('DOMContentLoaded', function() {
   checkLicence();
   loadSettings();
   loadLib().then(()=>{
