@@ -586,6 +586,10 @@ function updateProUI() {
   const banner = document.getElementById('pro-banner');
   if (banner) banner.style.display = isPro ? 'none' : 'flex';
 
+  // Add material button (Pro only)
+  const amw = document.getElementById('add-mat-wrap');
+  if (amw) amw.style.display = (isPro && mats.length < 5) ? 'block' : 'none';
+
   // History button
   const hBtn = document.getElementById('history-btn');
   if (hBtn) hBtn.style.display = isPro ? 'inline-flex' : 'none';
@@ -612,15 +616,8 @@ function buyPro(plan) {
 }
 
 // ══ PAGE NAVIGATION ════════════════════════════════════════════
-function showLanding(){window.location.href='/';}nction showLanding(){window.location.href='/';}nction showLanding() {
-  window.location.hash = '';
-  setTimeout(() => window.scrollTo(0, 0), 10);
-}
-function showApp(){}nction showApp(){}nction showApp() {
-  window.location.hash = 'app';
-  setTimeout(() => window.scrollTo(0, 0), 10);
-}
-
+function showLanding(){window.location.href='/';}
+function showApp(){}
 // ══ SETTINGS ═══════════════════════════════════════════════════
 function loadSettings() {
   try {
@@ -1176,8 +1173,7 @@ function renderOutput(){
     <div class="pres-right"><div style="text-align:center"><div class="pres-count">${total}</div><div class="pres-unit">sheet${total!==1?'s':''}</div>${matTotal>0?`<div style="margin-top:8px;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:var(--green)">£${matTotal.toLocaleString()}</div>`:''}</div></div></div>`;
   }).join('');
 
-  window._quoteText=quoteLines.join('
-');
+  window._quoteText=quoteLines.join('\n');
   const totalCost=results.reduce((sum,{libMat,sizeMap})=>sum+Object.entries(sizeMap).reduce((s,[dim,cnt])=>{const[dw,dh]=dim.split('x').map(Number);const m=[libMat.size1,libMat.size2].find(sz=>sz&&sz.w===dw&&sz.h===dh);return s+(m&&m.price>0?m.price*cnt:0);},0),0);
   const cb=document.getElementById('total-cost-bar'),cv=document.getElementById('total-cost-val');
   if(totalCost>0&&cb&&cv){cb.style.display='flex';cv.textContent='£'+totalCost.toLocaleString();}else if(cb)cb.style.display='none';
@@ -1234,8 +1230,7 @@ function exportCSV(){
     ['Material','Sheet #','Sheet Size','Part','W','H','X','Y','Rotated'],
     ...calcResult.results.flatMap(({libMat,sheets})=>sheets.flatMap((sh,si)=>sh.placed.map(p=>[libMat.name,si+1,`${sh.sheetW}x${sh.sheetH}`,`P${p.pieceIndex+1}`,p.w,p.h,Math.round(p.x),Math.round(p.y),p.rotated?'Yes':'No'])))
   ].filter(r=>r.length);
-  const csv=rows.map(r=>r.join(',')).join('
-');
+  const csv=rows.map(r=>r.join(',')).join('\n');
   const a=document.createElement('a');
   const u=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
   a.href=u;a.download=`cutnest-${jobRef.replace(/[^a-z0-9]/gi,'-')}-${Date.now()}.csv`;a.click();
