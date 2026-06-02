@@ -17,6 +17,7 @@
 <meta name="twitter:title" content="CutNest — Sheet Metal Nesting Software"/>
 <meta name="twitter:description" content="Professional sheet metal nesting built for fabricators. Free to try. Pro from £15/month."/>
 <link rel="canonical" href="https://cutnest.co.uk/"/>
+<script>if(location.protocol!=='https:'&&location.hostname!=='localhost')location.replace('https://'+location.hostname+location.pathname+location.search);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
@@ -371,7 +372,7 @@ tr:last-child td{border-bottom:none}
 
 /* Loading spinner */
 .calc-overlay{position:fixed;inset:0;background:rgba(5,20,28,.65);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
-.calc-overlay.hidden{display:none}
+.calc-overlay.hidden{display:none}.cookie-hidden{display:none!important}
 .spinner{width:52px;height:52px;border:5px solid rgba(255,255,255,.2);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:18px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .calc-overlay-text{color:#fff;font-family:"Barlow Condensed",sans-serif;font-size:22px;font-weight:700;letter-spacing:1px}
@@ -1167,12 +1168,18 @@ function buyPro(plan) {
 
 // ══ PAGE NAVIGATION ════════════════════════════════════════════
 function showLanding() {
-  document.getElementById('landing').style.display = 'block';
-  document.getElementById('app-view').style.display = 'none';
+  const l = document.getElementById('landing');
+  const a = document.getElementById('app-view');
+  if (l) l.style.display = 'block';
+  if (a) a.style.display = 'none';
+  window.scrollTo(0, 0);
 }
 function showApp() {
-  document.getElementById('landing').style.display = 'none';
-  document.getElementById('app-view').style.display = 'block';
+  const l = document.getElementById('landing');
+  const a = document.getElementById('app-view');
+  if (l) l.style.display = 'none';
+  if (a) a.style.display = 'block';
+  window.scrollTo(0, 0);
 }
 
 // ══ SETTINGS ═══════════════════════════════════════════════════
@@ -2039,7 +2046,7 @@ function openLegal(type) {
 
 function acceptCookies() {
   localStorage.setItem('cutnest-cookies', '1');
-  document.getElementById('cookie-banner').style.display = 'none';
+  document.getElementById('cookie-banner').classList.add('cookie-hidden');
 }
 
 // ── INIT ─────────────────────────────────────────────────────────
@@ -2053,7 +2060,7 @@ loadLib().then(()=>{
   if (!localStorage.getItem('cutnest-cookies')) {
     setTimeout(() => {
       const banner = document.getElementById('cookie-banner');
-      if (banner) banner.style.display = 'flex';
+      if (banner) banner.classList.remove('cookie-hidden');
     }, 2000);
   }
 });
@@ -2078,7 +2085,7 @@ loadLib().then(()=>{
 </div>
 
 <!-- ══ COOKIE BANNER ══ -->
-<div id="cookie-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--teal2);color:rgba(255,255,255,.85);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;z-index:500;flex-wrap:wrap;font-size:13px">
+<div id="cookie-banner" class="cookie-hidden" style="position:fixed;bottom:0;left:0;right:0;background:var(--teal2);color:rgba(255,255,255,.85);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;z-index:500;flex-wrap:wrap;font-size:13px">
   <span>🍪 We use localStorage to save your jobs and settings locally on your device. No tracking cookies. <a href="#" onclick="openLegal('privacy');return false;" style="color:var(--amber)">Privacy Policy</a></span>
   <button onclick="acceptCookies()" style="background:var(--amber);border:none;color:var(--teal2);font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;padding:8px 20px;border-radius:7px;cursor:pointer;white-space:nowrap">Got it</button>
 </div>
