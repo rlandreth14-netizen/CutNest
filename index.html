@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>NestIQ — Sheet Metal Nesting Software</title>
+<meta name="description" content="Professional sheet metal nesting software. Free placement for CNC punch press and laser. Guillotine mode for shear cutting. Minimises waste and material cost. Free to try."/>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230f4c5c'/><rect x='4' y='4' width='11' height='8' rx='1' fill='%23f59e0b'/><rect x='17' y='4' width='11' height='13' rx='1' fill='white' opacity='.9'/><rect x='4' y='14' width='11' height='14' rx='1' fill='white' opacity='.9'/><rect x='17' y='19' width='11' height='9' rx='1' fill='%23f59e0b' opacity='.8'/></svg>"/>
+<link rel="sitemap" type="application/xml" href="/sitemap.xml"/>
+<meta name="robots" content="index, follow"/>
+<meta name="keywords" content="sheet metal nesting software, cut list optimiser, CNC punch press nesting, guillotine cut optimiser, sheet metal waste reduction, panel nesting software, free nesting software"/>
+<meta property="og:title" content="NestIQ — Sheet Metal Nesting Software"/>
+<meta property="og:description" content="Professional sheet metal nesting. Free placement for punch/laser. Guillotine mode for shear. Cost-aware optimisation. Free to try."/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://nestiq.io"/>
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="NestIQ — Sheet Metal Nesting Software"/>
+<meta name="twitter:description" content="Professional sheet metal nesting built for fabricators. Free to try. Pro from £15/month."/>
+<link rel="canonical" href="https://nestiq.io/"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  /* Brand */
+  --teal:   #0f4c5c;
+  --teal2:  #0a3a47;
+  --teal3:  #1a6678;
+  --amber:  #f59e0b;
+  --amber2: #d97706;
+  --cyan:   #06b6d4;
+  /* Neutrals */
+  --bg:     #f0f7f9;
+  --white:  #ffffff;
+  --bdr:    #cde4ea;
+  --bdr2:   #9dcad6;
+  --sky:    #e8f4f8;
+  --sky2:   #d0eaf2;
+  /* Text */
+  --text:   #0d2d36;
+  --text2:  #2a5a6a;
+  --muted:  #6a9aaa;
+  /* States */
+  --green:  #059669;
+  --red:    #dc2626;
+  --yel:    #d97706;
+  --purple: #7c3aed;
+  /* Shadows */
+  --sh:     0 2px 8px rgba(15,76,92,.08);
+  --sh2:    0 4px 24px rgba(15,76,92,.14);
+  --sh3:    0 8px 40px rgba(15,76,92,.18);
+}
+
+body{background:var(--bg);color:var(--text);font-family:"Barlow",sans-serif;min-height:100vh}
+
+/* ══ LANDING PAGE ══════════════════════════════════════════════════ */
+.landing{display:block}
+.app-view{display:none}
+
+/* NAV */
+.nav{background:var(--teal2);padding:0 40px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-logo{width:36px;height:36px}
+.nav-name{font-family:"Barlow Condensed",sans-serif;font-size:22px;font-weight:900;color:#fff;letter-spacing:.5px}
+.nav-name span{color:var(--amber)}
+.nav-links{display:flex;align-items:center;gap:8px}
+.nav-link{color:rgba(255,255,255,.7);text-decoration:none;font-size:14px;padding:6px 12px;border-radius:6px;transition:all .15s}
+.nav-link:hover{color:#fff;background:rgba(255,255,255,.1)}
+.btn-nav-cta{background:var(--amber);color:var(--teal2);font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:14px;letter-spacing:.5px;padding:8px 20px;border-radius:8px;border:none;cursor:pointer;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center}
+.btn-nav-cta:hover{background:var(--amber2);transform:translateY(-1px)}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,var(--teal2) 0%,var(--teal) 50%,var(--teal3) 100%);padding:90px 40px 80px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);color:var(--amber);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:24px}
+.hero h1{font-family:"Barlow Condensed",sans-serif;font-size:clamp(42px,7vw,72px);font-weight:900;color:#fff;line-height:1.05;margin-bottom:20px;letter-spacing:-1px}
+.hero h1 span{color:var(--amber)}
+.hero-sub{font-size:clamp(16px,2.5vw,20px);color:rgba(255,255,255,.75);max-width:580px;margin:0 auto 36px;line-height:1.6}
+.hero-ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:48px}
+.btn-primary{background:var(--amber);color:var(--teal2);font-family:"Barlow Condensed",sans-serif;font-weight:900;font-size:17px;letter-spacing:.5px;padding:14px 36px;border-radius:10px;border:none;cursor:pointer;transition:all .2s;box-shadow:0 4px 16px rgba(245,158,11,.4)}
+.btn-primary:hover{background:var(--amber2);transform:translateY(-2px);box-shadow:0 6px 24px rgba(245,158,11,.5)}
+.btn-secondary{background:rgba(255,255,255,.12);color:#fff;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:17px;letter-spacing:.5px;padding:14px 36px;border-radius:10px;border:1.5px solid rgba(255,255,255,.25);cursor:pointer;transition:all .2s}
+.btn-secondary:hover{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.4)}
+.hero-proof{color:rgba(255,255,255,.5);font-size:13px}
+.hero-proof b{color:rgba(255,255,255,.8)}
+
+/* HERO VISUAL — mock app screenshot */
+.hero-visual{max-width:900px;margin:0 auto;position:relative}
+.mock-app{background:var(--white);border-radius:16px;box-shadow:0 24px 64px rgba(0,0,0,.35);overflow:hidden;border:1px solid rgba(255,255,255,.1)}
+.mock-topbar{background:var(--teal2);height:44px;display:flex;align-items:center;padding:0 18px;gap:8px}
+.mock-dot{width:12px;height:12px;border-radius:50%}
+.mock-body{padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.mock-card{background:var(--sky);border:1px solid var(--bdr);border-radius:10px;padding:14px}
+.mock-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:8px}
+.mock-sheet{background:var(--teal2);border-radius:6px;height:120px;position:relative;overflow:hidden;display:flex;flex-wrap:wrap;gap:2px;padding:4px}
+.mock-piece{border-radius:2px;opacity:.85}
+.mock-big{font-family:"Barlow Condensed",sans-serif;font-size:28px;font-weight:800;color:var(--teal)}
+.mock-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.mock-green{color:var(--green);font-weight:700}
+
+/* SOCIAL PROOF STRIP */
+.proof-strip{background:var(--white);border-top:1px solid var(--bdr);border-bottom:1px solid var(--bdr);padding:18px 40px;display:flex;align-items:center;justify-content:center;gap:48px;flex-wrap:wrap}
+.proof-item{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;font-weight:600}
+.proof-item svg{width:18px;height:18px;color:var(--amber);fill:var(--amber)}
+
+/* FEATURES */
+.features{padding:80px 40px;max-width:1100px;margin:0 auto}
+.section-label{font-family:"Barlow Condensed",sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--amber2);margin-bottom:12px}
+.section-title{font-family:"Barlow Condensed",sans-serif;font-size:clamp(28px,4vw,42px);font-weight:800;color:var(--teal);margin-bottom:14px;line-height:1.1}
+.section-sub{font-size:16px;color:var(--text2);max-width:540px;line-height:1.6;margin-bottom:48px}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px}
+.feat-card{background:var(--white);border:1px solid var(--bdr);border-radius:16px;padding:28px;box-shadow:var(--sh);transition:all .2s;position:relative;overflow:hidden}
+.feat-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--amber),var(--cyan))}
+.feat-card:hover{box-shadow:var(--sh2);transform:translateY(-2px)}
+.feat-icon{width:48px;height:48px;background:linear-gradient(135deg,var(--sky2),var(--sky));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:16px}
+.feat-title{font-family:"Barlow Condensed",sans-serif;font-size:20px;font-weight:800;color:var(--teal);margin-bottom:8px}
+.feat-desc{font-size:14px;color:var(--text2);line-height:1.6}
+.feat-vs{display:inline-flex;align-items:center;gap:5px;background:#fef3c7;border:1px solid #fde68a;color:#92400e;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:700;margin-top:12px}
+
+/* VS TABLE */
+.vs-section{background:var(--teal2);padding:80px 40px}
+.vs-inner{max-width:900px;margin:0 auto}
+.vs-table{width:100%;border-collapse:separate;border-spacing:0;border-radius:16px;overflow:hidden;box-shadow:var(--sh3)}
+.vs-table th{padding:16px 20px;font-family:"Barlow Condensed",sans-serif;font-size:16px;font-weight:800;letter-spacing:.5px;text-transform:uppercase}
+.vs-table th:first-child{background:#1a3040;color:rgba(255,255,255,.6);text-align:left;width:40%}
+.vs-table th:nth-child(2){background:#1a3040;color:rgba(255,255,255,.6);text-align:center}
+.vs-table th:nth-child(3){background:var(--amber);color:var(--teal2);text-align:center}
+.vs-table td{padding:14px 20px;font-size:14px;border-bottom:1px solid rgba(255,255,255,.05)}
+.vs-table td:first-child{background:rgba(255,255,255,.04);color:rgba(255,255,255,.8);font-weight:500}
+.vs-table td:nth-child(2){background:rgba(255,255,255,.02);color:rgba(255,255,255,.5);text-align:center}
+.vs-table td:nth-child(3){background:rgba(245,158,11,.08);color:#fff;text-align:center;font-weight:600}
+.vs-table tr:last-child td{border-bottom:none}
+.tick{color:var(--green);font-size:18px}
+.cross{color:var(--red);font-size:18px;opacity:.7}
+.partial{color:var(--yel);font-size:14px}
+
+/* PRICING */
+.pricing{padding:80px 40px;max-width:900px;margin:0 auto;text-align:center}
+.pricing-cards{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:48px;text-align:left}
+.price-card{background:var(--white);border:1.5px solid var(--bdr);border-radius:20px;padding:32px;box-shadow:var(--sh)}
+.price-card.featured{border-color:var(--amber);box-shadow:0 8px 32px rgba(245,158,11,.2);position:relative}
+.featured-badge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--amber);color:var(--teal2);font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:12px;letter-spacing:1px;padding:4px 16px;border-radius:20px;white-space:nowrap}
+.plan-name{font-family:"Barlow Condensed",sans-serif;font-size:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.plan-price{font-family:"Barlow Condensed",sans-serif;font-size:48px;font-weight:900;color:var(--teal);line-height:1}
+.plan-price span{font-size:20px;font-weight:600;color:var(--muted)}
+.plan-period{font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:20px}
+.plan-annual{background:var(--sky);border:1px solid var(--bdr);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text2);margin-bottom:20px;display:flex;align-items:center;justify-content:space-between}
+.plan-annual b{color:var(--green)}
+.plan-features{list-style:none;margin-bottom:28px}
+.plan-features li{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--sky);font-size:14px;color:var(--text2)}
+.plan-features li:last-child{border-bottom:none}
+.plan-features .fi{font-size:16px;flex-shrink:0;margin-top:1px}
+.plan-features .locked{color:var(--muted);opacity:.6}
+.btn-plan{width:100%;padding:14px;border-radius:10px;border:none;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:16px;letter-spacing:.5px;transition:all .2s}
+.btn-plan-free{background:var(--sky);color:var(--teal);border:1.5px solid var(--bdr2)}
+.btn-plan-free:hover{background:var(--sky2)}
+.btn-plan-pro{background:linear-gradient(135deg,var(--amber),var(--amber2));color:var(--teal2);box-shadow:0 4px 16px rgba(245,158,11,.35)}
+.btn-plan-pro:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(245,158,11,.45)}
+.pricing-note{font-size:13px;color:var(--muted);margin-top:20px}
+
+/* FAQ */
+.faq{padding:60px 40px;max-width:700px;margin:0 auto}
+.faq-item{border-bottom:1px solid var(--bdr);padding:20px 0}
+.faq-q{font-family:"Barlow Condensed",sans-serif;font-size:18px;font-weight:700;color:var(--teal);margin-bottom:8px}
+.faq-a{font-size:14px;color:var(--text2);line-height:1.7}
+
+/* FOOTER */
+.footer{background:var(--teal2);padding:40px;text-align:center}
+.footer-name{font-family:"Barlow Condensed",sans-serif;font-size:24px;font-weight:900;color:#fff;margin-bottom:6px}
+.footer-name span{color:var(--amber)}
+.footer-links{display:flex;gap:24px;justify-content:center;margin:16px 0}
+.footer-links a{color:rgba(255,255,255,.5);text-decoration:none;font-size:13px;transition:color .15s}
+.footer-links a:hover{color:#fff}
+.footer-copy{color:rgba(255,255,255,.3);font-size:12px}
+
+/* ══ APP ══════════════════════════════════════════════════════════ */
+/* App header */
+.app-hdr{background:var(--teal2);border-bottom:3px solid var(--amber);padding:0 28px;height:62px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30;box-shadow:0 3px 14px rgba(0,0,0,.22)}
+.app-brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+.app-brand-logo{width:30px;height:30px}
+.app-brand-name{font-family:"Barlow Condensed",sans-serif;font-size:20px;font-weight:900;color:#fff;letter-spacing:.5px}
+.app-brand-name span{color:var(--amber)}
+.app-brand-sub{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:.5px;margin-top:1px}
+.app-hright{display:flex;align-items:center;gap:8px}
+.kerf-pill{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:3px 11px;font-size:12px;color:rgba(255,255,255,.65)}
+.kerf-pill b{color:#fff}
+.sync-pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.55);background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:4px 11px}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+.sdot.saving{background:var(--yel);animation:blink .8s infinite}
+.sdot.err{background:var(--red)}
+.pro-badge{background:linear-gradient(135deg,var(--amber),var(--amber2));color:var(--teal2);font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:11px;letter-spacing:1px;padding:3px 10px;border-radius:20px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Pro upgrade banner */
+.pro-banner{background:linear-gradient(135deg,var(--teal),var(--teal3));border-bottom:1px solid rgba(245,158,11,.3);padding:10px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pro-banner-txt{color:#fff;font-size:13px}
+.pro-banner-txt b{color:var(--amber)}
+.btn-upgrade{background:var(--amber);color:var(--teal2);font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:13px;padding:6px 18px;border-radius:7px;border:none;cursor:pointer;white-space:nowrap;transition:all .15s}
+.btn-upgrade:hover{background:var(--amber2)}
+
+/* App main */
+.app-main{padding:24px 28px;max-width:1080px;margin:0 auto}
+
+/* Feature gate overlay */
+.gate-wrap{position:relative}
+.gate-overlay{position:absolute;inset:0;background:rgba(240,247,249,.85);backdrop-filter:blur(3px);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;gap:10px;border:2px dashed var(--bdr2)}
+.gate-icon{font-size:32px}
+.gate-title{font-family:"Barlow Condensed",sans-serif;font-size:18px;font-weight:800;color:var(--teal)}
+.gate-desc{font-size:13px;color:var(--text2);text-align:center;max-width:260px}
+
+/* Mat block — NestIQ colours */
+.mat-block{border-radius:14px;overflow:hidden;box-shadow:var(--sh2);margin-bottom:22px;border:1px solid var(--bdr)}
+.mat-block-cap{background:var(--teal);padding:14px 20px;display:flex;align-items:center;justify-content:space-between}
+.mat-cap-left{display:flex;align-items:center;gap:12px}
+.mat-num{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.3);font-family:"Barlow Condensed",sans-serif;font-size:15px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mat-cap-title{font-family:"Barlow Condensed",sans-serif;font-size:17px;font-weight:800;color:#fff;letter-spacing:.5px}
+.mat-cap-subtitle{font-size:12px;color:rgba(255,255,255,.5);margin-top:1px}
+.mat-body{background:var(--white);padding:20px}
+.btn-remove-mat{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.8);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:"Barlow",sans-serif;transition:all .15s}
+.btn-remove-mat:hover{background:rgba(220,38,38,.3);color:#fff}
+
+/* Inputs */
+.lbl{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px}
+input[type=text],input[type=number],select{width:100%;background:var(--sky);border:1px solid var(--bdr);color:var(--text);border-radius:7px;padding:7px 11px;font-family:"Barlow",sans-serif;font-size:13px;outline:none;transition:border-color .15s,background .15s;-webkit-appearance:none;appearance:none}
+input:focus,select:focus{border-color:var(--teal3);background:#fff}
+input[type=number]::-webkit-inner-spin-button{opacity:.3}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath fill='%236a9aaa' d='M5 7L0 0h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px;cursor:pointer}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:8px;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-weight:700;letter-spacing:.5px;transition:all .15s}
+.btn:hover{opacity:.87;transform:translateY(-1px)}.btn:active{transform:scale(.97)}
+.btn-teal{background:var(--teal);color:#fff;font-size:14px;padding:9px 18px}
+.btn-teal:hover{background:var(--teal3);opacity:1}
+.btn-out{background:#fff;border:1.5px solid var(--bdr2);color:var(--text2);font-size:13px;padding:8px 14px}
+.btn-out:hover{border-color:var(--teal3);color:var(--teal);opacity:1}
+.btn-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 5px;transition:color .15s;line-height:1}
+.btn-del:hover{color:var(--red)}
+.btn-sm-gr{background:var(--green);border:none;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600;font-family:"Barlow",sans-serif}
+.btn-sm-tl{background:var(--teal3);border:none;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-family:"Barlow",sans-serif}
+.btn-add-piece{margin-top:10px;background:var(--sky);border:1.5px dashed var(--bdr2);color:var(--text2);border-radius:8px;padding:7px 14px;cursor:pointer;font-family:"Barlow",sans-serif;font-size:13px;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn-add-piece:hover{background:var(--sky2);border-color:var(--teal3);color:var(--teal)}
+.add-mat-wrap{margin-bottom:20px}
+.add-mat-btn{width:100%;background:var(--white);border:2px dashed var(--bdr2);border-radius:14px;padding:14px;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-size:15px;font-weight:700;color:var(--text2);letter-spacing:.5px;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:var(--sh)}
+.add-mat-btn:hover{background:var(--sky);border-color:var(--teal3);color:var(--teal);border-style:solid}
+.add-mat-icon{width:26px;height:26px;border-radius:50%;background:var(--sky2);display:flex;align-items:center;justify-content:center;font-size:15px;transition:background .15s}
+.add-mat-btn:hover .add-mat-icon{background:var(--teal3);color:#fff}
+
+/* Table */
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:6px 7px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);border-bottom:2px solid var(--sky2)}
+td{padding:4px 6px;border-bottom:1px solid var(--sky);vertical-align:middle}
+td input{padding:6px 9px;font-size:13px}
+tr:last-child td{border-bottom:none}
+
+/* Material selector */
+.mat-select-row{display:flex;gap:12px;align-items:flex-end;margin-bottom:14px}
+.mat-select-row .sel-wrap{flex:1}
+.sz-info-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.sz-badge{background:var(--sky);border:1px solid var(--bdr2);border-radius:7px;padding:6px 12px}
+.sz-badge .sl{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:block;margin-bottom:1px}
+.sz-badge .sv{font-size:13px;font-weight:700;color:var(--teal3)}
+.sz-auto-note{font-size:11px;color:var(--muted);align-self:center}
+.block-divider{border:none;border-top:2px dashed var(--sky2);margin:4px 0 16px}
+.pieces-label{font-family:"Barlow Condensed",sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--teal);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.pieces-label::after{content:"";flex:1;height:1px;background:var(--sky2)}
+
+/* Calculate */
+.calc-bar{background:var(--white);border:1px solid var(--bdr);border-radius:12px;padding:16px 20px;box-shadow:var(--sh);display:flex;gap:14px;align-items:center;margin-bottom:20px}
+.btn-calc{flex:1;background:linear-gradient(135deg,var(--teal2),var(--teal));color:#fff;font-size:19px;padding:15px;border-radius:10px;letter-spacing:2px;border:none;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-weight:900;transition:all .2s;box-shadow:0 4px 14px rgba(15,76,92,.3)}
+.btn-calc:hover{filter:brightness(1.1);box-shadow:0 6px 22px rgba(15,76,92,.4);transform:translateY(-1px)}
+.calc-note{font-size:12px;color:var(--muted);flex-shrink:0;max-width:150px;line-height:1.5}
+
+/* Error/Warn */
+.err{background:#fff5f5;border:1.5px solid var(--red);border-radius:8px;padding:10px 14px;color:var(--red);font-size:13px;margin-bottom:14px}
+.warn{background:#fffbf0;border:1px solid var(--yel);border-radius:7px;padding:8px 12px;font-size:12px;color:var(--yel);margin-top:8px}
+
+/* Results */
+.results-shell{border-radius:14px;overflow:hidden;box-shadow:var(--sh2);border:1px solid var(--bdr);margin-bottom:8px}
+.results-hdr{background:var(--teal2);padding:14px 20px;display:flex;align-items:center;justify-content:space-between}
+.results-title{font-family:"Barlow Condensed",sans-serif;font-size:19px;font-weight:800;color:#fff;letter-spacing:1px}
+.res-acts{display:flex;gap:8px}
+.btn-exp{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:7px;padding:6px 13px;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:13px;letter-spacing:.5px;transition:background .15s}
+.btn-exp:hover{background:rgba(255,255,255,.24)}
+.pricing-wrap{background:var(--white);padding:20px}
+.pricing-ttl{font-family:"Barlow Condensed",sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--teal3);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.pricing-ttl::after{content:"";flex:1;height:1px;background:var(--sky2)}
+.pres-card{background:var(--sky);border:1.5px solid var(--bdr2);border-radius:12px;padding:16px 18px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.pres-name{font-size:17px;font-weight:700;color:var(--teal);margin-bottom:6px}
+.pres-thk{font-size:13px;color:var(--muted);font-weight:400;margin-left:6px}
+.pres-sizes{display:flex;gap:7px;flex-wrap:wrap}
+.pres-size-chip{background:#fff;border:1px solid var(--bdr);border-radius:6px;padding:4px 10px;font-size:12px;color:var(--text2)}
+.pres-size-chip b{color:var(--teal)}
+.pres-warn{font-size:11px;color:var(--red);margin-top:6px}
+.pres-count{font-family:"Barlow Condensed",sans-serif;font-size:44px;font-weight:800;color:var(--teal);line-height:1}
+.pres-unit{font-size:13px;color:var(--muted);margin-top:4px}
+.copy-btn{background:#fff;border:1px solid var(--bdr2);color:var(--muted);border-radius:6px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:"Barlow",sans-serif;transition:all .15s;white-space:nowrap}
+.copy-btn:hover{color:var(--teal3);border-color:var(--teal3)}
+.copy-btn.copied{color:var(--green);border-color:var(--green)}
+.stats-strip{display:flex;gap:10px;background:var(--sky);border-top:1px solid var(--bdr);padding:14px 20px}
+.stat-c{background:#fff;border:1px solid var(--bdr);border-radius:8px;padding:9px 14px;flex:1;text-align:center}
+.stat-l{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.stat-v{font-family:"Barlow Condensed",sans-serif;font-size:24px;font-weight:800;color:var(--teal)}
+.detail-section{background:var(--white);border-top:2px solid var(--sky2);padding:20px}
+.mat-section-header{font-family:"Barlow Condensed",sans-serif;font-size:14px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--teal);padding:16px 20px 8px;border-top:2px solid var(--sky2);display:flex;align-items:center;gap:8px}
+.mat-section-header:first-child{border-top:none}
+.ds-bar{width:4px;height:20px;background:var(--amber);border-radius:2px;flex-shrink:0}
+.full-table-wrap{background:#fff;border-top:1px solid var(--bdr);padding:20px;border-radius:0 0 14px 14px}
+
+/* Layout visuals */
+.layout-header-upgraded{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:16px;flex-wrap:wrap}
+.layout-title-big{font-family:"Barlow Condensed",sans-serif;font-size:26px;font-weight:800;color:var(--teal);line-height:1}
+.layout-subtitle{margin-top:5px;color:var(--muted);font-size:13px}
+.layout-metrics{display:flex;gap:10px;flex-wrap:wrap}
+.lm-card{background:#fff;border:1px solid var(--bdr2);border-radius:10px;padding:10px 14px;min-width:88px;text-align:center}
+.lm-lbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700}
+.lm-val{font-family:"Barlow Condensed",sans-serif;font-size:22px;font-weight:800;color:var(--teal);margin-top:2px}
+.lm-val.warn{color:var(--red)}.lm-val.good{color:var(--green)}
+.sheet-vis-upgraded{overflow:auto;background:var(--sky);border-radius:14px;padding:18px;border:1px solid var(--bdr2);margin-bottom:12px}
+.sheet-canvas-upgraded{position:relative;background:linear-gradient(45deg,#dbeef5 25%,transparent 25%),linear-gradient(-45deg,#dbeef5 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#dbeef5 75%),linear-gradient(-45deg,transparent 75%,#dbeef5 75%);background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0;background-color:#c8e4ee;border:3px solid var(--teal);border-radius:3px;box-shadow:0 8px 24px rgba(15,76,92,.15)}
+.piece-rect-upgraded{position:absolute;border:1.5px solid rgba(255,255,255,.5);overflow:hidden;box-sizing:border-box;transition:transform .12s,opacity .12s}
+.piece-rect-upgraded:hover{transform:scale(1.02);opacity:.9;z-index:5}
+.piece-inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px;text-align:center;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.piece-label{font-family:"Barlow Condensed",sans-serif;font-size:11px;font-weight:800;line-height:1;letter-spacing:.3px}
+.piece-dims-txt{font-size:9px;line-height:1.2;margin-top:2px;opacity:.9}
+.rot-badge{margin-top:3px;background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.4);border-radius:4px;padding:1px 4px;font-size:8px;letter-spacing:.5px;font-weight:700}
+
+/* Modals */
+.overlay{position:fixed;inset:0;background:rgba(5,20,28,.6);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)}
+.modal{background:#fff;border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,.25);width:100%;max-width:860px;max-height:92vh;overflow-y:auto}
+.modal-hdr{background:var(--teal2);border-radius:18px 18px 0 0;padding:18px 24px;display:flex;justify-content:space-between;align-items:center}
+.modal-title{font-family:"Barlow Condensed",sans-serif;font-size:22px;font-weight:800;color:#fff}
+.modal-x{background:none;border:none;color:rgba(255,255,255,.6);font-size:24px;cursor:pointer;transition:color .15s;line-height:1}
+.modal-x:hover{color:#fff}
+.modal-body{padding:22px 24px}
+.modal-sub{color:var(--muted);font-size:13px;margin-bottom:18px;line-height:1.5}
+
+/* Library */
+.lib-entry{background:var(--sky);border:1px solid var(--bdr);border-radius:10px;padding:13px 15px;margin-bottom:10px}
+.le-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.le-name{font-size:15px;font-weight:700;color:var(--teal)}
+.le-meta{font-size:12px;color:var(--muted)}
+.sizes-edit{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.se-box{background:#fff;border:1px solid var(--bdr);border-radius:8px;padding:12px}
+.se-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:9px}
+.se-inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.edit-basic{background:#fff;border:1px solid var(--bdr);border-radius:8px;padding:12px;margin-bottom:10px}
+.edit-basic-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.add-form{background:var(--sky);border:1.5px dashed var(--bdr2);border-radius:10px;padding:16px;margin-top:10px}
+.add-form-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:11px}
+.af-row1{display:grid;grid-template-columns:2fr 1fr 1fr;gap:9px;margin-bottom:9px}
+.af-row2{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr auto;gap:9px;align-items:end}
+
+/* Settings modal */
+.settings-section{margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--bdr)}
+.settings-section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.settings-title{font-family:"Barlow Condensed",sans-serif;font-size:16px;font-weight:800;color:var(--teal);margin-bottom:4px}
+.settings-desc{font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5}
+.key-status{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;margin-top:8px}
+.key-status.valid{background:#d1fae5;color:#065f46}
+.key-status.invalid{background:#fee2e2;color:#991b1b}
+.key-status.none{background:var(--sky);color:var(--muted)}
+.setup-steps{background:var(--sky);border:1px solid var(--bdr);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--text2);line-height:1.8;margin-top:8px}
+.setup-steps code{background:#fff;border:1px solid var(--bdr);border-radius:4px;padding:1px 5px;font-family:monospace;font-size:11px;color:var(--teal)}
+
+/* History */
+.hist-entry{background:var(--sky);border:1px solid var(--bdr);border-radius:10px;padding:13px 15px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.hist-ref{font-size:15px;font-weight:700;color:var(--teal)}
+.hist-meta{font-size:12px;color:var(--muted);margin-top:3px}
+.hist-summary{font-size:12px;color:var(--text2);margin-top:4px}
+.hist-actions{display:flex;gap:8px;flex-shrink:0}
+
+/* Loading spinner */
+.calc-overlay{position:fixed;inset:0;background:rgba(5,20,28,.65);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.calc-overlay.hidden{display:none}
+.spinner{width:52px;height:52px;border:5px solid rgba(255,255,255,.2);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:18px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.calc-overlay-text{color:#fff;font-family:"Barlow Condensed",sans-serif;font-size:22px;font-weight:700;letter-spacing:1px}
+.calc-overlay-sub{color:rgba(255,255,255,.6);font-size:13px;margin-top:6px}
+
+/* Stale banner */
+.stale-banner-inner{background:#fffbf0;border:1.5px solid var(--yel);border-radius:10px;padding:10px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+
+/* Total cost */
+.total-cost-bar{background:linear-gradient(135deg,var(--teal2),var(--teal));border-radius:10px;padding:12px 18px;margin-top:12px;display:flex;align-items:center;justify-content:space-between}
+
+/* Print */
+@media print{.no-print{display:none!important}body{background:#fff;font-size:11px}.results-shell{box-shadow:none;border:1px solid #ccc}.results-hdr{background:var(--teal2)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.detail-section,.full-table-wrap{break-inside:avoid}}
+
+/* Misc */
+.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt20{margin-top:20px}
+.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}.mb16{margin-bottom:16px}
+.flex{display:flex}.gap8{gap:8px}.gap12{gap:12px}.aic{align-items:center}.jsb{justify-content:space-between}
+
+@media(max-width:640px){
+  .nav{padding:0 16px}.hero{padding:60px 20px 50px}
+  .proof-strip{gap:20px;padding:14px 20px}
+  .features{padding:50px 20px}.pricing{padding:50px 20px}
+  .pricing-cards{grid-template-columns:1fr}
+  .vs-section{padding:50px 20px}
+  .app-main{padding:16px}
+  .app-hdr{padding:0 16px}
+  .mock-body{grid-template-columns:1fr}
+}
+
+/* ── CUTTING METHOD TOGGLE ── */
+.cut-method-toggle{display:flex;gap:0;border:1.5px solid var(--bdr2);border-radius:8px;overflow:hidden;margin-top:4px}
+.cut-method-btn{flex:1;padding:7px 12px;border:none;background:var(--sky);color:var(--text2);font-family:'Barlow',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:5px}
+.cut-method-btn.active{background:var(--teal);color:#fff}
+.cut-method-btn:first-child{border-right:1px solid var(--bdr2)}
+.guillotine-note{font-size:11px;color:var(--muted);margin-top:5px;font-style:italic}
+</style>
+</head>
+<body>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "NestIQ",
+  "description": "Professional sheet metal nesting software with free placement for CNC punch press and guillotine mode for shear cutting. Cost-aware optimisation.",
+  "url": "https://nestiq.io",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "offers": [
+    {
+      "@type": "Offer",
+      "name": "Free",
+      "price": "0",
+      "priceCurrency": "GBP"
+    },
+    {
+      "@type": "Offer",
+      "name": "Pro Monthly",
+      "price": "15",
+      "priceCurrency": "GBP",
+      "billingIncrement": "P1M"
+    },
+    {
+      "@type": "Offer",
+      "name": "Pro Annual",
+      "price": "129",
+      "priceCurrency": "GBP",
+      "billingIncrement": "P1Y"
+    }
+  ]
+}
+</script>
+
+<!-- ══ LOADING OVERLAY ══ -->
+<div class="calc-overlay hidden" id="calc-overlay">
+  <div class="spinner"></div>
+  <div class="calc-overlay-text">Optimising layouts…</div>
+  <div class="calc-overlay-sub">Finding the most cost-effective arrangement</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- LANDING PAGE                                                  -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="landing" id="landing">
+
+  <!-- NAV -->
+  <nav class="nav">
+    <a class="nav-brand" href="#" onclick="showLanding()">
+      <svg class="nav-logo" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="36" height="36" rx="8" fill="#0f4c5c"/>
+        <rect x="4" y="4" width="13" height="9" rx="2" fill="#f59e0b"/>
+        <rect x="19" y="4" width="13" height="15" rx="2" fill="white" opacity=".9"/>
+        <rect x="4" y="15" width="13" height="17" rx="2" fill="white" opacity=".9"/>
+        <rect x="19" y="21" width="13" height="11" rx="2" fill="#f59e0b" opacity=".8"/>
+      </svg>
+      <div>
+        <div class="nav-name">Nest<span>IQ</span></div>
+      </div>
+    </a>
+    <div class="nav-links">
+      <a href="#features" class="nav-link">Features</a>
+      <a href="#pricing" class="nav-link">Pricing</a>
+      <button class="btn-nav-cta" onclick="showApp()">Try Free →</button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge">✂ Sheet Metal Nesting Software</div>
+    <h1>Cut smarter.<br><span>Quote better.</span></h1>
+    <p class="hero-sub">Professional sheet metal nesting built for CNC turret punch press. Minimises material waste, optimises by cost — not just sheet count.</p>
+    <div class="hero-ctas">
+      <button class="btn-primary" onclick="showApp()">Try Free — No Sign Up</button>
+      <a href="#pricing" class="btn-secondary">See Pro Plans →</a>
+    </div>
+    <p class="hero-proof">Free forever on 1 material · <b>Pro from £15/month</b> · Cancel anytime</p>
+
+    <!-- Mock app visual -->
+    <div class="hero-visual" style="margin-top:48px">
+      <div class="mock-app">
+        <div class="mock-topbar">
+          <div class="mock-dot" style="background:#ef4444"></div>
+          <div class="mock-dot" style="background:#f59e0b"></div>
+          <div class="mock-dot" style="background:#22c55e"></div>
+          <div style="flex:1;height:20px;background:rgba(255,255,255,.1);border-radius:4px;margin-left:8px"></div>
+        </div>
+        <div class="mock-body">
+          <div class="mock-card">
+            <div class="mock-label">S/S 2mm — 316 Brushed · No Rotation</div>
+            <div class="mock-sheet">
+              <div class="mock-piece" style="width:62%;height:52%;background:#0891b2"></div>
+              <div class="mock-piece" style="width:36%;height:52%;background:#7c3aed"></div>
+              <div class="mock-piece" style="width:45%;height:44%;background:#059669"></div>
+              <div class="mock-piece" style="width:53%;height:44%;background:#dc2626"></div>
+            </div>
+            <div style="display:flex;gap:16px;margin-top:12px">
+              <div><div class="mock-label">Sheets</div><div class="mock-big">3</div></div>
+              <div><div class="mock-label">Utilisation</div><div class="mock-big mock-green">84%</div></div>
+              <div><div class="mock-label">Material Cost</div><div class="mock-big">£615</div></div>
+            </div>
+          </div>
+          <div class="mock-card">
+            <div class="mock-label">Mild Steel 2mm</div>
+            <div class="mock-sheet">
+              <div class="mock-piece" style="width:78%;height:60%;background:#d97706"></div>
+              <div class="mock-piece" style="width:20%;height:60%;background:#0f4c5c"></div>
+              <div class="mock-piece" style="width:48%;height:36%;background:#be185d"></div>
+              <div class="mock-piece" style="width:48%;height:36%;background:#0891b2"></div>
+            </div>
+            <div style="display:flex;gap:16px;margin-top:12px">
+              <div><div class="mock-label">Sheets</div><div class="mock-big">2</div></div>
+              <div><div class="mock-label">Utilisation</div><div class="mock-big mock-green">91%</div></div>
+              <div><div class="mock-label">Total Job</div><div class="mock-big">£985</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROOF STRIP -->
+  <div class="proof-strip">
+    <div class="proof-item">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      MaxRects free-placement algorithm
+    </div>
+    <div class="proof-item">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      Built for CNC turret punch press
+    </div>
+    <div class="proof-item">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      No install — runs in your browser
+    </div>
+    <div class="proof-item">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      Built by a fabricator, for fabricators
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <section class="features" id="features">
+    <div class="section-label">Why NestIQ</div>
+    <h2 class="section-title">Everything a fabricator actually needs</h2>
+    <p class="section-sub">Not a generic woodworking tool bolted onto metal. Built from scratch for sheet metal, CNC punch press, and real quoting workflows.</p>
+    <div class="features-grid">
+      <div class="feat-card">
+        <div class="feat-icon">🎯</div>
+        <div class="feat-title">Cost-aware optimisation</div>
+        <div class="feat-desc">Minimises your total material spend — not just sheet count. Knows the price of each sheet size and optimises accordingly. A cheap small sheet that creates waste is never preferred over a well-filled large sheet.</div>
+        <div class="feat-vs">✨ Unique to NestIQ</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🧵</div>
+        <div class="feat-title">Grain direction lock</div>
+        <div class="feat-desc">Per-material rotation control. Lock brushed or patterned stainless grades to prevent the optimiser rotating pieces against the grain direction. Essential for 304 Brushed, 316 Brushed, and any directional finish.</div>
+        <div class="feat-vs">✨ Unique to NestIQ</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">⚡</div>
+        <div class="feat-title">Never slows down</div>
+        <div class="feat-desc">Runs entirely in your browser — no cloud server, no queue, no waiting. Large jobs with 50+ pieces across multiple materials calculate in seconds regardless of your internet connection.</div>
+        <div class="feat-vs">👎 A known opticutter weakness</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📦</div>
+        <div class="feat-title">Pro master library included</div>
+        <div class="feat-desc">Pro users get instant access to the CutNest UK Master Library — 22 materials across mild steel, stainless, galvanised, aluminium, zintec and laser sizes with typical UK market prices. Pre-loaded, no setup, updated automatically.</div>
+        <div class="feat-vs">✨ Pro feature</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🔢</div>
+        <div class="feat-title">Unit multiplier</div>
+        <div class="feat-desc">Quoting 10 identical enclosures? Enter pieces for one unit, set quantity to 10. NestIQ scales the entire job automatically. Saves re-entering the same data repeatedly for batch quotes.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🕐</div>
+        <div class="feat-title">Job history</div>
+        <div class="feat-desc">Every calculation is saved automatically. Pull up any past quote in seconds — reload the pieces, tweak quantities, recalculate. Perfect for repeat orders and checking previous material usage.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📐</div>
+        <div class="feat-title">Guillotine & free placement</div>
+        <div class="feat-desc">Per-material cutting method selection. Free placement for CNC punch press and laser cutting. Guillotine mode for shear cutting — cuts go edge to edge, correct for smaller shops and manual shears. Mix both in the same job.</div>
+        <div class="feat-vs">✨ Unique to NestIQ</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VS TABLE -->
+  <div class="vs-section">
+    <div class="vs-inner">
+      <div style="text-align:center;margin-bottom:36px">
+        <div class="section-label" style="color:rgba(245,158,11,.8)">Comparison</div>
+        <h2 class="section-title" style="color:#fff">NestIQ vs opticutter</h2>
+      </div>
+      <table class="vs-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>opticutter Pro (€19/mo)</th>
+            <th>NestIQ Pro (£15/mo)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Sheet metal nesting (2D panel)</td><td class="tick">✓</td><td class="tick">✓</td></tr>
+          <tr><td>Free placement (CNC punch press)</td><td class="tick">✓</td><td class="tick">✓</td></tr>
+          <tr><td>Multiple materials per job</td><td class="tick">✓</td><td class="tick">✓</td></tr>
+          <tr><td>Cost-aware optimisation</td><td class="cross">✗</td><td class="tick">✓</td></tr>
+          <tr><td>Grain direction lock per material</td><td class="cross">✗</td><td class="tick">✓</td></tr>
+          <tr><td>Performance on large jobs</td><td class="partial">⚠ Slows on large sets</td><td class="tick">✓ Always fast</td></tr>
+          <tr><td>Pre-built UK material library (22 grades)</td><td class="cross">✗</td><td class="tick">✓</td></tr>
+          <tr><td>Job history</td><td class="cross">✗</td><td class="tick">✓</td></tr>
+          <tr><td>Unit quantity multiplier</td><td class="cross">✗</td><td class="tick">✓</td></tr>
+          <tr><td>Works offline</td><td class="cross">✗</td><td class="tick">✓</td></tr>
+          <tr><td>Guillotine mode (for shear cutting)</td><td class="cross">✗</td><td class="tick">✓</td></tr>
+          <tr><td>Price</td><td style="color:rgba(255,255,255,.6);text-align:center">€19/month</td><td style="color:var(--amber);text-align:center;font-weight:700">£15/month</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PRICING -->
+  <section class="pricing" id="pricing">
+    <div class="section-label">Pricing</div>
+    <h2 class="section-title">Simple, fair pricing</h2>
+    <p class="section-sub" style="margin:0 auto">Start free. Upgrade when you need your whole team on it.</p>
+    <div class="pricing-cards">
+
+      <!-- FREE -->
+      <div class="price-card">
+        <div class="plan-name">Free</div>
+        <div class="plan-price">£0<span></span></div>
+        <div class="plan-period">Forever free</div>
+        <ul class="plan-features">
+          <li><span class="fi">✅</span> Full nesting algorithm</li>
+          <li><span class="fi">✅</span> 1 material per job</li>
+          <li><span class="fi">✅</span> 2 sheet sizes per material</li>
+          <li><span class="fi">✅</span> Local stock library (5 materials)</li>
+          <li><span class="fi">✅</span> CSV export</li>
+          <li><span class="fi">✅</span> Visual cut layouts</li>
+          <li><span class="fi locked">🔒</span> <span class="locked">Multiple materials per job</span></li>
+          <li><span class="fi locked">🔒</span> <span class="locked">Shared team library</span></li>
+          <li><span class="fi locked">🔒</span> <span class="locked">Job history</span></li>
+          <li><span class="fi locked">🔒</span> <span class="locked">Unit multiplier</span></li>
+        </ul>
+        <button class="btn-plan btn-plan-free" onclick="showApp()">Start Free →</button>
+      </div>
+
+      <!-- PRO -->
+      <div class="price-card featured">
+        <div class="featured-badge">⭐ Most Popular</div>
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">£15<span>/mo</span></div>
+        <div class="plan-period">Per company · cancel anytime</div>
+        <div class="plan-annual">
+          <span>Pay annually — save £51</span>
+          <b>£129/year</b>
+        </div>
+        <ul class="plan-features">
+          <li><span class="fi">✅</span> Everything in Free</li>
+          <li><span class="fi">✅</span> Up to 5 materials per job</li>
+          <li><span class="fi">✅</span> Unlimited stock library</li>
+          <li><span class="fi">✅</span> CutNest Master Library (22 UK materials + prices)</li>
+          <li><span class="fi">✅</span> Job history (last 50 jobs)</li>
+          <li><span class="fi">✅</span> Unit quantity multiplier</li>
+          <li><span class="fi">✅</span> Grain direction lock</li>
+          <li><span class="fi">✅</span> Cost-aware optimisation</li>
+          <li><span class="fi">✅</span> Priority email support</li>
+        </ul>
+        <button class="btn-plan btn-plan-pro" onclick="buyPro('monthly')">Get Pro — £15/month →</button>
+        <div style="text-align:center;margin-top:10px">
+          <button onclick="buyPro('annual')" style="background:none;border:none;color:var(--teal3);font-size:13px;cursor:pointer;text-decoration:underline">Or £129/year (save £51)</button>
+        </div>
+      </div>
+    </div>
+    <p class="pricing-note">🔒 Secure payment via Lemon Squeezy · VAT included · Instant licence key by email</p>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq">
+    <div class="section-label">FAQ</div>
+    <h2 class="section-title" style="margin-bottom:24px">Common questions</h2>
+    <div class="faq-item">
+      <div class="faq-q">Do I need to install anything?</div>
+      <div class="faq-a">No. NestIQ runs entirely in your browser — Chrome, Edge, Safari, any modern browser. No downloads, no installation, no IT department needed.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What happens after I pay?</div>
+      <div class="faq-a">You'll receive a licence key by email immediately. Enter it in the Settings panel inside the app and Pro features unlock instantly. The key works per company — share it with your whole team.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Can I cancel any time?</div>
+      <div class="faq-a">Yes. Monthly plans cancel at end of the current billing period. Annual plans are non-refundable but you keep access until the year is up. No awkward cancellation hoops.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Is this for sheet metal specifically?</div>
+      <div class="faq-a">Yes. NestIQ uses free-placement packing — the correct algorithm for CNC turret punch press and laser cutting. Generic cutting optimisers often use guillotine algorithms designed for saws, which produce inferior results for punch/laser work.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What's the kerf setting?</div>
+      <div class="faq-a">NestIQ defaults to 20mm kerf (clearance between parts) which is typical for turret punch work. You can change this in Settings to match your machine and process.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Does it work offline?</div>
+      <div class="faq-a">Yes — once the page has loaded, the optimiser works with no internet connection. Shared library sync requires internet but all calculations run locally in your browser.</div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-name">Nest<span>IQ</span></div>
+    <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:12px">Sheet metal nesting. Done properly.</p>
+    <div class="footer-links">
+      <a href="mailto:support@nestiq.io">support@nestiq.io</a>
+      <a href="#" onclick="showApp()">Open App</a>
+      <a href="#pricing">Pricing</a>
+    </div>
+    <p class="footer-copy">© 2025 NestIQ · Built for fabricators · v1.0</p>
+  </footer>
+
+</div><!-- end landing -->
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- APP                                                            -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="app-view" id="app-view">
+
+  <!-- App header -->
+  <header class="app-hdr no-print">
+    <a class="app-brand" href="#" onclick="showLanding();return false;">
+      <svg class="app-brand-logo" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="36" height="36" rx="8" fill="#0f4c5c"/>
+        <rect x="4" y="4" width="13" height="9" rx="2" fill="#f59e0b"/>
+        <rect x="19" y="4" width="13" height="15" rx="2" fill="white" opacity=".9"/>
+        <rect x="4" y="15" width="13" height="17" rx="2" fill="white" opacity=".9"/>
+        <rect x="19" y="21" width="13" height="11" rx="2" fill="#f59e0b" opacity=".8"/>
+      </svg>
+      <div>
+        <div class="app-brand-name">Nest<span>IQ</span></div>
+        <div class="app-brand-sub">Sheet Metal Nesting</div>
+      </div>
+    </a>
+    <div class="app-hright">
+      <div class="kerf-pill">Kerf <b id="kerf-display">20mm</b></div>
+      <div class="sync-pill"><div class="sdot" id="sdot"></div><span id="stxt">Ready</span></div>
+      <span id="pro-badge-hdr" style="display:none" class="pro-badge">PRO</span>
+      <button class="btn btn-out" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.18);color:#fff;font-size:12px" onclick="openHistory()" id="history-btn">🕐 History</button>
+      <button class="btn btn-out" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.18);color:#fff;font-size:12px" onclick="openLib()">📦 Library</button>
+      <button class="btn btn-out" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.18);color:#fff;font-size:12px" onclick="openSettings()">⚙ Settings</button>
+    </div>
+  </header>
+
+  <!-- Pro upgrade banner (free users) -->
+  <div class="pro-banner no-print" id="pro-banner" style="display:none">
+    <div class="pro-banner-txt">You're on the <b>Free plan</b> — 1 material per job. Upgrade to Pro for unlimited materials, shared library and job history.</div>
+    <button class="btn-upgrade" onclick="buyPro('monthly')">Upgrade to Pro — £15/mo →</button>
+  </div>
+
+  <div class="app-main">
+
+    <!-- Job bar -->
+    <div class="no-print" style="background:var(--white);border:1px solid var(--bdr);border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:14px;box-shadow:var(--sh);flex-wrap:wrap">
+      <div style="flex:2;min-width:160px">
+        <label class="lbl">Job Reference / Quote No.</label>
+        <input type="text" id="job-ref" placeholder="e.g. JOB-001 or Quote #42" style="margin-top:4px" oninput="saveState()"/>
+      </div>
+      <div id="qty-wrap" style="min-width:100px">
+        <label class="lbl">No. of Units</label>
+        <input type="number" id="job-qty" value="1" min="1" max="999" style="margin-top:4px" oninput="saveState()" title="Multiply all quantities by this number"/>
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-end;padding-bottom:1px;flex-shrink:0">
+        <button class="btn btn-out" onclick="newJob()" style="white-space:nowrap;color:var(--red);border-color:var(--red)">🗑 New Job</button>
+      </div>
+    </div>
+
+    <!-- Material blocks -->
+    <div id="mat-blocks"></div>
+
+    <!-- Add material -->
+    <div class="add-mat-wrap no-print" id="add-mat-wrap">
+      <button class="add-mat-btn" onclick="addMat()">
+        <div class="add-mat-icon">+</div>
+        Add Another Material to This Job
+      </button>
+    </div>
+
+    <!-- Stale banner -->
+    <div id="stale-banner" style="display:none" class="no-print">
+      <div class="stale-banner-inner">
+        <div style="font-size:13px;color:var(--yel)">⚠ Pieces changed — results may be out of date</div>
+        <button onclick="calculate()" style="background:var(--yel);border:none;color:#fff;border-radius:7px;padding:6px 16px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;white-space:nowrap">Recalculate ✂</button>
+      </div>
+    </div>
+
+    <!-- Calculate -->
+    <div class="calc-bar no-print">
+      <button class="btn-calc" onclick="calculate()">✂ CALCULATE LAYOUTS</button>
+      <div class="calc-note">Each material calculated independently. Results show exact sheets and cost.</div>
+    </div>
+
+    <div class="err no-print" id="err-box" style="display:none"></div>
+
+    <!-- Results -->
+    <div id="output" style="display:none">
+      <div class="results-shell">
+        <div class="results-hdr">
+          <div class="results-title">📋 Sheet Usage <span id="units-badge" style="font-size:13px;font-weight:400;opacity:.7;margin-left:8px"></span></div>
+          <div class="res-acts">
+            <button class="btn-exp" onclick="exportCSV()">⬇ CSV</button>
+            <button class="btn-exp" onclick="window.print()">🖨 Print</button>
+          </div>
+        </div>
+        <div class="pricing-wrap">
+          <div class="pricing-ttl">Sheets required per material</div>
+          <div id="pricing-cards"></div>
+          <div id="total-cost-bar" style="display:none" class="total-cost-bar">
+            <div style="color:rgba(255,255,255,.7);font-size:13px;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px;text-transform:uppercase">Total Material Cost</div>
+            <div id="total-cost-val" style="color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800"></div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:8px">
+            <button class="copy-btn" id="copy-btn" onclick="copyQuote()">📋 Copy summary for quote</button>
+          </div>
+        </div>
+        <div class="stats-strip">
+          <div class="stat-c"><div class="stat-l">Total Sheets</div><div class="stat-v" id="s-sheets">—</div></div>
+          <div class="stat-c"><div class="stat-l">Total Pieces</div><div class="stat-v" id="s-placed">—</div></div>
+          <div class="stat-c"><div class="stat-l">Unplaced</div><div class="stat-v" id="s-unplaced">—</div></div>
+          <div class="stat-c"><div class="stat-l">Avg Waste</div><div class="stat-v" id="s-waste">—</div></div>
+        </div>
+        <div id="mat-visuals"></div>
+        <div class="full-table-wrap">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--teal);margin-bottom:12px">Full Placement Table</div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>Material</th><th>Sheet #</th><th>Size</th><th>Part</th><th>W</th><th>H</th><th>X</th><th>Y</th><th>Rotated</th></tr></thead>
+              <tbody id="placement-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><!-- end app-main -->
+</div><!-- end app-view -->
+
+<!-- ══ HISTORY MODAL ══ -->
+<div class="overlay" id="history-modal" style="display:none">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-hdr">
+      <div class="modal-title">🕐 Job History</div>
+      <button class="modal-x" onclick="closeHistory()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-sub">Your last 50 jobs are saved automatically. Load any job to restore all pieces and materials.</p>
+      <div id="history-entries"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SETTINGS MODAL ══ -->
+<div class="overlay" id="settings-modal" style="display:none">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-hdr">
+      <div class="modal-title">⚙ Settings</div>
+      <button class="modal-x" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Licence key -->
+      <div class="settings-section">
+        <div class="settings-title">🔑 Licence Key</div>
+        <div class="settings-desc">Enter your NestIQ Pro licence key to unlock all features. Keys are per company — share with your whole team.</div>
+        <label class="lbl">Licence Key</label>
+        <input type="text" id="licence-key-input" placeholder="NESTIQ-XXXX-XXXX-XXXX-XXXX" style="font-family:monospace;letter-spacing:1px" oninput="this.value=this.value.toUpperCase()"/>
+        <div id="key-status" class="key-status none">No key entered</div>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn btn-teal" onclick="validateAndSaveKey()" style="padding:9px 20px;font-size:14px">Activate Key</button>
+          <button class="btn btn-out" onclick="buyPro('monthly')" style="padding:9px 20px;font-size:14px">Buy Pro — £15/mo →</button>
+        </div>
+      </div>
+
+      <!-- Company name -->
+      <div class="settings-section">
+        <div class="settings-title">🏢 Company Name</div>
+        <div class="settings-desc">Shown on CSV exports and print layouts.</div>
+        <label class="lbl">Company Name</label>
+        <input type="text" id="company-name" placeholder="e.g. Acme Fabrications Ltd" oninput="saveSettings()"/>
+      </div>
+
+      <!-- Kerf -->
+      <div class="settings-section">
+        <div class="settings-title">✂ Blade Kerf</div>
+        <div class="settings-desc">Clearance between parts in mm. 20mm is typical for CNC turret punch press. Adjust for laser cutting or your specific machine setup.</div>
+        <div style="display:flex;gap:12px;align-items:flex-end">
+          <div style="width:120px">
+            <label class="lbl">Kerf (mm)</label>
+            <input type="number" id="kerf-setting" value="20" min="0" max="100" oninput="saveSettings()"/>
+          </div>
+          <div style="font-size:12px;color:var(--muted);padding-bottom:8px">Typical: 20mm punch · 3mm laser · 5mm plasma</div>
+        </div>
+      </div>
+
+      <!-- Pro master library info -->
+      <div class="settings-section">
+        <div class="settings-title">☁ CutNest Master Library <span style="background:var(--amber);color:var(--teal2);font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;margin-left:6px;vertical-align:middle">PRO</span></div>
+        <div class="settings-desc">Pro users automatically get the full CutNest UK Master Library — 22 materials across mild steel, stainless, galvanised, aluminium and zintec with typical UK market prices. No setup required. Updated automatically when you renew.</div>
+        <div id="master-lib-status" style="background:var(--sky);border:1px solid var(--bdr);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--text2)">
+          <span id='master-lib-txt'>Loading...</span>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px">
+        <button class="btn btn-out" onclick="closeSettings()" style="padding:10px 18px;font-size:14px">Cancel</button>
+        <button class="btn btn-teal" onclick="saveSettingsAndClose()" style="padding:10px 24px;font-size:14px">💾 Save Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LIBRARY MODAL ══ -->
+<div class="overlay" id="lib-modal" style="display:none">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">📦 Stock Library</div>
+      <button class="modal-x" onclick="closeLib()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-sub">Your materials with sheet sizes, prices and settings. Changes sync to your team if shared library is configured.</p>
+      <div id="lib-entries"></div>
+      <div id="lib-limit-notice" style="display:none;background:#fff3cd;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;font-size:13px;color:#92400e;margin-bottom:10px">
+        🔒 Free plan: up to 5 materials. <button onclick="buyPro('monthly')" style="background:none;border:none;color:var(--teal3);cursor:pointer;font-weight:700;text-decoration:underline;font-size:13px">Upgrade to Pro for unlimited →</button>
+      </div>
+      <div class="add-form mt12" id="add-form-wrap">
+        <div class="add-form-title">➕ Add New Material</div>
+        <div class="af-row1">
+          <div><label class="lbl">Material Name *</label><input type="text" id="n-name" placeholder="e.g. S/S 2mm — 304 Brushed"/></div>
+          <div><label class="lbl">Material Type</label><input type="text" id="n-mat" placeholder="Stainless Steel"/></div>
+          <div><label class="lbl">Thickness</label><input type="text" id="n-thk" placeholder="2mm"/></div>
+        </div>
+        <div class="af-row2">
+          <div><label class="lbl">Size 1 W *</label><input type="number" id="n-w1" placeholder="2450"/></div>
+          <div><label class="lbl">Size 1 H *</label><input type="number" id="n-h1" placeholder="1150"/></div>
+          <div><label class="lbl">Size 1 Price</label><input type="number" id="n-pr1" placeholder="£"/></div>
+          <div><label class="lbl">Size 2 W</label><input type="number" id="n-w2" placeholder="opt"/></div>
+          <div><label class="lbl">Size 2 H</label><input type="number" id="n-h2" placeholder="opt"/></div>
+          <div><label class="lbl">Size 2 Price</label><input type="number" id="n-pr2" placeholder="£"/></div>
+          <div><button class="btn btn-teal" style="padding:8px 12px;margin-top:18px" onclick="addLibEntry()">+ Add</button></div>
+        </div>
+      </div>
+      <div class="flex gap8 mt20" style="justify-content:flex-end">
+        <button class="btn btn-out" onclick="closeLib()" style="padding:10px 18px;font-size:14px">Cancel</button>
+        <button class="btn btn-teal" style="padding:10px 24px;font-size:14px" onclick="saveLibClose()">💾 Save Library</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ UPGRADE MODAL ══ -->
+<div class="overlay" id="upgrade-modal" style="display:none">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-hdr" style="background:linear-gradient(135deg,var(--teal2),var(--teal))">
+      <div class="modal-title">⭐ Upgrade to NestIQ Pro</div>
+      <button class="modal-x" onclick="document.getElementById('upgrade-modal').style.display='none'">✕</button>
+    </div>
+    <div class="modal-body" style="text-align:center;padding:32px 24px">
+      <div style="font-size:40px;margin-bottom:16px" id="upgrade-icon">🔒</div>
+      <h3 style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:var(--teal);margin-bottom:8px" id="upgrade-title">Pro Feature</h3>
+      <p style="font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.6" id="upgrade-desc">Upgrade to NestIQ Pro to unlock this feature.</p>
+      <div style="background:var(--sky);border:1px solid var(--bdr);border-radius:12px;padding:16px;margin-bottom:20px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;color:var(--teal)">£15<span style="font-size:16px;color:var(--muted)">/month</span></div>
+        <div style="font-size:13px;color:var(--muted)">or £129/year · cancel anytime</div>
+      </div>
+      <button class="btn-plan btn-plan-pro" style="width:100%;margin-bottom:10px" onclick="buyPro('monthly')">Get Pro — £15/month →</button>
+      <button onclick="buyPro('annual')" style="background:none;border:none;color:var(--teal3);font-size:13px;cursor:pointer;text-decoration:underline">Or £129/year (save £51)</button>
+      <p style="font-size:12px;color:var(--muted);margin-top:16px">Instant licence key by email · VAT included · 1 key per company</p>
+    </div>
+  </div>
+</div>
+<script>
+// ══ CONSTANTS ══════════════════════════════════════════════════
+const APP_VERSION = '1.0.0';
+const STOR_KEY    = 'nestiq-lib-v1';
+const JOB_KEY     = 'nestiq-job-v1';
+const HIST_KEY    = 'nestiq-hist-v1';
+const SETT_KEY    = 'nestiq-settings-v1';
+const KEY_STORE   = 'nestiq-licence-v1';
+const HIST_MAX    = 50;
+const FREE_MAT_LIMIT = 1;
+const FREE_LIB_LIMIT = 5;
+
+// ══ CUTNEST PRO MASTER LIBRARY ══════════════════════════════════
+// 22 UK sheet metal grades with typical market prices.
+// Pro users get this automatically — no setup needed.
+// Update prices here and push a new version to update all Pro users.
+const MASTER_LIBRARY = [
+  // MILD STEEL
+  {id:101,allowRotation:true,cuttingMethod:'free',name:'Mild Steel 1.5mm',material:'Mild Steel',thickness:'1.5mm',grade:'',size1:{w:2450,h:1150,price:85},size2:{w:2050,h:900,price:52}},
+  {id:102,allowRotation:true,cuttingMethod:'free',name:'Mild Steel 2mm',material:'Mild Steel',thickness:'2mm',grade:'',size1:{w:2450,h:1150,price:105},size2:{w:2050,h:900,price:65}},
+  {id:103,allowRotation:true,cuttingMethod:'free',name:'Mild Steel 3mm',material:'Mild Steel',thickness:'3mm',grade:'',size1:{w:2450,h:1150,price:145},size2:{w:1950,h:900,price:88}},
+  {id:104,allowRotation:true,cuttingMethod:'free',name:'Mild Steel 4mm',material:'Mild Steel',thickness:'4mm',grade:'',size1:{w:2450,h:1150,price:185},size2:{w:1950,h:900,price:112}},
+  {id:105,allowRotation:true,cuttingMethod:'free',name:'Mild Steel 5mm',material:'Mild Steel',thickness:'5mm',grade:'',size1:{w:2450,h:1150,price:225},size2:{w:1950,h:900,price:138}},
+  // STAINLESS STEEL
+  {id:201,allowRotation:false,cuttingMethod:'free',name:'S/S 1.5mm — 304 Brushed',material:'Stainless Steel',thickness:'1.5mm',grade:'304 Brushed',size1:{w:2450,h:1150,price:165},size2:{w:1950,h:900,price:98}},
+  {id:202,allowRotation:true,cuttingMethod:'free',name:'S/S 1.5mm — 304',material:'Stainless Steel',thickness:'1.5mm',grade:'304',size1:{w:2450,h:1150,price:155},size2:{w:1950,h:900,price:92}},
+  {id:203,allowRotation:false,cuttingMethod:'free',name:'S/S 2mm — 304 Brushed',material:'Stainless Steel',thickness:'2mm',grade:'304 Brushed',size1:{w:2450,h:1150,price:205},size2:{w:1950,h:900,price:118}},
+  {id:204,allowRotation:true,cuttingMethod:'free',name:'S/S 2mm — 304',material:'Stainless Steel',thickness:'2mm',grade:'304',size1:{w:2450,h:1150,price:195},size2:{w:1950,h:900,price:112}},
+  {id:205,allowRotation:false,cuttingMethod:'free',name:'S/S 2mm — 316 Brushed',material:'Stainless Steel',thickness:'2mm',grade:'316 Brushed',size1:{w:2450,h:1150,price:225},size2:{w:1950,h:900,price:132}},
+  {id:206,allowRotation:true,cuttingMethod:'free',name:'S/S 2mm — 316',material:'Stainless Steel',thickness:'2mm',grade:'316',size1:{w:2450,h:1150,price:215},size2:{w:1950,h:900,price:125}},
+  {id:207,allowRotation:false,cuttingMethod:'free',name:'S/S 2.5mm — 316 Brushed',material:'Stainless Steel',thickness:'2.5mm',grade:'316 Brushed',size1:{w:2450,h:1150,price:268},size2:{w:1950,h:900,price:155}},
+  {id:208,allowRotation:true,cuttingMethod:'free',name:'S/S 3mm — 304',material:'Stainless Steel',thickness:'3mm',grade:'304',size1:{w:2450,h:1150,price:285},size2:{w:1950,h:900,price:168}},
+  // GALVANISED
+  {id:301,allowRotation:true,cuttingMethod:'free',name:'Galv 1.5mm',material:'Galvanised',thickness:'1.5mm',grade:'',size1:{w:2450,h:1150,price:78},size2:{w:1950,h:900,price:48}},
+  {id:302,allowRotation:true,cuttingMethod:'free',name:'Galv 2mm',material:'Galvanised',thickness:'2mm',grade:'',size1:{w:2450,h:1150,price:95},size2:{w:1950,h:900,price:58}},
+  {id:303,allowRotation:true,cuttingMethod:'free',name:'Galv 3mm',material:'Galvanised',thickness:'3mm',grade:'',size1:{w:2450,h:1150,price:135},size2:{w:1950,h:900,price:82}},
+  // ALUMINIUM
+  {id:401,allowRotation:true,cuttingMethod:'free',name:'Aluminium 1.5mm',material:'Aluminium',thickness:'1.5mm',grade:'',size1:{w:2450,h:1150,price:125},size2:{w:1950,h:900,price:75}},
+  {id:402,allowRotation:true,cuttingMethod:'free',name:'Aluminium 2mm',material:'Aluminium',thickness:'2mm',grade:'',size1:{w:2450,h:1150,price:158},size2:{w:1950,h:900,price:95}},
+  {id:403,allowRotation:true,cuttingMethod:'free',name:'Aluminium 3mm',material:'Aluminium',thickness:'3mm',grade:'',size1:{w:2450,h:1150,price:195},size2:{w:1950,h:900,price:118}},
+  {id:404,allowRotation:true,cuttingMethod:'free',name:'Aluminium 4mm',material:'Aluminium',thickness:'4mm',grade:'',size1:{w:2450,h:1150,price:245},size2:{w:1950,h:900,price:148}},
+  // ZINTEC
+  {id:501,allowRotation:true,cuttingMethod:'free',name:'Zintec 1mm',material:'Zintec',thickness:'1mm',grade:'',size1:{w:2450,h:1150,price:72},size2:{w:1950,h:900,price:44}},
+  {id:502,allowRotation:true,cuttingMethod:'free',name:'Zintec 1.5mm',material:'Zintec',thickness:'1.5mm',grade:'',size1:{w:2450,h:1150,price:92},size2:{w:1950,h:900,price:56}},
+];
+
+// Lemon Squeezy checkout links — replace with your real product URLs
+const LS_MONTHLY = 'https://nestiq.lemonsqueezy.com/buy/monthly';
+const LS_ANNUAL  = 'https://nestiq.lemonsqueezy.com/buy/annual';
+
+// Colour palette for pieces
+const COLORS = ['#0891b2','#059669','#d97706','#dc2626','#7c3aed','#db2777','#0d9488','#65a30d','#9333ea','#0369a1','#b45309','#be123c','#1d4ed8','#15803d','#c2410c'];
+
+// ══ STATE ══════════════════════════════════════════════════════
+let library    = [];
+let pending    = [];
+let calcResult = null;
+let layoutGroups = [];
+let isPro      = false;
+let settings   = { kerf: 20, companyName: '' };
+let KERF       = 20;
+
+let mats = [{ id:'mat-1', selectedMatId:null, pieces:[{w:'',h:'',qty:1}] }];
+
+// ══ PRO / LICENCE ══════════════════════════════════════════════
+function checkLicence() {
+  const stored = localStorage.getItem(KEY_STORE);
+  if (stored) {
+    const data = JSON.parse(stored);
+    if (validateKeyFormat(data.key)) {
+      isPro = true;
+      return;
+    }
+  }
+  isPro = false;
+}
+
+function validateKeyFormat(key) {
+  // Format: NESTIQ-XXXX-XXXX-XXXX-XXXX (replace with real validation later)
+  return /^NESTIQ-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(key);
+}
+
+function validateAndSaveKey() {
+  const key = document.getElementById('licence-key-input').value.trim().toUpperCase();
+  const statusEl = document.getElementById('key-status');
+  if (validateKeyFormat(key)) {
+    localStorage.setItem(KEY_STORE, JSON.stringify({ key, date: new Date().toISOString() }));
+    isPro = true;
+    statusEl.className = 'key-status valid';
+    statusEl.textContent = '✓ Pro licence active — loading master library…';
+    updateProUI();
+    // Reload library to get master materials
+    loadLib().then(() => {
+      statusEl.textContent = '✓ Pro licence active — ' + MASTER_LIBRARY.length + ' materials loaded';
+      setTimeout(() => closeSettings(), 1500);
+    });
+  } else {
+    statusEl.className = 'key-status invalid';
+    statusEl.textContent = '✗ Invalid key format — check your email and try again';
+  }
+}
+
+function updateProUI() {
+  // Header badge
+  const badge = document.getElementById('pro-badge-hdr');
+  if (badge) badge.style.display = isPro ? 'flex' : 'none';
+
+  // Pro banner
+  const banner = document.getElementById('pro-banner');
+  if (banner) banner.style.display = isPro ? 'none' : 'flex';
+
+  // History button
+  const hBtn = document.getElementById('history-btn');
+  if (hBtn) hBtn.style.display = isPro ? 'inline-flex' : 'none';
+
+  // Unit qty (Pro only)
+  const qtyWrap = document.getElementById('qty-wrap');
+  if (qtyWrap) qtyWrap.style.display = isPro ? 'block' : 'none';
+
+  // Master library loaded via loadLib() — no UI toggle needed
+
+  // Lib limit notice
+  updateLibLimitNotice();
+}
+
+function showUpgradeModal(icon, title, desc) {
+  document.getElementById('upgrade-icon').textContent = icon;
+  document.getElementById('upgrade-title').textContent = title;
+  document.getElementById('upgrade-desc').textContent = desc;
+  document.getElementById('upgrade-modal').style.display = 'flex';
+}
+
+function buyPro(plan) {
+  window.open(plan === 'annual' ? LS_ANNUAL : LS_MONTHLY, '_blank');
+}
+
+// ══ PAGE NAVIGATION ════════════════════════════════════════════
+function showLanding() {
+  document.getElementById('landing').style.display = 'block';
+  document.getElementById('app-view').style.display = 'none';
+}
+function showApp() {
+  document.getElementById('landing').style.display = 'none';
+  document.getElementById('app-view').style.display = 'block';
+}
+
+// ══ SETTINGS ═══════════════════════════════════════════════════
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETT_KEY);
+    if (raw) settings = {...settings, ...JSON.parse(raw)};
+  } catch(e) {}
+  KERF = Math.max(0, parseInt(settings.kerf) || 20);
+  const kd = document.getElementById('kerf-display');
+  if (kd) kd.textContent = KERF + 'mm';
+}
+function openSettings() {
+  loadSettings();
+  document.getElementById('kerf-setting').value = settings.kerf || 20;
+  document.getElementById('company-name').value = settings.companyName || '';
+
+  // Show current key
+  const stored = localStorage.getItem(KEY_STORE);
+  const keyInput = document.getElementById('licence-key-input');
+  const statusEl = document.getElementById('key-status');
+  if (stored) {
+    const data = JSON.parse(stored);
+    keyInput.value = data.key;
+    statusEl.className = 'key-status valid';
+    statusEl.textContent = '✓ Pro licence active';
+  } else {
+    statusEl.className = 'key-status none';
+    statusEl.textContent = 'No key entered';
+  }
+  updateProUI();
+  // Update master library status text
+  const mlt = document.getElementById('master-lib-txt');
+  if (mlt) mlt.innerHTML = isPro
+    ? '✅ <b>Active</b> — ' + MASTER_LIBRARY.length + ' materials loaded from the CutNest Master Library'
+    : '🔒 <a href="#" onclick="buyPro(\'monthly\');return false;" style="color:var(--teal3);font-weight:700">Upgrade to Pro</a> to access the full 22-material master library';
+  document.getElementById('settings-modal').style.display = 'flex';
+}
+function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
+function saveSettings() {
+  settings.kerf = parseInt(document.getElementById('kerf-setting')?.value) || 20;
+  settings.companyName = document.getElementById('company-name')?.value?.trim() || '';
+  // JSONBin removed — master library is built-in
+  KERF = Math.max(0, settings.kerf);
+  const kd = document.getElementById('kerf-display');
+  if (kd) kd.textContent = KERF + 'mm';
+  localStorage.setItem(SETT_KEY, JSON.stringify(settings));
+}
+function saveSettingsAndClose() { saveSettings(); closeSettings(); }
+
+// ══ STORAGE / LIBRARY ══════════════════════════════════════════
+function setSS(state, txt) {
+  const dot = document.getElementById('sdot');
+  const stxt = document.getElementById('stxt');
+  if (dot) dot.className = 'sdot ' + state;
+  if (stxt) stxt.textContent = txt;
+}
+
+async function saveData(lib) {
+  // Save user's custom additions/edits to localStorage
+  // Master library is always available from MASTER_LIBRARY constant
+  const customEntries = lib.filter(e => e.id >= 10000); // user-added items have high IDs
+  localStorage.setItem(STOR_KEY, JSON.stringify(lib));
+}
+
+async function loadLib() {
+  setSS('saving', 'Loading…');
+  try {
+    // Load saved library from localStorage (contains user customisations)
+    const saved = localStorage.getItem(STOR_KEY);
+    let savedLib = saved ? JSON.parse(saved) : null;
+
+    if (isPro) {
+      // Pro: start with master library, then overlay any user customisations
+      const masterIds = new Set(MASTER_LIBRARY.map(m => m.id));
+      const userCustom = savedLib ? savedLib.filter(e => !masterIds.has(e.id)) : [];
+      // Merge: master library + user-added custom entries
+      // User edits to master entries are preserved via savedLib
+      const savedMasterEdits = savedLib ? savedLib.filter(e => masterIds.has(e.id)) : [];
+      const mergedMaster = MASTER_LIBRARY.map(m => {
+        const userEdit = savedMasterEdits.find(e => e.id === m.id);
+        return userEdit || m; // prefer user's edited version
+      });
+      library = [...mergedMaster, ...userCustom];
+      setSS('ok', '✓ Pro Library loaded');
+    } else {
+      // Free: use saved library or a small default starter set
+      library = savedLib || defaultLib();
+      setSS('ok', 'Ready');
+    }
+
+    if (!savedLib) await saveData(library);
+  } catch(e) {
+    library = defaultLib();
+    setSS('err', 'Error loading library');
+  }
+  renderAll();
+}
+
+async function persistLib(lib) {
+  setSS('saving','Saving…');
+  try { await saveData(lib); setSS('ok','Saved'); }
+  catch(e) { setSS('err','Save failed'); }
+}
+
+function defaultLib() {
+  // Free users get 5 starter materials — enough to try the product
+  // Pro users get the full MASTER_LIBRARY (22 materials) via loadLib
+  return [
+    {id:10001,allowRotation:true,cuttingMethod:'free',name:'Mild Steel 2mm',material:'Mild Steel',thickness:'2mm',grade:'',size1:{w:2450,h:1150,price:0},size2:{w:2050,h:900,price:0}},
+    {id:10002,allowRotation:true,cuttingMethod:'free',name:'Mild Steel 3mm',material:'Mild Steel',thickness:'3mm',grade:'',size1:{w:2450,h:1150,price:0},size2:{w:1950,h:900,price:0}},
+    {id:10003,allowRotation:false,cuttingMethod:'free',name:'S/S 2mm — 304 Brushed',material:'Stainless Steel',thickness:'2mm',grade:'304 Brushed',size1:{w:2450,h:1150,price:0},size2:{w:1950,h:900,price:0}},
+    {id:10004,allowRotation:true,cuttingMethod:'free',name:'Galv 2mm',material:'Galvanised',thickness:'2mm',grade:'',size1:{w:2450,h:1150,price:0},size2:{w:1950,h:900,price:0}},
+    {id:10005,allowRotation:true,cuttingMethod:'free',name:'Aluminium 3mm',material:'Aluminium',thickness:'3mm',grade:'',size1:{w:2450,h:1150,price:0},size2:{w:'',h:'',price:0}},
+  ];
+}
+
+// ══ AUTO-SAVE JOB ═══════════════════════════════════════════════
+function saveState() {
+  try {
+    const state = {
+      jobRef: document.getElementById('job-ref')?.value || '',
+      jobQty: document.getElementById('job-qty')?.value || '1',
+      mats: mats.map(m => ({...m, pieces:m.pieces.map(p=>({...p}))}))
+    };
+    localStorage.setItem(JOB_KEY, JSON.stringify(state));
+  } catch(e) {}
+}
+function restoreState() {
+  try {
+    const raw = localStorage.getItem(JOB_KEY);
+    if (!raw) return;
+    const state = JSON.parse(raw);
+    if (state.mats && state.mats.length) { mats = state.mats; renderAll(); }
+    const jr = document.getElementById('job-ref');
+    if (jr && state.jobRef) jr.value = state.jobRef;
+    const jq = document.getElementById('job-qty');
+    if (jq && state.jobQty) jq.value = state.jobQty;
+  } catch(e) {}
+}
+function newJob() {
+  if (!confirm('Start a new job? Current pieces will be cleared.')) return;
+  mats = [{id:'mat-1', selectedMatId:null, pieces:[{w:'',h:'',qty:1}]}];
+  const jr = document.getElementById('job-ref');
+  if (jr) jr.value = '';
+  const jq = document.getElementById('job-qty');
+  if (jq) jq.value = '1';
+  document.getElementById('output').style.display = 'none';
+  const sb = document.getElementById('stale-banner');
+  if (sb) sb.style.display = 'none';
+  calcResult = null;
+  localStorage.removeItem(JOB_KEY);
+  renderAll();
+}
+
+// ══ RENDER MATERIAL BLOCKS ═══════════════════════════════════════
+function renderAll() {
+  const wrap = document.getElementById('mat-blocks');
+  if (!wrap) return;
+  wrap.innerHTML = mats.map((m, idx) => buildBlock(m, idx)).join('');
+  const addWrap = document.getElementById('add-mat-wrap');
+  if (addWrap) addWrap.style.display = (!isPro || mats.length >= 5) ? 'none' : 'block';
+  if (!isPro && mats.length >= 1) {
+    if (addWrap) addWrap.style.display = 'none';
+  }
+  updateProUI();
+}
+
+function buildBlock(m, idx) {
+  const libMat = library.find(l => l.id == m.selectedMatId);
+  const opts = library.map(l => {
+    const showThk = l.thickness && !l.name.includes(l.thickness);
+    return `<option value="${l.id}" ${m.selectedMatId==l.id?'selected':''}>${l.name}${showThk?' · '+l.thickness:''}</option>`;
+  }).join('');
+  let sizeHtml = '';
+  if (libMat) {
+    sizeHtml = `<div class="sz-info-row">
+      <div class="sz-badge"><span class="sl">Size 1${libMat.size1.price?' · £'+libMat.size1.price:''}</span><span class="sv">${libMat.size1.w} × ${libMat.size1.h} mm</span></div>
+      ${libMat.size2&&libMat.size2.w&&libMat.size2.h
+        ? `<div class="sz-badge"><span class="sl">Size 2${libMat.size2.price?' · £'+libMat.size2.price:''}</span><span class="sv">${libMat.size2.w} × ${libMat.size2.h} mm</span></div>`
+        : `<div class="sz-badge" style="opacity:.4"><span class="sl">Size 2</span><span class="sv" style="color:var(--muted)">Not set</span></div>`}
+      <div class="sz-auto-note">${libMat.size1.price||libMat.size2?.price?'Picks lowest cost per sheet':'Picks best fit per sheet'}</div>
+      ${libMat.allowRotation===false?'<div style="background:#fff3cd;border:1px solid #fde68a;border-radius:6px;padding:3px 10px;font-size:11px;color:#92400e;font-weight:600">⚠ No rotation — grain locked</div>':''}
+      ${libMat.cuttingMethod==='guillotine'?'<div style="background:#e0f2fe;border:1px solid #7dd3fc;border-radius:6px;padding:3px 10px;font-size:11px;color:#0369a1;font-weight:600">📐 Guillotine mode</div>':''}
+    </div>`;
+  }
+  const pRows = m.pieces.map((p, pi) => `<tr>
+    <td style="color:var(--muted);font-size:12px;width:24px">${pi+1}</td>
+    <td><input type="number" value="${p.w}" placeholder="500" style="width:84px" oninput="updatePiece('${m.id}',${pi},'w',+this.value);saveState()"/></td>
+    <td><input type="number" value="${p.h}" placeholder="300" style="width:84px" oninput="updatePiece('${m.id}',${pi},'h',+this.value);saveState()"/></td>
+    <td><input type="number" value="${p.qty}" min="1" style="width:56px" oninput="updatePiece('${m.id}',${pi},'qty',Math.max(1,+this.value));saveState()"/></td>
+    <td style="display:flex;gap:4px;align-items:center">
+      <button title="Duplicate this row" onclick="duplicatePiece('${m.id}',${pi})"
+        style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 4px;transition:color .15s;line-height:1"
+        onmouseover="this.style.color='var(--teal3)'" onmouseout="this.style.color='var(--muted)'">⧉</button>
+      <button class="btn-del" onclick="removePiece('${m.id}',${pi})">✕</button>
+    </td>
+  </tr>`).join('');
+  const pieceCount = m.pieces.filter(p=>p.w>0&&p.h>0).length;
+  return `<div class="mat-block no-print" id="block-${m.id}">
+    <div class="mat-block-cap">
+      <div class="mat-cap-left">
+        <div class="mat-num">${idx+1}</div>
+        <div>
+          <div class="mat-cap-title">Material ${idx+1}${libMat?' — '+libMat.name:''}</div>
+          <div class="mat-cap-subtitle">Select material, then enter pieces to cut · <span>${pieceCount} piece${pieceCount!==1?'s':''} entered</span></div>
+        </div>
+      </div>
+      ${mats.length>1?`<button class="btn-remove-mat" onclick="removeMat('${m.id}')">✕ Remove</button>`:''}
+    </div>
+    <div class="mat-body">
+      <div class="mat-select-row">
+        <div class="sel-wrap"><label class="lbl">Select material</label>
+          <select onchange="onMatSelect('${m.id}',this.value)">
+            <option value="">— Choose a material —</option>${opts}
+          </select>
+        </div>
+        <button class="btn btn-out" onclick="openLib(true)" style="white-space:nowrap;flex-shrink:0">+ Add Material</button>
+      </div>
+      ${sizeHtml}
+      <hr class="block-divider"/>
+      <div class="pieces-label">Pieces to cut from this material</div>
+      <div style="overflow-x:auto">
+        <table><thead><tr><th>#</th><th>Width (mm)</th><th>Height (mm)</th><th>Qty</th><th></th></tr></thead>
+        <tbody id="ptbody-${m.id}">${pRows}</tbody></table>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
+        <button class="btn-add-piece" onclick="addPiece('${m.id}')">+ Add Piece</button>
+        <div style="display:flex;align-items:center;gap:6px;background:var(--sky);border:1.5px dashed var(--bdr2);border-radius:8px;padding:5px 10px">
+          <span style="font-size:12px;color:var(--text2);white-space:nowrap">Add</span>
+          <input type="number" id="bulk-qty-${m.id}" value="5" min="2" max="50"
+            style="width:52px;padding:4px 7px;font-size:13px;text-align:center"
+            onkeydown="if(event.key==='Enter'){addMultiplePieces('${m.id}');event.preventDefault();}"/>
+          <span style="font-size:12px;color:var(--text2);white-space:nowrap">rows</span>
+          <button onclick="addMultiplePieces('${m.id}')"
+            style="background:var(--teal);border:none;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;white-space:nowrap">
+            Add Rows
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function addMat() {
+  if (!isPro) { showUpgradeModal('📦','Multiple Materials','Upgrade to Pro to add multiple materials to a single job.'); return; }
+  if (mats.length >= 5) return;
+  mats.push({id:'mat-'+Date.now(), selectedMatId:null, pieces:[{w:'',h:'',qty:1}]});
+  renderAll(); saveState();
+}
+function removeMat(id) {
+  if (mats.length<=1) return;
+  mats = mats.filter(m=>m.id!==id); renderAll(); saveState();
+}
+function onMatSelect(id, val) {
+  const m = mats.find(m=>m.id===id);
+  if (m) { m.selectedMatId = val ? parseInt(val) : null; renderAll(); saveState(); }
+}
+function addPiece(matId) {
+  const m = mats.find(m=>m.id===matId);
+  if (m) { m.pieces.push({w:'',h:'',qty:1}); renderAll(); saveState();
+    // Focus first input of new row
+    setTimeout(()=>{
+      const block = document.getElementById('block-'+matId);
+      if(!block) return;
+      const inputs = block.querySelectorAll('tbody input[type=number]');
+      if(inputs.length) inputs[inputs.length-3].focus();
+    }, 50);
+  }
+}
+
+function addMultiplePieces(matId) {
+  const m = mats.find(m=>m.id===matId);
+  if (!m) return;
+  const qtyEl = document.getElementById('bulk-qty-'+matId);
+  const count = Math.min(50, Math.max(2, parseInt(qtyEl?.value) || 5));
+  for (let i = 0; i < count; i++) m.pieces.push({w:'',h:'',qty:1});
+  renderAll(); saveState();
+  // Focus first input of first new row
+  setTimeout(()=>{
+    const block = document.getElementById('block-'+matId);
+    if(!block) return;
+    const inputs = block.querySelectorAll('tbody input[type=number]');
+    const firstNew = inputs[inputs.length - (count * 3)];
+    if(firstNew) { firstNew.focus(); firstNew.scrollIntoView({behavior:'smooth',block:'center'}); }
+  }, 50);
+}
+
+function duplicatePiece(matId, pi) {
+  const m = mats.find(m=>m.id===matId);
+  if (!m) return;
+  const original = m.pieces[pi];
+  // Insert duplicate immediately after the original row
+  m.pieces.splice(pi + 1, 0, {...original});
+  renderAll(); saveState();
+  // Focus the W input of the new duplicate row
+  setTimeout(()=>{
+    const block = document.getElementById('block-'+matId);
+    if(!block) return;
+    const rows = block.querySelectorAll('tbody tr');
+    if(rows[pi+1]) {
+      const input = rows[pi+1].querySelector('input[type=number]');
+      if(input) { input.focus(); input.select(); }
+    }
+  }, 50);
+}
+function removePiece(matId, pi) {
+  const m = mats.find(m=>m.id===matId);
+  if (!m) return;
+  if (m.pieces.length>1) m.pieces.splice(pi,1);
+  else m.pieces[0]={w:'',h:'',qty:1};
+  renderAll(); saveState();
+}
+function updatePiece(matId, pi, field, val) {
+  const m = mats.find(m=>m.id===matId);
+  if (m) m.pieces[pi][field] = val;
+  if (calcResult && document.getElementById('output').style.display!=='none') {
+    const sb = document.getElementById('stale-banner');
+    if (sb) sb.style.display = 'block';
+  }
+}
+
+// ══ ALGORITHM ════════════════════════════════════════════════════
+// ── GUILLOTINE PACKING ───────────────────────────────
+// For guillotine shears — every cut goes edge to edge.
+// Uses Best Area Fit scoring with horizontal+vertical split comparison.
+function guillotinePack(sheetW, sheetH, queue, allowRotation=true) {
+  const placed = [];
+  let rem = [...queue];
+  let free = [{x:0, y:0, w:sheetW, h:sheetH}];
+
+  let improved = true;
+  while (improved && rem.length > 0) {
+    improved = false;
+    let bestScore = Infinity, bestI = -1, bestJ = -1, bestFit = null;
+
+    for (let i = 0; i < rem.length; i++) {
+      const pc = rem[i];
+      const orients = [{pw:pc.w, ph:pc.h, rot:false}];
+      if (allowRotation && pc.w !== pc.h) orients.push({pw:pc.h, ph:pc.w, rot:true});
+
+      for (const {pw, ph, rot} of orients) {
+        for (let j = 0; j < free.length; j++) {
+          const r = free[j];
+          if (pw <= r.w && ph <= r.h) {
+            const score = r.w * r.h - pw * ph;
+            if (score < bestScore) {
+              bestScore = score; bestI = i; bestJ = j;
+              bestFit = {x:r.x, y:r.y, pw, ph, rot};
+            }
+          }
+        }
+      }
+    }
+
+    if (bestI === -1) break;
+    const pc = rem[bestI];
+    const {x, y, pw, ph, rot} = bestFit;
+    placed.push({x, y, w:pw, h:ph, label:pc.label,
+      pieceIndex:pc.pieceIndex, instanceIndex:pc.instanceIndex, rotated:rot});
+    rem.splice(bestI, 1);
+    improved = true;
+
+    // Guillotine split — try both orientations, pick the one that
+    // maximises the largest remaining rectangle
+    const used = free.splice(bestJ, 1)[0];
+    const rw = used.w - pw - KERF;
+    const th = used.h - ph - KERF;
+
+    // Option A: right rect gets full height, top rect gets piece width
+    const aRight = rw > 0 ? rw * used.h : 0;
+    const aTop   = th > 0 ? pw * th : 0;
+    const scoreA = Math.max(aRight, aTop);
+
+    // Option B: top rect gets full width, right rect gets piece height
+    const bTop   = th > 0 ? used.w * th : 0;
+    const bRight = rw > 0 ? rw * ph : 0;
+    const scoreB = Math.max(bTop, bRight);
+
+    if (scoreB >= scoreA) {
+      if (th > 0) free.push({x:used.x,    y:y+ph+KERF, w:used.w,  h:th});
+      if (rw > 0) free.push({x:x+pw+KERF, y:used.y,    w:rw,      h:ph});
+    } else {
+      if (rw > 0) free.push({x:x+pw+KERF, y:used.y,    w:rw,      h:used.h});
+      if (th > 0) free.push({x:used.x,    y:y+ph+KERF, w:pw,      h:th});
+    }
+  }
+
+  const area = placed.reduce((s,p) => s + p.w * p.h, 0);
+  return {placed, unplaced:rem,
+    wastePercent: Math.round((1 - area/(sheetW*sheetH)) * 100),
+    sheetW, sheetH};
+}
+
+function guillotinePackBest(sheetW, sheetH, queue, allowRotation=true) {
+  const sorters = [
+    q => [...q].sort((a,b) => b.w*b.h - a.w*a.h),
+    q => [...q].sort((a,b) => Math.max(b.w,b.h) - Math.max(a.w,a.h)),
+    q => [...q].sort((a,b) => b.w - a.w),
+    q => [...q].sort((a,b) => b.h - a.h),
+    q => [...q].sort((a,b) => (b.w+b.h) - (a.w+a.h)),
+    q => [...q].sort((a,b) => a.w*a.h - b.w*b.h),
+  ];
+  let best = null;
+  for (const sf of sorters) {
+    const r = guillotinePack(sheetW, sheetH, sf(queue), allowRotation);
+    if (!best || r.placed.length > best.placed.length ||
+        (r.placed.length === best.placed.length && r.wastePercent < best.wastePercent))
+      best = r;
+  }
+  return best;
+}
+
+// ── MAXRECTS FREE PLACEMENT ──────────────────────────
+function _rIntersects(a,b){return!(a.x+a.w<=b.x||b.x+b.w<=a.x||a.y+a.h<=b.y||b.y+b.h<=a.y)}
+function _splitFree(fr,px,py,pw,ph){const res=[];if(px>fr.x)res.push({x:fr.x,y:fr.y,w:px-fr.x,h:fr.h});if(px+pw<fr.x+fr.w)res.push({x:px+pw,y:fr.y,w:(fr.x+fr.w)-(px+pw),h:fr.h});if(py>fr.y)res.push({x:fr.x,y:fr.y,w:fr.w,h:py-fr.y});if(py+ph<fr.y+fr.h)res.push({x:fr.x,y:py+ph,w:fr.w,h:(fr.y+fr.h)-(py+ph)});return res}
+function _pruneFree(rects){return rects.filter((r,i)=>r.w>0&&r.h>0&&!rects.some((s,j)=>j!==i&&s.x<=r.x&&s.y<=r.y&&s.x+s.w>=r.x+r.w&&s.y+s.h>=r.y+r.h))}
+
+function maxRectsPack(sheetW, sheetH, queue, allowRotation=true) {
+  const placed=[]; let rem=[...queue]; let free=[{x:0,y:0,w:sheetW,h:sheetH}]; let improved=true;
+  while(improved&&rem.length>0){
+    improved=false; let bs=Infinity,bi=-1,bf=null;
+    for(let i=0;i<rem.length;i++){const pc=rem[i];const orients=[{pw:pc.w,ph:pc.h,rot:false}];if(allowRotation&&pc.w!==pc.h)orients.push({pw:pc.h,ph:pc.w,rot:true});
+      for(const{pw,ph,rot}of orients)for(const r of free)if(pw<=r.w&&ph<=r.h){const sc=r.w*r.h-pw*ph;if(sc<bs){bs=sc;bi=i;bf={x:r.x,y:r.y,pw,ph,rot};}}}
+    if(bi===-1)break;const pc=rem[bi];const{x,y,pw,ph,rot}=bf;
+    placed.push({x,y,w:pw,h:ph,label:pc.label,pieceIndex:pc.pieceIndex,instanceIndex:pc.instanceIndex,rotated:rot});
+    rem.splice(bi,1);improved=true;
+    const kw=Math.min(pw+KERF,sheetW-x),kh=Math.min(ph+KERF,sheetH-y),box={x,y,w:kw,h:kh};
+    const nf=[];for(const r of free){if(_rIntersects(r,box))nf.push(..._splitFree(r,x,y,kw,kh));else nf.push(r);}
+    free=_pruneFree(nf);
+  }
+  const area=placed.reduce((s,p)=>s+p.w*p.h,0);
+  return{placed,unplaced:rem,wastePercent:Math.round((1-area/(sheetW*sheetH))*100),sheetW,sheetH};
+}
+
+function packSheetBest(sheetW, sheetH, queue, allowRotation=true, cuttingMethod='free') {
+  if (cuttingMethod === 'guillotine') return guillotinePackBest(sheetW, sheetH, queue, allowRotation);
+  const sorters=[q=>[...q].sort((a,b)=>b.w*b.h-a.w*a.h),q=>[...q].sort((a,b)=>Math.max(b.w,b.h)-Math.max(a.w,a.h)),q=>[...q].sort((a,b)=>Math.min(b.w,b.h)-Math.min(a.w,a.h)),q=>[...q].sort((a,b)=>b.w-a.w),q=>[...q].sort((a,b)=>b.h-a.h),q=>[...q].sort((a,b)=>(b.w+b.h)-(a.w+a.h)),q=>[...q].sort((a,b)=>Math.abs(b.w-b.h)-Math.abs(a.w-a.h)),q=>[...q].sort((a,b)=>a.w*a.h-b.w*b.h)];
+  const rotModes=allowRotation?[q=>q,q=>q.map(p=>({...p,w:p.h,h:p.w})),q=>q.map(p=>p.h>p.w?{...p,w:p.h,h:p.w}:{...p}),q=>q.map(p=>p.w>p.h?{...p,w:p.h,h:p.w}:{...p}),q=>q.map(p=>(p.h<=sheetW&&p.w<=sheetH&&!(p.w<=sheetW&&p.h<=sheetH))?{...p,w:p.h,h:p.w}:{...p})]:[q=>q];
+  let best=null;
+  for(const rm of rotModes)for(const sf of sorters){const r=maxRectsPack(sheetW,sheetH,sf(rm(queue)),allowRotation);if(!best||r.placed.length>best.placed.length||(r.placed.length===best.placed.length&&r.wastePercent<best.wastePercent))best=r;}
+  return best;
+}
+
+function _totalJobCost(sheets,unplaced,sizes){
+  let cost=0;const hp=sizes.some(sz=>sz.price>0);
+  for(const s of sheets){const sz=sizes.find(z=>z.w===s.sheetW&&z.h===s.sheetH);cost+=hp?(sz&&sz.price>0?sz.price:99):1;}
+  cost+=unplaced.length*99999;return cost;
+}
+
+function _shuffle(arr,seed){const a=[...arr];let s=seed>>>0;for(let i=a.length-1;i>0;i--){s=(Math.imul(s,1664525)+1013904223)>>>0;const j=s%(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function _runGreedy(queue,sizes,allowRotation=true,cuttingMethod='free'){
+  let remaining=[...queue];const sheets=[];let limit=300;
+  const hp=sizes.some(sz=>sz.price>0),la=Math.max(...sizes.map(sz=>sz.w*sz.h)),mp=hp?Math.max(...sizes.filter(s=>s.price>0).map(s=>s.price)):1;
+  while(remaining.length>0&&limit-->0){
+    let bc=null,bs=-Infinity;
+    for(const sz of sizes){
+      const r=packSheetBest(sz.w,sz.h,remaining,allowRotation);if(!r.placed.length)continue;
+      const sa=sz.w*sz.h,pa=r.placed.reduce((s,p)=>s+p.w*p.h,0),fr=pa/sa;
+      const nc=hp&&sz.price>0?sz.price/mp:sa/la,wp=r.wastePercent/100;
+      const wp2=r.wastePercent>35?wp*0.5:wp*0.1;
+      const lpA=r.placed.reduce((m,p)=>Math.max(m,p.w*p.h),0),dom=lpA/sa;
+      const score=(fr/nc)-wp2+(dom>0.4?fr*0.3:0);
+      if(score>bs){bs=score;bc=r;}
+    }
+    if(!bc)break;sheets.push(bc);
+    const done=new Set(bc.placed.map(p=>`${p.pieceIndex}-${p.instanceIndex}`));
+    remaining=remaining.filter(p=>!done.has(`${p.pieceIndex}-${p.instanceIndex}`));
+  }
+  return{sheets,unplaced:remaining};
+}
+
+function runMat(libMat,pieces){
+  let allPieces=[];
+  pieces.forEach((p,pi)=>{for(let q=0;q<p.qty;q++)allPieces.push({...p,pieceIndex:pi,instanceIndex:q});});
+  const allowRotation=libMat.allowRotation!==false;
+  const cuttingMethod=libMat.cuttingMethod||'free';
+  const sizes=[libMat.size1,libMat.size2&&libMat.size2.w&&libMat.size2.h?libMat.size2:null].filter(Boolean);
+  const orderings=[[...allPieces].sort((a,b)=>b.w*b.h-a.w*a.h),[...allPieces].sort((a,b)=>a.w*a.h-b.w*b.h),[...allPieces].sort((a,b)=>Math.max(b.w,b.h)-Math.max(a.w,a.h)),(b=>b)([...allPieces]),[...allPieces]];
+  for(let seed=1;seed<=30;seed++)orderings.push(_shuffle(allPieces,seed*2654435761));
+  let bestResult=null,bestCost=Infinity;
+  for(const ordering of orderings){const{sheets,unplaced}=_runGreedy(ordering,sizes,allowRotation,cuttingMethod);const cost=_totalJobCost(sheets,unplaced,sizes);if(cost<bestCost){bestCost=cost;bestResult={sheets:[...sheets],unplaced:[...unplaced]};}}
+  let{sheets,unplaced}=bestResult;let improved=true,passes=0;
+  while(improved&&passes<10){improved=false;passes++;
+    outer:for(let i=0;i<sheets.length;i++)for(let j=i+1;j<sheets.length;j++){
+      const combined=[...sheets[i].placed,...sheets[j].placed];let bm=null,bmc=Infinity;
+      for(const sz of sizes){const res=packSheetBest(sz.w,sz.h,combined,allowRotation,cuttingMethod);if(res.unplaced.length===0){const mc=sz.price>0?sz.price:sz.w*sz.h;if(mc<bmc){bmc=mc;bm={...res,sheetW:sz.w,sheetH:sz.h};}}}
+      if(bm){sheets=sheets.filter((_,k)=>k!==i&&k!==j);sheets.push(bm);improved=true;break outer;}
+    }
+  }
+  const sizeMap={};sheets.forEach(s=>{const k=s.sheetW+'x'+s.sheetH;sizeMap[k]=(sizeMap[k]||0)+1;});
+  return{sheets,unplaced,sizeMap};
+}
+
+function getLayoutKey(sheet){
+  const pp=sheet.placed.map(p=>`${Math.min(p.w,p.h)}x${Math.max(p.w,p.h)}`).sort().join('|');
+  return`${sheet.sheetW}x${sheet.sheetH}|${pp}`;
+}
+
+// ══ CALCULATE ════════════════════════════════════════════════════
+function showErr(msg){const b=document.getElementById('err-box');b.textContent=msg;b.style.display='block';b.scrollIntoView({behavior:'smooth',block:'center'});}
+
+function calculate() {
+  document.getElementById('err-box').style.display='none';
+  document.getElementById('output').style.display='none';
+  const sb=document.getElementById('stale-banner');if(sb)sb.style.display='none';
+  const errors=[],toRun=[];
+  const jobQty=isPro?Math.max(1,parseInt(document.getElementById('job-qty')?.value)||1):1;
+  for(const m of mats){
+    const libMat=library.find(l=>l.id==m.selectedMatId);
+    if(!libMat){errors.push(`Material ${mats.indexOf(m)+1}: Please select a material.`);continue;}
+    const valid=m.pieces.filter(p=>p.w>0&&p.h>0&&p.qty>0).map(p=>({...p,qty:p.qty*jobQty}));
+    if(!valid.length){errors.push(`Material ${mats.indexOf(m)+1} (${libMat.name}): Add at least one piece.`);continue;}
+    const sizes=[libMat.size1,libMat.size2&&libMat.size2.w&&libMat.size2.h?libMat.size2:null].filter(Boolean);
+    for(const p of valid){const fits=sizes.some(sz=>(p.w<=sz.w&&p.h<=sz.h)||(p.h<=sz.w&&p.w<=sz.h));if(!fits)errors.push(`${p.w}×${p.h}mm is too large for any sheet in ${libMat.name}.`);}
+    toRun.push({libMat,valid});
+  }
+  if(errors.length){showErr(errors.join(' | '));return;}
+  const overlay=document.getElementById('calc-overlay');overlay.classList.remove('hidden');
+  document.querySelector('.btn-calc').disabled=true;
+  setTimeout(()=>{
+    try{
+      const results=toRun.map(({libMat,valid})=>({libMat,...runMat(libMat,valid)}));
+      calcResult={results};renderOutput();saveToHistory();
+    }catch(e){showErr('Calculation error: '+e.message);}
+    finally{overlay.classList.add('hidden');document.querySelector('.btn-calc').disabled=false;}
+  },30);
+}
+
+// ══ RENDER OUTPUT ════════════════════════════════════════════════
+function renderOutput(){
+  document.getElementById('output').style.display='block';
+  const{results}=calcResult;layoutGroups=[];
+  results.forEach(r=>{r.sheets.forEach((sheet,si)=>{const key=getLayoutKey(sheet);let group=layoutGroups.find(g=>g.key===key);
+    if(!group){group={key,sheetW:sheet.sheetW,sheetH:sheet.sheetH,sheets:[],count:0,material:r.libMat.name,id:layoutGroups.length<26?String.fromCharCode(65+layoutGroups.length):String(layoutGroups.length+1)};layoutGroups.push(group);}
+    group.sheets.push({...sheet,sheetIndex:si+1,material:r.libMat.name});group.count++;});});
+
+  const quoteLines=[];
+  const companyName=settings.companyName||'';
+  if(companyName)quoteLines.push(companyName);
+  const jobRef=document.getElementById('job-ref')?.value?.trim();
+  if(jobRef)quoteLines.push('Job Ref: '+jobRef);
+
+  document.getElementById('pricing-cards').innerHTML=results.map(({libMat,sheets,unplaced,sizeMap})=>{
+    const total=sheets.length;let matTotal=0;
+    const chips=Object.entries(sizeMap).map(([dim,cnt])=>{
+      const[dw,dh]=dim.split('x').map(Number);const matchSz=[libMat.size1,libMat.size2].find(s=>s&&s.w===dw&&s.h===dh);
+      const price=matchSz&&matchSz.price>0?matchSz.price:0;const lt=price*cnt;matTotal+=lt;
+      const cs=price>0?` <span style="color:var(--green);font-weight:700">= £${lt.toLocaleString()}</span>`:'';
+      quoteLines.push(`${libMat.name}: ${cnt} sheet${cnt>1?'s':''} — ${dim}mm${price>0?' @ £'+price+' = £'+lt:''}`);
+      return`<div class="pres-size-chip"><b>${cnt}</b> × ${dim}mm${cs}</div>`;
+    }).join('');
+    return`<div class="pres-card"><div class="pres-left"><div class="pres-name">${libMat.name}<span class="pres-thk">${libMat.thickness||''}</span></div><div class="pres-sizes">${chips||'<span style="color:var(--red)">No pieces placed</span>'}</div>${unplaced.length?`<div class="pres-warn">⚠ ${unplaced.length} piece(s) unplaced</div>`:''}</div>
+    <div class="pres-right"><div style="text-align:center"><div class="pres-count">${total}</div><div class="pres-unit">sheet${total!==1?'s':''}</div>${matTotal>0?`<div style="margin-top:8px;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:var(--green)">£${matTotal.toLocaleString()}</div>`:''}</div></div></div>`;
+  }).join('');
+
+  window._quoteText=quoteLines.join('
+');
+  const totalCost=results.reduce((sum,{libMat,sizeMap})=>sum+Object.entries(sizeMap).reduce((s,[dim,cnt])=>{const[dw,dh]=dim.split('x').map(Number);const m=[libMat.size1,libMat.size2].find(sz=>sz&&sz.w===dw&&sz.h===dh);return s+(m&&m.price>0?m.price*cnt:0);},0),0);
+  const cb=document.getElementById('total-cost-bar'),cv=document.getElementById('total-cost-val');
+  if(totalCost>0&&cb&&cv){cb.style.display='flex';cv.textContent='£'+totalCost.toLocaleString();}else if(cb)cb.style.display='none';
+
+  const jq=isPro?Math.max(1,parseInt(document.getElementById('job-qty')?.value)||1):1;
+  const badge=document.getElementById('units-badge');if(badge)badge.textContent=jq>1?`× ${jq} units`:'';
+  const totalSheets=results.reduce((s,r)=>s+r.sheets.length,0);
+  const totalPlaced=results.reduce((s,r)=>s+r.sheets.reduce((a,sh)=>a+sh.placed.length,0),0);
+  const totalUnplaced=results.reduce((s,r)=>s+r.unplaced.length,0);
+  const wastes=results.flatMap(r=>r.sheets.map(sh=>sh.wastePercent));
+  const avgWaste=wastes.length?Math.round(wastes.reduce((a,b)=>a+b,0)/wastes.length):0;
+  document.getElementById('s-sheets').textContent=totalSheets;
+  document.getElementById('s-placed').textContent=totalPlaced;
+  const su=document.getElementById('s-unplaced');su.textContent=totalUnplaced;su.style.color=totalUnplaced>0?'var(--red)':'var(--green)';
+  const sw=document.getElementById('s-waste');sw.textContent=avgWaste+'%';sw.style.color=avgWaste>30?'var(--red)':'var(--teal)';
+
+  const visWrap=document.getElementById('mat-visuals');visWrap.innerHTML='';let lastMat=null;
+  layoutGroups.forEach(group=>{
+    const sh=group.sheets[0];const util=100-sh.wastePercent;
+    if(group.material!==lastMat){const h=document.createElement('div');h.className='mat-section-header';h.innerHTML=`<div class="ds-bar"></div>${group.material}`;visWrap.appendChild(h);lastMat=group.material;}
+    const sec=document.createElement('div');sec.className='detail-section';
+    const scale=Math.min(640/sh.sheetW,300/sh.sheetH,0.32);
+    const cw=Math.round(sh.sheetW*scale),ch=Math.round(sh.sheetH*scale);
+    const rects=sh.placed.map((p,i)=>{const col=COLORS[p.pieceIndex%COLORS.length];const pw=p.w*scale,ph=p.h*scale;const sl=pw>24&&ph>16,sd=pw>38&&ph>26;const fs=Math.max(8,Math.min(pw*0.11,13));
+      return`<div class="piece-rect-upgraded" title="P${p.pieceIndex+1}: ${p.w}×${p.h}mm${p.rotated?' (rotated)':''}" style="left:${p.x*scale}px;top:${p.y*scale}px;width:${Math.max(1,pw-1)}px;height:${Math.max(1,ph-1)}px;background:${col}"><div class="piece-inner">${sl?`<div class="piece-label" style="font-size:${fs}px">P${p.pieceIndex+1}</div>`:''} ${sd?`<div class="piece-dims-txt" style="font-size:${Math.max(7,fs-2)}px">${p.w}×${p.h}</div>`:''} ${p.rotated&&ph>20?'<div class="rot-badge">ROT</div>':''}</div></div>`;}).join('');
+    sec.innerHTML=`<div class="layout-header-upgraded"><div><div class="layout-title-big">Layout ${group.id}</div><div class="layout-subtitle">${group.count} sheet${group.count>1?'s':''} · ${sh.sheetW} × ${sh.sheetH} mm</div></div>
+    <div class="layout-metrics"><div class="lm-card"><div class="lm-lbl">Parts</div><div class="lm-val">${sh.placed.length}</div></div><div class="lm-card"><div class="lm-lbl">Utilisation</div><div class="lm-val ${util>=70?'good':util<50?'warn':''}">${util}%</div></div><div class="lm-card"><div class="lm-lbl">Waste</div><div class="lm-val ${sh.wastePercent>35?'warn':''}">${sh.wastePercent}%</div></div><div class="lm-card"><div class="lm-lbl">Repeats</div><div class="lm-val">${group.count}</div></div></div></div>
+    <div class="sheet-vis-upgraded"><div class="sheet-canvas-upgraded" style="width:${cw}px;height:${ch}px">${rects}</div></div>`;
+    visWrap.appendChild(sec);
+  });
+
+  document.getElementById('placement-body').innerHTML=results.flatMap(({libMat,sheets})=>sheets.flatMap((sh,si)=>sh.placed.map(p=>`<tr><td style="font-weight:600;color:var(--teal);font-size:12px">${libMat.name}</td><td style="color:var(--muted)">${si+1}</td><td style="color:var(--muted);font-size:12px">${sh.sheetW}×${sh.sheetH}</td><td><div style="display:flex;align-items:center;gap:5px"><div style="width:9px;height:9px;border-radius:2px;background:${COLORS[p.pieceIndex%COLORS.length]};flex-shrink:0"></div>P${p.pieceIndex+1}</div></td><td style="color:var(--muted)">${p.w}</td><td style="color:var(--muted)">${p.h}</td><td style="color:var(--muted)">${Math.round(p.x)}</td><td style="color:var(--muted)">${Math.round(p.y)}</td><td style="color:${p.rotated?'var(--amber)':'var(--muted)'}">${p.rotated?'Yes ↻':'No'}</td></tr>`))).join('');
+  document.getElementById('output').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ══ EXPORT ═══════════════════════════════════════════════════════
+function copyQuote(){navigator.clipboard.writeText(window._quoteText||'').then(()=>{const b=document.getElementById('copy-btn');b.textContent='✓ Copied!';b.classList.add('copied');setTimeout(()=>{b.textContent='📋 Copy summary for quote';b.classList.remove('copied');},3000);});}
+
+function exportCSV(){
+  if(!calcResult)return;
+  const company=settings.companyName||'';
+  const jobRef=document.getElementById('job-ref')?.value?.trim()||'N/A';
+  const rows=[
+    ['NestIQ — '+new Date().toLocaleDateString()],
+    company?[company]:[],
+    ['Job Ref: '+jobRef],
+    ['Blade Kerf: '+KERF+'mm'],
+    ['Units: '+(isPro?Math.max(1,parseInt(document.getElementById('job-qty')?.value)||1):1)],
+    [],['SHEET USAGE SUMMARY'],
+    ...calcResult.results.flatMap(({libMat,sizeMap})=>Object.entries(sizeMap).map(([dim,c])=>[`${c}x ${libMat.name} ${dim}mm`])),
+    [],['LAYOUT SUMMARY'],
+    ...layoutGroups.map(g=>[`Layout ${g.id}`,`${g.count} sheets`,`${g.sheetW}x${g.sheetH}`]),
+    [],['PLACEMENT DETAIL'],
+    ['Material','Sheet #','Sheet Size','Part','W','H','X','Y','Rotated'],
+    ...calcResult.results.flatMap(({libMat,sheets})=>sheets.flatMap((sh,si)=>sh.placed.map(p=>[libMat.name,si+1,`${sh.sheetW}x${sh.sheetH}`,`P${p.pieceIndex+1}`,p.w,p.h,Math.round(p.x),Math.round(p.y),p.rotated?'Yes':'No'])))
+  ].filter(r=>r.length);
+  const csv=rows.map(r=>r.join(',')).join('
+');
+  const a=document.createElement('a');
+  const u=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.href=u;a.download=`nestiq-${jobRef.replace(/[^a-z0-9]/gi,'-')}-${Date.now()}.csv`;a.click();
+  setTimeout(()=>URL.revokeObjectURL(u),1000);
+}
+
+// ══ LIBRARY MODAL ════════════════════════════════════════════════
+function openLib(scrollToAdd){
+  pending=library.map(e=>({...e,size1:{...e.size1},size2:{...(e.size2||{w:'',h:'',price:0})}}));
+  renderLibEntries();
+  document.getElementById('lib-modal').style.display='flex';
+  updateLibLimitNotice();
+  if(scrollToAdd)setTimeout(()=>document.querySelector('.add-form')?.scrollIntoView({behavior:'smooth',block:'center'}),100);
+}
+function closeLib(){document.getElementById('lib-modal').style.display='none';}
+function updateLibLimitNotice(){
+  const notice=document.getElementById('lib-limit-notice');
+  const addForm=document.getElementById('add-form-wrap');
+  if(!notice||!addForm)return;
+  if(!isPro&&library.length>=FREE_LIB_LIMIT){notice.style.display='block';addForm.style.display='none';}
+  else{notice.style.display='none';addForm.style.display='block';}
+}
+async function saveLibClose(){
+  flushEditForms();
+  library=pending.map(e=>({...e,size1:{...e.size1},size2:{...(e.size2||{w:'',h:'',price:0})}}));
+  await persistLib(library);renderAll();closeLib();
+}
+function renderLibEntries(){
+  const wrap=document.getElementById('lib-entries');
+  if(!pending.length){wrap.innerHTML='<p style="color:var(--muted);font-size:13px;margin-bottom:12px">No materials yet. Add one below.</p>';return;}
+  wrap.innerHTML=pending.map(e=>`<div class="lib-entry"><div class="le-hdr"><div><div class="le-name">${e.name}</div><div class="le-meta">${e.material||''}${e.thickness?' · '+e.thickness:''}</div></div>
+  <div style="display:flex;gap:7px;align-items:center"><button class="btn-sm-tl" onclick="toggleEdit(${e.id})">Edit</button><button class="btn-del" onclick="delPending(${e.id})">✕</button></div></div>
+  <div id="ev-${e.id}"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center">
+    ${e.allowRotation===false?'<div style="background:#fff3cd;border:1px solid #fde68a;border-radius:6px;padding:2px 8px;font-size:11px;color:#92400e;font-weight:600">⚠ No rotation</div>':''}
+    ${e.cuttingMethod==='guillotine'?'<div style="background:#e0f2fe;border:1px solid #7dd3fc;border-radius:6px;padding:2px 8px;font-size:11px;color:#0369a1;font-weight:600">📐 Guillotine</div>':''}
+    <div class="sz-badge"><span class="sl">Size 1${e.size1.price?' · £'+e.size1.price:''}</span><span class="sv">${e.size1.w} × ${e.size1.h} mm</span></div>
+    ${e.size2&&e.size2.w&&e.size2.h?`<div class="sz-badge"><span class="sl">Size 2${e.size2.price?' · £'+e.size2.price:''}</span><span class="sv">${e.size2.w} × ${e.size2.h} mm</span></div>`:'<div class="sz-badge" style="opacity:.4"><span class="sl">Size 2</span><span class="sv" style="color:var(--muted)">Not set</span></div>'}
+  </div></div>
+  <div id="ee-${e.id}" style="display:none">
+    <div class="edit-basic mt8"><div class="edit-basic-grid">
+      <div><label class="lbl">Name</label><input type="text" data-field="name" value="${e.name}" oninput="upd(${e.id},'name',this.value)"/></div>
+      <div><label class="lbl">Material</label><input type="text" data-field="material" value="${e.material||''}" oninput="upd(${e.id},'material',this.value)"/></div>
+      <div><label class="lbl">Thickness</label><input type="text" data-field="thickness" value="${e.thickness||''}" oninput="upd(${e.id},'thickness',this.value)"/></div>
+    </div>
+    <div style="margin-top:12px">
+      <label class="lbl">Cutting Method</label>
+      <div class="cut-method-toggle" style="margin-top:4px">
+        <button type="button" class="cut-method-btn ${e.cuttingMethod!=='guillotine'?'active':''}"
+          onclick="upd(${e.id},'cuttingMethod','free');this.classList.add('active');this.nextElementSibling.classList.remove('active')">
+          ✂ Free Placement <span style="font-size:10px;opacity:.8">(Punch / Laser)</span>
+        </button>
+        <button type="button" class="cut-method-btn ${e.cuttingMethod==='guillotine'?'active':''}"
+          onclick="upd(${e.id},'cuttingMethod','guillotine');this.classList.add('active');this.previousElementSibling.classList.remove('active')">
+          📐 Guillotine <span style="font-size:10px;opacity:.8">(Shear)</span>
+        </button>
+      </div>
+      <div class="guillotine-note">${e.cuttingMethod==='guillotine'?'Cuts go edge-to-edge. Higher waste but correct for guillotine shears.':'Parts placed freely anywhere on the sheet. Optimal for punch press and laser.'}</div>
+    </div>
+    <div style="margin-top:10px;display:flex;align-items:center;gap:10px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text2)">
+        <input type="checkbox" data-field="allowRotation" ${e.allowRotation!==false?'checked':''} onchange="upd(${e.id},'allowRotation',this.checked)" style="width:16px;height:16px;accent-color:var(--teal3)"/>
+        Allow piece rotation (uncheck for brushed/patterned finishes)
+      </label>
+    </div></div>
+    <div class="sizes-edit">
+      <div class="se-box"><div class="se-title">📐 Size 1</div><div class="se-inputs" style="grid-template-columns:1fr 1fr 1fr">
+        <div><label class="lbl">W (mm)</label><input type="number" data-sz="1" data-field="w" value="${e.size1.w}" oninput="updSz(${e.id},1,'w',+this.value)"/></div>
+        <div><label class="lbl">H (mm)</label><input type="number" data-sz="1" data-field="h" value="${e.size1.h}" oninput="updSz(${e.id},1,'h',+this.value)"/></div>
+        <div><label class="lbl">Price (£)</label><input type="number" data-sz="1" data-field="price" value="${e.size1.price||''}" placeholder="e.g. 205" oninput="updSz(${e.id},1,'price',+this.value)"/></div>
+      </div></div>
+      <div class="se-box"><div class="se-title">📐 Size 2</div><div class="se-inputs" style="grid-template-columns:1fr 1fr 1fr">
+        <div><label class="lbl">W (mm)</label><input type="number" data-sz="2" data-field="w" value="${e.size2&&e.size2.w||''}" placeholder="opt" oninput="updSz(${e.id},2,'w',+this.value)"/></div>
+        <div><label class="lbl">H (mm)</label><input type="number" data-sz="2" data-field="h" value="${e.size2&&e.size2.h||''}" placeholder="opt" oninput="updSz(${e.id},2,'h',+this.value)"/></div>
+        <div><label class="lbl">Price (£)</label><input type="number" data-sz="2" data-field="price" value="${e.size2&&e.size2.price||''}" placeholder="e.g. 118" oninput="updSz(${e.id},2,'price',+this.value)"/></div>
+      </div></div>
+    </div>
+    <div style="text-align:right;margin-top:9px"><button class="btn-sm-gr" onclick="toggleEdit(${e.id})">✓ Done</button></div>
+  </div></div>`).join('');
+}
+function flushEditForms(){
+  pending.forEach(e=>{
+    const ed=document.getElementById(`ee-${e.id}`);if(!ed||ed.style.display==='none')return;
+    const ne=ed.querySelector('[data-field="name"]'),me=ed.querySelector('[data-field="material"]'),te=ed.querySelector('[data-field="thickness"]');
+    if(ne&&ne.value.trim())e.name=ne.value.trim();if(me)e.material=me.value.trim();if(te)e.thickness=te.value.trim();
+    const re=ed.querySelector('[data-field="allowRotation"]');if(re)e.allowRotation=re.checked;
+    if(!e.size1)e.size1={};if(!e.size2)e.size2={};
+    ed.querySelectorAll('[data-sz]').forEach(input=>{const sz=input.dataset.sz,field=input.dataset.field,sk=sz==='1'?'size1':'size2';const val=input.type==='number'?(input.value!==''?+input.value:''):input.value;if(val!=='')e[sk][field]=val;});
+  });
+}
+function toggleEdit(id){const ed=document.getElementById(`ee-${id}`),vw=document.getElementById(`ev-${id}`);const io=ed.style.display==='none';if(!io)flushEditForms();ed.style.display=io?'block':'none';vw.style.display=io?'none':'block';if(!io)renderLibEntries();}
+function upd(id,f,v){const e=pending.find(x=>x.id===id);if(e)e[f]=v;}
+function updSz(id,n,d,v){const e=pending.find(x=>x.id===id);if(!e)return;const k=n===1?'size1':'size2';if(!e[k])e[k]={w:'',h:'',price:0};e[k][d]=v;}
+function delPending(id){if(!confirm('Delete this material?'))return;pending=pending.filter(x=>x.id!==id);renderLibEntries();}
+function addLibEntry(){
+  if(!isPro&&pending.length>=FREE_LIB_LIMIT){showUpgradeModal('📦','Unlock the Full Library','Free plan includes 5 starter materials. Upgrade to Pro for the full CutNest Master Library with 22 UK sheet metal grades, sizes and market prices — plus unlimited custom entries.');return;}
+  const name=document.getElementById('n-name').value.trim();const w1=+document.getElementById('n-w1').value,h1=+document.getElementById('n-h1').value;
+  if(!name||!w1||!h1){alert('Name, Size 1 Width and Height are required.');return;}
+  pending.push({id:Date.now()+10000,name,material:document.getElementById('n-mat').value.trim(),thickness:document.getElementById('n-thk').value.trim(),grade:'',allowRotation:true,cuttingMethod:'free',size1:{w:w1,h:h1,price:+document.getElementById('n-pr1').value||0},size2:{w:+document.getElementById('n-w2').value||'',h:+document.getElementById('n-h2').value||'',price:+document.getElementById('n-pr2').value||0}});
+  ['n-name','n-mat','n-thk','n-w1','n-h1','n-pr1','n-w2','n-h2','n-pr2'].forEach(id=>document.getElementById(id).value='');
+  renderLibEntries();updateLibLimitNotice();
+}
+
+// ══ HISTORY ══════════════════════════════════════════════════════
+function saveToHistory(){
+  if(!isPro||!calcResult)return;
+  try{
+    const jobRef=document.getElementById('job-ref')?.value?.trim()||'Untitled';
+    const jobQty=parseInt(document.getElementById('job-qty')?.value)||1;
+    const totalSheets=calcResult.results.reduce((s,r)=>s+r.sheets.length,0);
+    const summary=calcResult.results.map(r=>`${r.libMat.name}: ${Object.entries(r.sizeMap).map(([d,c])=>`${c}x ${d}mm`).join(', ')}`).join(' | ');
+    const entry={id:Date.now(),date:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}),jobRef,jobQty,totalSheets,summary,mats:mats.map(m=>({...m,pieces:m.pieces.map(p=>({...p}))}))};
+    const raw=localStorage.getItem(HIST_KEY);const history=raw?JSON.parse(raw):[];
+    history.unshift(entry);if(history.length>HIST_MAX)history.splice(HIST_MAX);
+    localStorage.setItem(HIST_KEY,JSON.stringify(history));
+  }catch(e){}
+}
+function openHistory(){
+  if(!isPro){showUpgradeModal('🕐','Job History','Upgrade to Pro to access job history — automatically saves your last 50 jobs.');return;}
+  renderHistoryEntries();document.getElementById('history-modal').style.display='flex';
+}
+function closeHistory(){document.getElementById('history-modal').style.display='none';}
+function renderHistoryEntries(){
+  const wrap=document.getElementById('history-entries');
+  try{const raw=localStorage.getItem(HIST_KEY);const history=raw?JSON.parse(raw):[];
+    if(!history.length){wrap.innerHTML='<p style="color:var(--muted);font-size:13px">No jobs saved yet.</p>';return;}
+    wrap.innerHTML=history.map(e=>`<div class="hist-entry"><div><div class="hist-ref">${e.jobRef}${e.jobQty>1?` <span style="font-size:12px;color:var(--muted);font-weight:400">× ${e.jobQty} units</span>`:''}</div><div class="hist-meta">${e.date} · ${e.totalSheets} sheet${e.totalSheets!==1?'s':''}</div><div class="hist-summary">${e.summary}</div></div>
+    <div class="hist-actions"><button class="btn btn-teal" style="padding:7px 14px;font-size:13px" onclick="loadHistoryJob(${e.id})">↩ Load</button><button class="btn-del" onclick="deleteHistoryJob(${e.id})" title="Delete">✕</button></div></div>`).join('');
+  }catch(e){wrap.innerHTML='<p style="color:var(--red);font-size:13px">Could not load history.</p>';}
+}
+function loadHistoryJob(id){
+  try{const raw=localStorage.getItem(HIST_KEY);const history=raw?JSON.parse(raw):[];const entry=history.find(e=>e.id===id);if(!entry)return;
+    mats=entry.mats;renderAll();
+    const jr=document.getElementById('job-ref');if(jr)jr.value=entry.jobRef;
+    const jq=document.getElementById('job-qty');if(jq)jq.value=entry.jobQty||1;
+    document.getElementById('output').style.display='none';calcResult=null;closeHistory();window.scrollTo({top:0,behavior:'smooth'});
+  }catch(e){}
+}
+function deleteHistoryJob(id){
+  if(!confirm('Delete this job from history?'))return;
+  try{const raw=localStorage.getItem(HIST_KEY);const history=raw?JSON.parse(raw):[];localStorage.setItem(HIST_KEY,JSON.stringify(history.filter(e=>e.id!==id)));renderHistoryEntries();}catch(e){}
+}
+
+// ══ KEYBOARD ═════════════════════════════════════════════════════
+document.addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();calculate();return;}
+  if(e.key!=='Enter'||e.target.tagName!=='INPUT')return;
+  const block=e.target.closest('.mat-block');if(!block)return;
+  e.preventDefault();
+  const all=Array.from(block.querySelectorAll('input:not([disabled]):not([type=hidden])')).filter(el=>el.offsetParent!==null&&el.getBoundingClientRect().width>0);
+  const idx=all.indexOf(e.target);if(idx===-1)return;
+  const next=all[idx+1];
+  if(next){next.focus();next.select();}
+  else{const id=block.id.replace('block-','');addPiece(id);setTimeout(()=>{const ni=Array.from(block.querySelectorAll('input:not([disabled])')).filter(el=>el.offsetParent!==null);if(ni.length>=3)ni[ni.length-3].focus();},50);}
+});
+
+// ══ HASH ROUTING (landing vs app) ════════════════════════════════
+function handleRoute(){
+  if(window.location.hash==='#app')showApp();
+  else showLanding();
+}
+window.addEventListener('hashchange',handleRoute);
+
+// ══ INIT ═════════════════════════════════════════════════════════
+checkLicence();
+loadSettings();
+loadLib().then(()=>{
+  restoreState();
+  updateProUI();
+  handleRoute();
+});
+</script>
+
+<footer style="display:none;text-align:center;padding:16px;font-size:11px;color:var(--muted);border-top:1px solid var(--bdr)" class="no-print" id="app-footer">
+  NestIQ v1.0 · Sheet Metal Nesting · <a href="#" onclick="showLanding();return false;" style="color:var(--teal3)">nestiq.io</a>
+</footer>
+</body>
+</html>
