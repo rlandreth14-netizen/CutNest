@@ -460,7 +460,7 @@ tr:last-child td{border-bottom:none}
 
   <!-- NAV -->
   <nav class="nav">
-    <a class="nav-brand" href="#" onclick="showLanding()">
+    <a class="nav-brand" href="#" onclick="showLanding();return false;">
       <svg class="nav-logo" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect width="36" height="36" rx="8" fill="#0f4c5c"/>
         <rect x="4" y="4" width="13" height="9" rx="2" fill="#f59e0b"/>
@@ -469,7 +469,7 @@ tr:last-child td{border-bottom:none}
         <rect x="19" y="21" width="13" height="11" rx="2" fill="#f59e0b" opacity=".8"/>
       </svg>
       <div>
-        <div class="nav-name">Nest<span>IQ</span></div>
+        <div class="nav-name">Cut<span>Nest</span></div>
       </div>
     </a>
     <div class="nav-links">
@@ -724,14 +724,14 @@ tr:last-child td{border-bottom:none}
 
   <!-- FOOTER -->
   <footer class="footer">
-    <div class="footer-name">Nest<span>IQ</span></div>
+    <div class="footer-name">Cut<span>Nest</span></div>
     <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:12px">Sheet metal nesting. Done properly.</p>
     <div class="footer-links">
       <a href="mailto:hello@cutnest.co.uk">hello@cutnest.co.uk</a>
-      <a href="#" onclick="showApp()">Open App</a>
+      <a href="#" onclick="showApp();return false;">Open App</a>
       <a href="#pricing">Pricing</a>
-      <a href="#" onclick="openLegal('terms')">Terms</a>
-      <a href="#" onclick="openLegal('privacy')">Privacy</a>
+      <a href="#" onclick="openLegal('terms');return false;">Terms</a>
+      <a href="#" onclick="openLegal('privacy');return false;">Privacy</a>
     </div>
     <p class="footer-copy">© 2025 CutNest · cutnest.co.uk · v1.0</p>
   </footer>
@@ -754,7 +754,7 @@ tr:last-child td{border-bottom:none}
         <rect x="19" y="21" width="13" height="11" rx="2" fill="#f59e0b" opacity=".8"/>
       </svg>
       <div>
-        <div class="app-brand-name">Nest<span>IQ</span></div>
+        <div class="app-brand-name">Cut<span>Nest</span></div>
         <div class="app-brand-sub">Sheet Metal Nesting</div>
       </div>
     </a>
@@ -922,7 +922,7 @@ tr:last-child td{border-bottom:none}
         <div class="settings-title">☁ CutNest Master Library <span style="background:var(--amber);color:var(--teal2);font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;margin-left:6px;vertical-align:middle">PRO</span></div>
         <div class="settings-desc">Pro users automatically get the full CutNest UK Master Library — 22 materials across mild steel, stainless, galvanised, aluminium and zintec with typical UK market prices. No setup required. Updated automatically when you renew.</div>
         <div id="master-lib-status" style="background:var(--sky);border:1px solid var(--bdr);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--text2)">
-          <span id='master-lib-txt'>Loading...</span>
+          <span id="master-lib-txt">Loading...</span>
         </div>
       </div>
 
@@ -1954,10 +1954,13 @@ document.addEventListener('keydown',function(e){
 
 // ══ HASH ROUTING (landing vs app) ════════════════════════════════
 function handleRoute(){
-  if(window.location.hash==='#app')showApp();
+  if(window.location.hash==='#app') showApp();
   else showLanding();
 }
-window.addEventListener('hashchange',handleRoute);
+window.addEventListener('hashchange', handleRoute);
+// Also handle direct Try Free clicks properly on all devices
+window.showApp = showApp;
+window.showLanding = showLanding;
 
 // ══ INIT ═════════════════════════════════════════════════════════
 // ── LEGAL ────────────────────────────────────────────────────
@@ -2050,19 +2053,21 @@ function acceptCookies() {
 }
 
 // ── INIT ─────────────────────────────────────────────────────────
-checkLicence();
-loadSettings();
-loadLib().then(()=>{
-  restoreState();
-  updateProUI();
-  handleRoute();
-  // Show cookie banner if not yet accepted
-  if (!localStorage.getItem('cutnest-cookies')) {
-    setTimeout(() => {
-      const banner = document.getElementById('cookie-banner');
-      if (banner) banner.classList.remove('cookie-hidden');
-    }, 2000);
-  }
+document.addEventListener('DOMContentLoaded', function() {
+  checkLicence();
+  loadSettings();
+  loadLib().then(()=>{
+    restoreState();
+    updateProUI();
+    handleRoute();
+    // Show cookie banner if not yet accepted
+    if (!localStorage.getItem('cutnest-cookies')) {
+      setTimeout(() => {
+        const banner = document.getElementById('cookie-banner');
+        if (banner) banner.classList.remove('cookie-hidden');
+      }, 2000);
+    }
+  });
 });
 </script>
 
