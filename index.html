@@ -475,7 +475,7 @@ tr:last-child td{border-bottom:none}
     <div class="nav-links">
       <a href="#features" class="nav-link">Features</a>
       <a href="#pricing" class="nav-link">Pricing</a>
-      <button class="btn-nav-cta" onclick="showApp()">Try Free →</button>
+      <a class="btn-nav-cta" href="/#app">Try Free →</a>
     </div>
   </nav>
 
@@ -485,7 +485,7 @@ tr:last-child td{border-bottom:none}
     <h1>Cut smarter.<br><span>Quote better.</span></h1>
     <p class="hero-sub">Professional sheet metal nesting built for CNC turret punch press. Minimises material waste, optimises by cost — not just sheet count.</p>
     <div class="hero-ctas">
-      <button class="btn-primary" onclick="showApp()">Try Free — No Sign Up</button>
+      <a class="btn-primary" href="/#app" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">Try Free — No Sign Up</a>
       <a href="#pricing" class="btn-secondary">See Pro Plans →</a>
     </div>
     <p class="hero-proof">Free forever on 1 material · <b>Pro from £15/month</b> · Cancel anytime</p>
@@ -659,7 +659,7 @@ tr:last-child td{border-bottom:none}
           <li><span class="fi locked">🔒</span> <span class="locked">Job history</span></li>
           <li><span class="fi locked">🔒</span> <span class="locked">Unit multiplier</span></li>
         </ul>
-        <button class="btn-plan btn-plan-free" onclick="showApp()">Start Free →</button>
+        <a class="btn-plan btn-plan-free" href="/#app" style="display:block;text-align:center;text-decoration:none;padding:14px">Start Free →</a>
       </div>
 
       <!-- PRO -->
@@ -683,9 +683,9 @@ tr:last-child td{border-bottom:none}
           <li><span class="fi">✅</span> Cost-aware optimisation</li>
           <li><span class="fi">✅</span> Priority email support</li>
         </ul>
-        <button class="btn-plan btn-plan-pro" onclick="buyPro('monthly')">Get Pro — £15/month →</button>
+        <a class="btn-plan btn-plan-pro" href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank" style="display:block;text-align:center;text-decoration:none">Get Pro — £15/month →</a>
         <div style="text-align:center;margin-top:10px">
-          <button onclick="buyPro('annual')" style="background:none;border:none;color:var(--teal3);font-size:13px;cursor:pointer;text-decoration:underline">Or £129/year (save £51)</button>
+          <a href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank" style="color:var(--teal3);font-size:13px;text-decoration:underline;display:block;text-align:center;margin-top:8px">Or £129/year (save £51)</a>
         </div>
       </div>
     </div>
@@ -728,7 +728,7 @@ tr:last-child td{border-bottom:none}
     <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:12px">Sheet metal nesting. Done properly.</p>
     <div class="footer-links">
       <a href="mailto:hello@cutnest.co.uk">hello@cutnest.co.uk</a>
-      <a href="#" onclick="showApp();return false;">Open App</a>
+      <a href="/#app">Open App</a>
       <a href="#pricing">Pricing</a>
       <a href="#" onclick="openLegal('terms');return false;">Terms</a>
       <a href="#" onclick="openLegal('privacy');return false;">Privacy</a>
@@ -771,7 +771,7 @@ tr:last-child td{border-bottom:none}
   <!-- Pro upgrade banner (free users) -->
   <div class="pro-banner no-print" id="pro-banner" style="display:none">
     <div class="pro-banner-txt">You're on the <b>Free plan</b> — 1 material per job. Upgrade to Pro for unlimited materials, shared library and job history.</div>
-    <button class="btn-upgrade" onclick="buyPro('monthly')">Upgrade to Pro — £15/mo →</button>
+    <a class="btn-upgrade" href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center">Upgrade to Pro — £15/mo →</a>
   </div>
 
   <div class="app-main">
@@ -988,7 +988,7 @@ tr:last-child td{border-bottom:none}
         <div style="font-size:13px;color:var(--muted)">or £129/year · cancel anytime</div>
       </div>
       <button class="btn-plan btn-plan-pro" style="width:100%;margin-bottom:10px" onclick="buyPro('monthly')">Get Pro — £15/month →</button>
-      <button onclick="buyPro('annual')" style="background:none;border:none;color:var(--teal3);font-size:13px;cursor:pointer;text-decoration:underline">Or £129/year (save £51)</button>
+      <a href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank" style="color:var(--teal3);font-size:13px;text-decoration:underline;display:block;text-align:center;margin-top:8px">Or £129/year (save £51)</a>
       <p style="font-size:12px;color:var(--muted);margin-top:16px">Instant licence key by email · VAT included · 1 key per company</p>
     </div>
   </div>
@@ -1168,18 +1168,12 @@ function buyPro(plan) {
 
 // ══ PAGE NAVIGATION ════════════════════════════════════════════
 function showLanding() {
-  const l = document.getElementById('landing');
-  const a = document.getElementById('app-view');
-  if (l) l.style.display = 'block';
-  if (a) a.style.display = 'none';
-  window.scrollTo(0, 0);
+  window.location.hash = '';
+  setTimeout(() => window.scrollTo(0, 0), 10);
 }
 function showApp() {
-  const l = document.getElementById('landing');
-  const a = document.getElementById('app-view');
-  if (l) l.style.display = 'none';
-  if (a) a.style.display = 'block';
-  window.scrollTo(0, 0);
+  window.location.hash = 'app';
+  setTimeout(() => window.scrollTo(0, 0), 10);
 }
 
 // ══ SETTINGS ═══════════════════════════════════════════════════
@@ -1954,11 +1948,21 @@ document.addEventListener('keydown',function(e){
 
 // ══ HASH ROUTING (landing vs app) ════════════════════════════════
 function handleRoute(){
-  if(window.location.hash==='#app') showApp();
-  else showLanding();
+  const onApp = window.location.hash === '#app';
+  const landing = document.getElementById('landing');
+  const appView = document.getElementById('app-view');
+  if (!landing || !appView) return;
+  if (onApp) {
+    landing.style.display = 'none';
+    appView.style.display = 'block';
+    window.scrollTo(0, 0);
+  } else {
+    landing.style.display = 'block';
+    appView.style.display = 'none';
+    window.scrollTo(0, 0);
+  }
 }
 window.addEventListener('hashchange', handleRoute);
-// Also handle direct Try Free clicks properly on all devices
 window.showApp = showApp;
 window.showLanding = showLanding;
 
