@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>CutNest — Sheet Metal Cut List Optimiser</title>
-<meta name="description" content="Stop over-ordering steel. CutNest tells you exactly which sheets to order before you cut. Built by a sheet metal fabricator. Free to try."/>
-<meta name="keywords" content="sheet metal nesting software, cut list optimiser, CNC punch press nesting, guillotine cut optimiser, sheet metal waste reduction, fabrication quoting"/>
-<meta property="og:title" content="CutNest — Stop Over-Ordering Steel"/>
-<meta property="og:description" content="Know exactly what steel you need before you cut. Built by a fabricator, for fabricators. Free to try."/>
+<title>CutNest — Cut List Optimiser for Any Sheet Material</title>
+<meta name="description" content="Stop over-ordering materials. CutNest tells you exactly which sheets to order before you cut. Works for steel, timber, acrylic, glass and more. Free to try."/>
+<meta name="keywords" content="cut list optimiser, sheet material nesting, timber cut list software, sheet metal nesting, acrylic cutting optimiser, CNC punch press nesting, guillotine cut optimiser, joinery cut list, fabrication quoting"/>
+<meta property="og:title" content="CutNest — Stop Over-Ordering Sheet Material"/>
+<meta property="og:description" content="Know exactly what material you need before you cut. Works for steel, timber, acrylic, glass and more. Free to try."/>
 <meta property="og:type" content="website"/>
 <meta property="og:url" content="https://cutnest.co.uk"/>
 <meta name="twitter:card" content="summary"/>
@@ -223,6 +223,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
 
 /* ── RESPONSIVE ── */
 @media(max-width:768px){
+  .pro-teaser-grid{grid-template-columns:1fr!important}
   .hero-inner{grid-template-columns:1fr;gap:40px}
   .hero-visual{display:none}
   .story-inner{grid-template-columns:1fr}
@@ -269,21 +270,28 @@ footer{background:var(--teal2);padding:44px 5% 32px}
     <div class="hero-text">
       <div class="hero-origin">
         <div class="hero-origin-dot"></div>
-        <span>Built in Salford &middot; Used in real fabrication shops</span>
+        <span>Built in Newcastle upon Tyne &middot; Used across fabrication, joinery &amp; more</span>
       </div>
-      <h1>Stop guessing<br>how much<br>steel to order</h1>
+      <h1>Stop guessing<br>how much<br>material to order</h1>
       <p class="hero-sub">
-        I got fed up quoting jobs on a spreadsheet and consistently over-ordering.
-        So I built CutNest. <strong>It tells you exactly which sheets to cut &mdash; before you order.</strong>
+        I got fed up quoting jobs on a spreadsheet and consistently over-ordering steel.
+        So I built CutNest. <strong>It tells you exactly which sheets to cut &mdash; whatever the material.</strong>
       </p>
       <div class="hero-ctas">
         <a href="app.html" class="btn-primary">Try Free &mdash; No Sign Up</a>
         <a href="#how" class="btn-secondary">See How It Works</a>
       </div>
       <div class="hero-trust">
-        <div class="trust-item"><span class="trust-check">&#10003;</span> Works in your browser</div>
+        <div class="trust-item"><span class="trust-check">&#10003;</span> Works in any browser</div>
         <div class="trust-item"><span class="trust-check">&#10003;</span> No install needed</div>
-        <div class="trust-item"><span class="trust-check">&#10003;</span> Free forever on 1 material</div>
+        <div class="trust-item"><span class="trust-check">&#10003;</span> Free on 1 material &middot; <b style="color:var(--amber)">Pro from &pound;15/mo</b></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:20px">
+        <span style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600">&#9986; Sheet Metal</span>
+        <span style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600">&#128296; Timber &amp; Joinery</span>
+        <span style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600">&#128048; Acrylic &amp; Plastics</span>
+        <span style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600">&#128165; Glass &amp; Glazing</span>
+        <span style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600">&#127968; Decking &amp; Cladding</span>
       </div>
     </div>
     <div class="hero-visual">
@@ -335,9 +343,9 @@ footer{background:var(--teal2);padding:44px 5% 32px}
     <div class="story-avatar">R</div>
     <div>
       <div class="story-quote">
-        &ldquo;I work in sheet metal fabrication. Every week we&rsquo;d quote a job, order steel, and end up with offcuts we couldn&rsquo;t use. I built CutNest to solve that. The first job we ran through it, <strong>we saved three sheets of stainless</strong>. That&rsquo;s about &pound;675 we&rsquo;d have wasted.&rdquo;
+        &ldquo;I work in sheet metal fabrication. Every week we&rsquo;d quote a job, order steel, and end up with offcuts we couldn&rsquo;t use. I built CutNest to solve that &mdash; and quickly realised the same problem exists in timber, joinery, acrylic, glass. <strong>Anyone cutting from sheet material wastes money without a proper cut list.</strong>&rdquo;
       </div>
-      <div class="story-attr">Ryan &mdash; Sheet Metal Fabricator &middot; <span>Salford, UK</span></div>
+      <div class="story-attr">Ryan &mdash; Sheet Metal Fabricator &middot; <span>Newcastle upon Tyne, UK</span></div>
     </div>
   </div>
 </div>
@@ -348,7 +356,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
     <div class="num-card">
       <div class="num-val">2&ndash;4</div>
       <div class="num-unit">sheets saved</div>
-      <div class="num-label">Typical saving per job on mixed-material work</div>
+      <div class="num-label">Typical sheets saved per job across steel, timber and acrylic work</div>
     </div>
     <div class="num-card">
       <div class="num-val">&lt;30s</div>
@@ -363,6 +371,30 @@ footer{background:var(--teal2);padding:44px 5% 32px}
   </div>
 </div>
 
+
+<!-- PRO TEASER -->
+<section style="background:linear-gradient(135deg,var(--teal2) 0%,var(--teal) 100%);padding:56px 5%">
+  <div style="max-width:900px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center">
+    <div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(245,158,11,.8);margin-bottom:10px">Free vs Pro</div>
+      <h2 style="font-family:'Barlow Condensed',sans-serif;font-size:clamp(26px,4vw,38px);font-weight:900;color:#fff;margin-bottom:14px;line-height:1.1">The free version is genuinely useful.<br><span style="color:var(--amber)">Pro is where it gets serious.</span></h2>
+      <p style="font-size:14px;color:rgba(255,255,255,.65);line-height:1.7;margin-bottom:24px">One material is enough to see if CutNest works for you. But most jobs involve two or three sheet materials. That&rsquo;s where Pro pays for itself &mdash; usually on the first job.</p>
+      <a href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank" style="background:var(--amber);color:var(--teal2);font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:16px;padding:13px 32px;border-radius:9px;letter-spacing:.5px;display:inline-block;transition:.2s;box-shadow:0 4px 16px rgba(245,158,11,.35)">Get Pro &mdash; &pound;15/month &rarr;</a>
+      <div style="margin-top:12px;font-size:12px;color:rgba(255,255,255,.35)">or &pound;129/year &middot; cancel any time &middot; key emailed instantly</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;border-radius:12px;overflow:hidden">
+      <div style="background:rgba(255,255,255,.06);padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.06)">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:14px">Free</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.6);line-height:2">&#10003; 1 material per job<br>&#10003; 2 sheet sizes<br>&#10003; Visual layouts<br>&#10003; CSV export<br><span style="color:rgba(255,255,255,.25)">&#10007; Multiple materials<br>&#10007; Master library<br>&#10007; Job history<br>&#10007; Unit multiplier</span></div>
+      </div>
+      <div style="background:rgba(245,158,11,.12);padding:18px 16px;border:1px solid rgba(245,158,11,.2);border-radius:0 12px 12px 0">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);margin-bottom:14px">Pro &mdash; &pound;15/mo</div>
+        <div style="font-size:13px;color:#fff;line-height:2">&#10003; 5 materials per job<br>&#10003; Unlimited sheet sizes<br>&#10003; Visual layouts<br>&#10003; CSV export<br><span style="color:var(--amber)">&#10003; Multiple materials<br>&#10003; 16-grade UK library<br>&#10003; Job history (50 jobs)<br>&#10003; Unit multiplier</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- HOW IT WORKS -->
 <section class="how" id="how">
   <div class="how-inner">
@@ -373,7 +405,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
       <div class="step">
         <div class="step-num">1</div>
         <div class="step-title">Add your pieces</div>
-        <div class="step-desc">Type in the width, height and quantity of each piece you need to cut. Set your material and sheet sizes once, save them for next time.</div>
+        <div class="step-desc">Enter the width, height and quantity of each piece you need to cut. Works for steel, timber, MDF, acrylic, glass &mdash; any sheet material.</div>
       </div>
       <div class="step">
         <div class="step-num">2</div>
@@ -383,7 +415,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
       <div class="step">
         <div class="step-num">3</div>
         <div class="step-title">Order with confidence</div>
-        <div class="step-desc">You get an exact sheet count, total material cost and a visual layout showing where every piece goes. Export to CSV or print it for the shop floor.</div>
+        <div class="step-desc">You get an exact sheet count, total material cost and a visual layout showing where every piece goes. Export to CSV or print it for the shop floor or site.</div>
       </div>
     </div>
   </div>
@@ -392,8 +424,8 @@ footer{background:var(--teal2);padding:44px 5% 32px}
 <!-- FEATURES -->
 <section class="features" id="features">
   <div class="sec-eyebrow">Features</div>
-  <h2 class="sec-h2">Built for how fabricators actually work</h2>
-  <p class="sec-sub">Not a generic tool ported from woodworking. Every feature exists because someone in a real fab shop needed it.</p>
+  <h2 class="sec-h2">Built for anyone who cuts from sheet material</h2>
+  <p class="sec-sub">Steel fabricators, joiners, acrylic cutters, glaziers &mdash; if you cut sheet material and quote jobs, CutNest is built for you.</p>
   <div class="feat-grid">
     <div class="feat-card">
       <div class="feat-card-accent"></div>
@@ -401,7 +433,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
         <div class="feat-icon-wrap">&#9986;</div>
         <div class="feat-title">Grain direction lock</div>
       </div>
-      <div class="feat-desc">Brushed stainless and patterned finishes can&rsquo;t be rotated. Tick &ldquo;no rotation&rdquo; on any material and CutNest will never flip your pieces against the grain. Every other nesting tool ignores this.</div>
+      <div class="feat-desc">Brushed stainless, veneered MDF, patterned glass, wood grain &mdash; some materials can&rsquo;t be rotated. Tick &ldquo;no rotation&rdquo; on any material and CutNest will never flip pieces against the grain direction.</div>
       <div class="feat-tag">Only on CutNest</div>
     </div>
     <div class="feat-card">
@@ -419,7 +451,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
         <div class="feat-icon-wrap">&#128296;</div>
         <div class="feat-title">Guillotine mode</div>
       </div>
-      <div class="feat-desc">Running a guillotine shear as well as a punch press? Set cutting method per material. Free placement for punch and laser, guillotine mode for the shear. Mix both in the same job.</div>
+      <div class="feat-desc">Running a saw or guillotine as well as a punch press or laser? Set cutting method per material. Free placement for CNC work, guillotine mode for straight cuts. Ideal for timber, decking and steel sheet alike.</div>
       <div class="feat-tag">Only on CutNest</div>
     </div>
     <div class="feat-card teal">
@@ -428,7 +460,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
         <div class="feat-icon-wrap">&#9889;</div>
         <div class="feat-title">Fast. Always.</div>
       </div>
-      <div class="feat-desc">CutNest runs in your browser, not on a shared server. A 50-piece job across three materials calculates in under 30 seconds. No queue, no waiting, works offline once loaded.</div>
+      <div class="feat-desc">CutNest runs in your browser, not on a shared server. A 50-piece job across three materials &mdash; steel, ply and acrylic &mdash; calculates in under 30 seconds. No queue, no waiting, works offline once loaded.</div>
       <div class="feat-tag blue">Works offline</div>
     </div>
     <div class="feat-card teal">
@@ -437,7 +469,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
         <div class="feat-icon-wrap">&#128230;</div>
         <div class="feat-title">Your materials, your prices</div>
       </div>
-      <div class="feat-desc">Set up your stock library once with your actual sheet sizes and what you pay for them. CutNest uses your real prices, not estimates. Pro users get a pre-built UK library of 16 common grades to start from.</div>
+      <div class="feat-desc">Set up your stock library with your actual sheet sizes and prices. Steel, timber, MDF, acrylic &mdash; add whatever you work with. Pro users get a pre-built library of common UK grades as a starting point.</div>
     </div>
     <div class="feat-card teal">
       <div class="feat-card-accent"></div>
@@ -455,18 +487,18 @@ footer{background:var(--teal2);padding:44px 5% 32px}
   <div class="vs-inner">
     <div class="vs-intro">
       <div class="sec-eyebrow">Comparison</div>
-      <h2 class="sec-h2">CutNest vs opticutter</h2>
-      <p class="sec-sub">opticutter is the main alternative. Here&rsquo;s an honest comparison.</p>
+      <h2 class="sec-h2">CutNest vs the competition</h2>
+      <p class="sec-sub">The leading nesting tools are built for one trade. CutNest works across all of them.</p>
     </div>
     <table class="vs-table">
       <thead><tr>
         <th>Feature</th>
-        <th>opticutter Pro (~&pound;16/mo)</th>
+        <th>Leading competitor (~&pound;16/mo)</th>
         <th>CutNest Pro (&pound;15/mo)</th>
       </tr></thead>
       <tbody>
-        <tr><td>Sheet metal nesting</td><td>&#10003;</td><td>&#10003;</td></tr>
-        <tr><td>Free placement (punch &amp; laser)</td><td>&#10003;</td><td>&#10003;</td></tr>
+        <tr><td>Sheet material nesting (steel, timber, acrylic...)</td><td>&#10003;</td><td>&#10003;</td></tr>
+        <tr><td>Free placement (CNC punch, laser, router)</td><td>&#10003;</td><td>&#10003;</td></tr>
         <tr><td>Multiple materials per job</td><td>&#10003;</td><td>&#10003;</td></tr>
         <tr><td>Grain direction lock per material</td><td style="color:rgba(255,255,255,.25)">&#10007;</td><td>&#10003;</td></tr>
         <tr><td>Cost-aware optimisation</td><td style="color:rgba(255,255,255,.25)">&#10007;</td><td>&#10003;</td></tr>
@@ -484,7 +516,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
 <!-- PRICING -->
 <section class="pricing" id="pricing">
   <div class="sec-eyebrow">Pricing</div>
-  <h2 class="sec-h2">Start free. Upgrade when it&rsquo;s earning its keep.</h2>
+  <h2 class="sec-h2">Start free. Upgrade when it pays for itself.</h2>
   <p class="sec-sub" style="margin:0 auto">No subscription tricks. No hidden fees. Cancel any time.</p>
   <div class="pricing-grid">
     <div class="price-card">
@@ -533,16 +565,16 @@ footer{background:var(--teal2);padding:44px 5% 32px}
   <h2 class="sec-h2" style="margin-bottom:24px">Straight answers</h2>
 
   <div class="faq-item">
-    <div class="faq-q">Will it work for guillotine shearing, not just punch press?</div>
-    <div class="faq-a">Yes. You set the cutting method per material in your library. &ldquo;Free placement&rdquo; for punch press and laser, &ldquo;Guillotine&rdquo; for shear cutting where every cut goes edge to edge. You can mix both in the same job.</div>
+    <div class="faq-q">Will it work for saw cutting and guillotine, not just punch press?</div>
+    <div class="faq-a">Yes. Set the cutting method per material. &ldquo;Free placement&rdquo; for CNC punch, laser and router. &ldquo;Guillotine&rdquo; for saw or shear cutting where every cut goes edge to edge. Works for timber, steel sheet, acrylic &mdash; mix both in the same job.</div>
   </div>
   <div class="faq-item">
     <div class="faq-q">Can I use my own sheet sizes and prices?</div>
-    <div class="faq-a">Yes &mdash; that&rsquo;s the whole point. Go to Library, enter your sheet sizes and what you actually pay for them. CutNest uses your numbers, not generic estimates. Pro users also get a pre-built library of 16 common UK grades as a starting point.</div>
+    <div class="faq-a">Yes &mdash; that&rsquo;s the whole point. Go to Library, enter your sheet sizes and prices. Steel, MDF, ply, acrylic, glass &mdash; whatever you work with. CutNest uses your actual numbers. Pro users get a pre-built library of common UK grades as a starting point.</div>
   </div>
   <div class="faq-item">
-    <div class="faq-q">What if I have brushed stainless that can&rsquo;t be rotated?</div>
-    <div class="faq-a">Tick &ldquo;No rotation&rdquo; on that material in your library. CutNest will never rotate pieces on that sheet, so the grain direction is always maintained. Most nesting tools don&rsquo;t have this &mdash; it&rsquo;s one of the main reasons we built CutNest.</div>
+    <div class="faq-q">What if my material has a grain direction and can&rsquo;t be rotated?</div>
+    <div class="faq-a">Tick &ldquo;No rotation&rdquo; on that material in your library. Works for brushed stainless, veneered MDF, wood grain, patterned glass &mdash; any material where rotation matters. CutNest will never flip pieces against the grain.</div>
   </div>
   <div class="faq-item">
     <div class="faq-q">Do I need to install anything or create an account?</div>
@@ -564,7 +596,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
     <div class="footer-top">
       <div>
         <div class="footer-brand-name">Cut<span>Nest</span></div>
-        <div class="footer-brand-desc">Sheet metal cut list optimisation. Built by a fabricator in Salford. Used by fabrication shops across the UK.</div>
+        <div class="footer-brand-desc">Cut list optimisation for any sheet material. Built by a fabricator in Newcastle upon Tyne. Used by fabricators, joiners and trades across the UK.</div>
       </div>
       <div class="footer-links-group">
         <h4>Product</h4>
@@ -582,7 +614,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
     </div>
     <div class="footer-bottom">
       <div class="footer-copy">&copy; 2025 CutNest &middot; cutnest.co.uk</div>
-      <div class="footer-made">Made in <span>Salford, UK</span></div>
+      <div class="footer-made">Made in <span>Newcastle upon Tyne, UK</span></div>
     </div>
   </div>
 </footer>
