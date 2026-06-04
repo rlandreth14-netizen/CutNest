@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>CutNest — Sheet Metal Nesting App</title>
+<title>CutNest — Cut List Optimiser</title>
 <meta name="robots" content="noindex"/>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230f4c5c'/><rect x='4' y='4' width='11' height='8' rx='1' fill='%23f59e0b'/><rect x='17' y='4' width='11' height='13' rx='1' fill='white' opacity='.9'/><rect x='4' y='14' width='11' height='14' rx='1' fill='white' opacity='.9'/><rect x='17' y='19' width='11' height='9' rx='1' fill='%23f59e0b' opacity='.8'/></svg>"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -219,6 +219,21 @@ tr:last-child td{border-bottom:none}
 .calc-overlay-text{color:#fff;font-family:"Barlow Condensed",sans-serif;font-size:20px;font-weight:700;letter-spacing:1px}
 .calc-overlay-sub{color:rgba(255,255,255,.6);font-size:13px;margin-top:4px}
 
+
+/* ── GHOST PRO UI ── */
+.ghost-block{border-radius:14px;overflow:hidden;margin-bottom:18px;border:2px dashed var(--bdr2);position:relative;cursor:pointer;transition:.2s}
+.ghost-block:hover{border-color:var(--amber);transform:translateY(-1px)}
+.ghost-inner{padding:20px;filter:blur(2px);opacity:.4;pointer-events:none;user-select:none}
+.ghost-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(240,247,249,.7);backdrop-filter:blur(1px)}
+.ghost-lock{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--teal3));display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 14px rgba(15,76,92,.25)}
+.ghost-title{font-family:"Barlow Condensed",sans-serif;font-size:16px;font-weight:800;color:var(--teal);text-align:center}
+.ghost-desc{font-size:12px;color:var(--text2);text-align:center;max-width:240px;line-height:1.5}
+.ghost-cta{background:var(--amber);color:var(--teal2);font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:13px;padding:8px 20px;border-radius:7px;border:none;cursor:pointer;letter-spacing:.5px;transition:.15s;text-decoration:none;display:inline-block}
+.ghost-cta:hover{background:var(--amber2)}
+.ghost-hist-entry{background:var(--sky);border:1px solid var(--bdr);border-radius:8px;padding:10px 13px;margin-bottom:7px}
+.ghost-hist-line{height:10px;border-radius:4px;background:var(--bdr2);margin-bottom:5px}
+.ghost-hist-line.short{width:40%}
+
 /* ── MISC ── */
 @media print{.no-print{display:none!important}body{background:#fff}.results-shell{box-shadow:none}.detail-section{break-inside:avoid}}
 @media(max-width:640px){
@@ -253,7 +268,7 @@ tr:last-child td{border-bottom:none}
     </svg>
     <div>
       <div class="app-brand-name">Cut<span>Nest</span></div>
-      <div class="app-brand-sub">Sheet Metal Nesting</div>
+      <div class="app-brand-sub">Cut List Optimiser</div>
     </div>
   </a>
   <div class="app-hright">
@@ -268,7 +283,7 @@ tr:last-child td{border-bottom:none}
 
 <!-- PRO BANNER -->
 <div class="pro-banner no-print" id="pro-banner" style="display:none">
-  <div class="pro-banner-txt">You&rsquo;re on the <b>Free plan</b> &mdash; 1 material per job. Upgrade for unlimited materials, master library and job history.</div>
+  <div class="pro-banner-txt">You&rsquo;re on the <b>Free plan</b> &mdash; 1 material per job. Upgrade for unlimited materials, full material library and job history.</div>
   <a class="btn-upgrade" href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank">Upgrade to Pro &mdash; &pound;15/mo &rarr;</a>
 </div>
 
@@ -285,6 +300,11 @@ tr:last-child td{border-bottom:none}
       <label class="lbl">Units</label>
       <input type="number" id="job-qty" value="1" min="1" max="999" style="margin-top:3px" oninput="saveState()"/>
     </div>
+    <div id="qty-ghost" style="min-width:85px;position:relative;cursor:pointer" onclick="showUpgradeModal('&#128290;','Unit Multiplier','Pro lets you set a quantity multiplier. Quote 10 identical enclosures? Enter pieces for one, set units to 10.')" title="Pro: Unit multiplier">
+      <label class="lbl" style="opacity:.5">Units</label>
+      <div style="background:var(--sky);border:1px solid var(--bdr);border-radius:7px;padding:7px 10px;font-size:13px;color:var(--muted);filter:blur(1.5px);user-select:none">1</div>
+      <div style="position:absolute;top:50%;right:6px;transform:translateY(-20%);font-size:14px">&#128274;</div>
+    </div>
     <button class="btn btn-out" onclick="newJob()" style="color:var(--red);border-color:var(--red);margin-top:15px;flex-shrink:0">&#128465; New Job</button>
   </div>
 
@@ -297,6 +317,30 @@ tr:last-child td{border-bottom:none}
       <div class="add-mat-icon">+</div>
       Add Another Material to This Job
     </button>
+  </div>
+
+  <!-- Ghost Pro block (free users only) -->
+  <div class="ghost-block no-print" id="ghost-mat-block" style="display:none" onclick="showUpgradeModal('&#128230;','Multiple Materials','Pro lets you add up to 5 materials in a single job &mdash; mild steel, stainless, galv, all calculated together in one go.')">
+    <div class="ghost-inner">
+      <div style="background:var(--teal);border-radius:10px 10px 0 0;padding:12px 16px;display:flex;align-items:center;gap:10px">
+        <div style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:800;color:#fff">2</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;color:#fff">Material 2 &mdash; e.g. Mild Steel 3mm</div>
+      </div>
+      <div style="background:#fff;padding:14px">
+        <div style="background:var(--sky);border-radius:7px;height:36px;margin-bottom:10px"></div>
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+          <div style="background:var(--sky);border-radius:6px;height:28px;flex:1"></div>
+          <div style="background:var(--sky);border-radius:6px;height:28px;flex:1"></div>
+        </div>
+        <div style="background:var(--sky2);border-radius:6px;height:24px;width:60%"></div>
+      </div>
+    </div>
+    <div class="ghost-overlay">
+      <div class="ghost-lock">&#128274;</div>
+      <div class="ghost-title">Add a second material</div>
+      <div class="ghost-desc">Pro lets you nest multiple materials in one job &mdash; steel, timber, acrylic, all calculated together.</div>
+      <a href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank" class="ghost-cta" onclick="event.stopPropagation()">Upgrade to Pro &mdash; &pound;15/mo &rarr;</a>
+    </div>
   </div>
 
   <!-- Stale banner -->
@@ -360,7 +404,25 @@ tr:last-child td{border-bottom:none}
 <div class="overlay" id="history-modal" style="display:none">
   <div class="modal" style="max-width:660px">
     <div class="modal-hdr"><div class="modal-title">&#128336; Job History</div><button class="modal-x" onclick="closeHistory()">&#10005;</button></div>
-    <div class="modal-body"><p class="modal-sub">Your last 50 jobs are saved automatically. Load any job to restore all pieces.</p><div id="history-entries"></div></div>
+    <div class="modal-body">
+    <p class="modal-sub">Your last 50 jobs are saved automatically. Load any job to restore all pieces.</p>
+    <div id="history-entries"></div>
+    <div id="ghost-history" style="display:none">
+      <div class="ghost-block" style="margin-bottom:0" onclick="document.getElementById('history-modal').style.display='none';showUpgradeModal('&#128336;','Job History','Pro saves your last 50 jobs automatically. Load any previous quote in seconds.')">
+        <div class="ghost-inner">
+          <div class="ghost-hist-entry"><div class="ghost-hist-line"></div><div class="ghost-hist-line short"></div></div>
+          <div class="ghost-hist-entry"><div class="ghost-hist-line"></div><div class="ghost-hist-line short"></div></div>
+          <div class="ghost-hist-entry"><div class="ghost-hist-line"></div><div class="ghost-hist-line short"></div></div>
+        </div>
+        <div class="ghost-overlay">
+          <div class="ghost-lock">&#128274;</div>
+          <div class="ghost-title">Your job history</div>
+          <div class="ghost-desc">Pro saves every calculation automatically. Pull up any past quote and reload it instantly.</div>
+          <a href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank" class="ghost-cta" onclick="event.stopPropagation()">Upgrade to Pro &rarr;</a>
+        </div>
+      </div>
+    </div>
+  </div>
   </div>
 </div>
 
@@ -390,12 +452,12 @@ tr:last-child td{border-bottom:none}
         <div class="settings-desc">Gap between parts in mm. Default 20mm for CNC turret punch press. Adjust for laser or plasma.</div>
         <div style="display:flex;gap:11px;align-items:flex-end">
           <div style="width:100px"><label class="lbl">Kerf (mm)</label><input type="number" id="kerf-setting" value="20" min="0" max="100" oninput="saveSettings()"/></div>
-          <div style="font-size:12px;color:var(--muted);padding-bottom:8px">20mm punch &middot; 3mm laser &middot; 5mm plasma</div>
+          <div style="font-size:12px;color:var(--muted);padding-bottom:8px">20mm punch &middot; 3mm laser &middot; 3mm saw &middot; 5mm plasma</div>
         </div>
       </div>
       <div class="settings-section">
         <div class="settings-title">&#9729; CutNest Master Library <span style="background:var(--amber);color:var(--teal2);font-size:10px;font-weight:800;padding:2px 7px;border-radius:10px;margin-left:5px;vertical-align:middle">PRO</span></div>
-        <div class="settings-desc">Pro users get 16 UK sheet metal grades with typical market prices &mdash; loaded automatically on activation. No setup needed.</div>
+        <div class="settings-desc">Pro users get a pre-built library of common UK grades across steel, timber, acrylic and more &mdash; loaded automatically. No setup needed.</div>
         <div style="background:var(--sky);border:1px solid var(--bdr);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text2)"><span id="master-lib-txt">Loading&hellip;</span></div>
       </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:5px">
@@ -411,7 +473,7 @@ tr:last-child td{border-bottom:none}
   <div class="modal">
     <div class="modal-hdr"><div class="modal-title">&#128230; Stock Library</div><button class="modal-x" onclick="closeLib()">&#10005;</button></div>
     <div class="modal-body">
-      <p class="modal-sub">Add your materials with sheet sizes and prices. CutNest will use these when optimising your cut lists.</p>
+      <p class="modal-sub">Add your materials with sheet sizes and prices. Works for steel, timber, MDF, acrylic, glass &mdash; any sheet material.</p>
       <div id="lib-entries"></div>
       <div id="lib-limit-notice" style="display:none;background:#fff3cd;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;font-size:13px;color:#92400e;margin-bottom:8px">
         &#128274; Free plan: up to 5 materials. <button onclick="showUpgradeModal('&#128230;','Unlock Full Library','Upgrade to Pro for unlimited library entries plus the 16-grade CutNest Master Library pre-loaded.')" style="background:none;border:none;color:var(--teal3);cursor:pointer;font-weight:700;text-decoration:underline;font-size:13px">Upgrade to Pro &rarr;</button>
@@ -1263,6 +1325,15 @@ const MASTER_LIBRARY=[
 {id:403,allowRotation:true,cuttingMethod:'free',name:'Aluminium 3mm',material:'Aluminium',thickness:'3mm',size1:{w:2450,h:1150,price:195},size2:{w:1950,h:900,price:118}},
 {id:501,allowRotation:true,cuttingMethod:'free',name:'Zintec 1mm',material:'Zintec',thickness:'1mm',size1:{w:2450,h:1150,price:72},size2:{w:1950,h:900,price:44}},
 {id:502,allowRotation:true,cuttingMethod:'free',name:'Zintec 1.5mm',material:'Zintec',thickness:'1.5mm',size1:{w:2450,h:1150,price:92},size2:{w:1950,h:900,price:56}},
+  // TIMBER & SHEET
+  {id:601,allowRotation:true,cuttingMethod:'guillotine',name:'MDF 18mm',material:'Timber',thickness:'18mm',size1:{w:2440,h:1220,price:28},size2:{w:1220,h:610,price:15}},
+  {id:602,allowRotation:true,cuttingMethod:'guillotine',name:'MDF 12mm',material:'Timber',thickness:'12mm',size1:{w:2440,h:1220,price:22},size2:{w:1220,h:610,price:12}},
+  {id:603,allowRotation:false,cuttingMethod:'guillotine',name:'Plywood 18mm (Hardwood Face)',material:'Timber',thickness:'18mm',size1:{w:2440,h:1220,price:45},size2:{w:'',h:'',price:0}},
+  {id:604,allowRotation:true,cuttingMethod:'guillotine',name:'OSB 18mm',material:'Timber',thickness:'18mm',size1:{w:2400,h:1200,price:18},size2:{w:'',h:'',price:0}},
+  {id:605,allowRotation:false,cuttingMethod:'guillotine',name:'Composite Decking Board',material:'Decking',thickness:'25mm',size1:{w:3600,h:145,price:8},size2:{w:4800,h:145,price:10}},
+  // ACRYLIC & PLASTICS
+  {id:701,allowRotation:true,cuttingMethod:'free',name:'Acrylic 3mm Clear',material:'Acrylic',thickness:'3mm',size1:{w:2440,h:1220,price:55},size2:{w:1220,h:610,price:30}},
+  {id:702,allowRotation:true,cuttingMethod:'free',name:'Acrylic 5mm Clear',material:'Acrylic',thickness:'5mm',size1:{w:2440,h:1220,price:85},size2:{w:1220,h:610,price:45}},
 ];
 
 let isPro=false,settings={kerf:20,companyName:''};
@@ -1304,8 +1375,11 @@ function updateProUI(){
   setDisplay('pro-banner',isPro?'none':'flex');
   setDisplay('history-btn',isPro?'inline-flex':'none');
   setDisplay('qty-wrap',isPro?'block':'none');
+  setDisplay('qty-ghost',isPro?'none':'block');
   var amw=document.getElementById('add-mat-wrap');
   if(amw)amw.style.display=(isPro&&mats&&mats.length<5)?'block':'none';
+  var ghost=document.getElementById('ghost-mat-block');
+  if(ghost)ghost.style.display=isPro?'none':'block';
   var mlt=document.getElementById('master-lib-txt');
   if(mlt)mlt.textContent=isPro?'Active - '+MASTER_LIBRARY.length+' UK grades loaded':'Upgrade to Pro for the master library';
   updateLibLimitNotice();
@@ -1373,7 +1447,15 @@ function saveToHistory(){
   }catch(err){}
 }
 function openHistory(){
-  if(!isPro){showUpgradeModal('!','Job History','Upgrade to Pro to access job history.');return;}
+  var gh = document.getElementById('ghost-history');
+  var he = document.getElementById('history-entries');
+  if(!isPro){
+    if(gh) gh.style.display='block';
+    if(he) he.innerHTML='<p style="color:var(--muted);font-size:13px;margin-bottom:12px">Upgrade to Pro to save and restore your jobs.</p>';
+    var hm=document.getElementById('history-modal'); if(hm) hm.style.display='flex';
+    return;
+  }
+  if(gh) gh.style.display='none';
   renderHistoryEntries();var hm=document.getElementById('history-modal');if(hm)hm.style.display='flex';
 }
 function closeHistory(){var hm=document.getElementById('history-modal');if(hm)hm.style.display='none';}
