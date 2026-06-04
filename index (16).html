@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CutNest — Sheet Metal Cut List Optimiser</title>
+<meta name="description" content="Stop over-ordering steel. CutNest tells you exactly which sheets to order before you cut. Built by a sheet metal fabricator. Free to try."/>
+<meta name="keywords" content="sheet metal nesting software, cut list optimiser, CNC punch press nesting, guillotine cut optimiser, sheet metal waste reduction, fabrication quoting"/>
+<meta property="og:title" content="CutNest — Stop Over-Ordering Steel"/>
+<meta property="og:description" content="Know exactly what steel you need before you cut. Built by a fabricator, for fabricators. Free to try."/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://cutnest.co.uk"/>
+<meta name="twitter:card" content="summary"/>
+<link rel="canonical" href="https://cutnest.co.uk/"/>
+<link rel="sitemap" type="application/xml" href="/sitemap.xml"/>
+<meta name="robots" content="index,follow"/>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230f4c5c'/><rect x='4' y='4' width='11' height='8' rx='1' fill='%23f59e0b'/><rect x='17' y='4' width='11' height='13' rx='1' fill='white' opacity='.9'/><rect x='4' y='14' width='11' height='14' rx='1' fill='white' opacity='.9'/><rect x='17' y='19' width='11' height='9' rx='1' fill='%23f59e0b' opacity='.8'/></svg>"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --teal:#0f4c5c;--teal2:#0a3a47;--teal3:#1a6678;--teal4:#e8f4f8;
+  --amber:#f59e0b;--amber2:#d97706;--amber3:#fef3c7;
+  --bg:#ffffff;--white:#fff;--bdr:#e2ecef;--bdr2:#9dcad6;
+  --sky:#f0f9ff;--sky2:#d0eaf2;--steel:#f8fafb;
+  --text:#0d2d36;--text2:#2a5a6a;--muted:#6a9aaa;
+  --green:#059669;--red:#dc2626;
+  --sh:0 2px 8px rgba(15,76,92,.07);--sh2:0 8px 32px rgba(15,76,92,.12);--sh3:0 20px 60px rgba(15,76,92,.15);
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:"Barlow",sans-serif;line-height:1.5}
+a{color:inherit;text-decoration:none}
+img{max-width:100%}
+
+/* ── NAV ── */
+.nav{background:var(--teal2);height:62px;padding:0 5%;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 2px 16px rgba(0,0,0,.18)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-logo{width:32px;height:32px}
+.brand-name{font-family:"Barlow Condensed",sans-serif;font-size:21px;font-weight:900;color:#fff;letter-spacing:.5px}
+.brand-name span{color:var(--amber)}
+.nav-links{display:flex;align-items:center;gap:6px}
+.nav-link{color:rgba(255,255,255,.65);font-size:14px;padding:6px 12px;border-radius:6px;transition:.15s}
+.nav-link:hover{color:#fff;background:rgba(255,255,255,.1)}
+.btn-try{background:var(--amber);color:var(--teal2);font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:15px;padding:9px 22px;border-radius:8px;letter-spacing:.5px;transition:.15s;display:inline-block}
+.btn-try:hover{background:var(--amber2);transform:translateY(-1px)}
+
+/* ── HERO ── */
+.hero{background:var(--teal2);padding:72px 5% 0;overflow:hidden;position:relative}
+.hero::after{content:"";position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");pointer-events:none}
+.hero-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;position:relative;z-index:1}
+.hero-text{}
+.hero-origin{display:inline-flex;align-items:center;gap:8px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.25);border-radius:6px;padding:6px 14px;margin-bottom:28px}
+.hero-origin-dot{width:8px;height:8px;border-radius:50%;background:var(--amber);flex-shrink:0}
+.hero-origin span{font-size:12px;font-weight:600;color:rgba(255,255,255,.8);letter-spacing:.3px}
+.hero h1{font-family:"Barlow Condensed",sans-serif;font-size:clamp(40px,5.5vw,64px);font-weight:900;color:#fff;line-height:1.0;letter-spacing:-0.5px;margin-bottom:20px}
+.hero h1 em{color:var(--amber);font-style:normal}
+.hero-sub{font-size:17px;color:rgba(255,255,255,.7);line-height:1.65;margin-bottom:36px;max-width:480px}
+.hero-sub strong{color:#fff;font-weight:600}
+.hero-ctas{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:36px}
+.btn-primary{background:var(--amber);color:var(--teal2);font-family:"Barlow Condensed",sans-serif;font-weight:900;font-size:17px;padding:14px 36px;border-radius:9px;letter-spacing:.5px;transition:.2s;box-shadow:0 4px 18px rgba(245,158,11,.35);display:inline-block}
+.btn-primary:hover{background:var(--amber2);transform:translateY(-2px);box-shadow:0 6px 26px rgba(245,158,11,.45)}
+.btn-secondary{background:transparent;color:rgba(255,255,255,.85);font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:17px;padding:14px 32px;border-radius:9px;border:1.5px solid rgba(255,255,255,.25);transition:.2s;display:inline-block}
+.btn-secondary:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.4)}
+.hero-trust{display:flex;gap:20px;flex-wrap:wrap}
+.trust-item{display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,.5);font-weight:500}
+.trust-check{color:var(--amber);font-size:14px;font-weight:700}
+
+/* HERO APP VISUAL */
+.hero-visual{position:relative;padding-bottom:0;align-self:flex-end}
+.app-window{background:#fff;border-radius:12px 12px 0 0;box-shadow:0 -4px 40px rgba(0,0,0,.3);overflow:hidden;border:1px solid rgba(255,255,255,.1);border-bottom:none}
+.app-titlebar{background:var(--teal2);padding:10px 14px;display:flex;align-items:center;gap:6px;border-bottom:2px solid var(--amber)}
+.app-titlebar-dot{width:10px;height:10px;border-radius:50%}
+.app-titlebar-title{font-family:"Barlow Condensed",sans-serif;font-size:13px;font-weight:700;color:rgba(255,255,255,.6);margin-left:6px;letter-spacing:.5px}
+.app-body{padding:16px}
+.app-mat-header{background:var(--teal);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.app-mat-num{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.2);font-family:"Barlow Condensed",sans-serif;font-size:12px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center}
+.app-mat-label{font-family:"Barlow Condensed",sans-serif;font-size:14px;font-weight:800;color:#fff}
+.app-mat-sub{font-size:11px;color:rgba(255,255,255,.5);margin-left:auto}
+.app-sizes{display:flex;gap:8px;margin-bottom:12px}
+.app-size-chip{background:var(--sky);border:1px solid var(--bdr2);border-radius:6px;padding:5px 10px;font-size:11px}
+.app-size-chip .sl{color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.08em;display:block}
+.app-size-chip .sv{color:var(--teal);font-weight:700;font-size:12px}
+.app-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px}
+.app-table th{text-align:left;padding:4px 6px;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em;border-bottom:2px solid var(--sky2);font-weight:700}
+.app-table td{padding:5px 6px;border-bottom:1px solid var(--sky);color:var(--text2)}
+.app-table td input-sim{display:block;background:var(--sky);border:1px solid var(--bdr);border-radius:4px;padding:3px 6px;font-size:12px;color:var(--text);width:100%}
+.app-calc-btn{width:100%;background:linear-gradient(135deg,var(--teal2),var(--teal));color:#fff;border:none;border-radius:7px;padding:10px;font-family:"Barlow Condensed",sans-serif;font-weight:900;font-size:15px;letter-spacing:2px;cursor:pointer}
+.app-result{background:var(--sky);border:1px solid var(--bdr2);border-radius:8px;padding:12px;margin-top:12px;display:flex;justify-content:space-between;align-items:center}
+.app-result-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.app-result-val{font-family:"Barlow Condensed",sans-serif;font-size:28px;font-weight:800;color:var(--teal)}
+.app-result-val span{font-size:12px;color:var(--muted);font-weight:400}
+.app-result-saving{background:#d1fae5;border:1px solid #6ee7b7;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;color:#065f46}
+
+/* ── STORY STRIP ── */
+.story{background:var(--steel);border-top:1px solid var(--bdr);border-bottom:1px solid var(--bdr);padding:40px 5%}
+.story-inner{max-width:900px;margin:0 auto;display:grid;grid-template-columns:auto 1fr;gap:32px;align-items:center}
+.story-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--teal3));display:flex;align-items:center;justify-content:center;font-family:"Barlow Condensed",sans-serif;font-size:28px;font-weight:900;color:#fff;flex-shrink:0;border:3px solid var(--amber)}
+.story-quote{font-size:15px;color:var(--text);line-height:1.7;font-style:italic}
+.story-quote strong{font-style:normal;color:var(--teal);font-weight:700}
+.story-attr{margin-top:8px;font-size:13px;color:var(--muted);font-weight:600}
+.story-attr span{color:var(--teal3)}
+
+/* ── NUMBERS ── */
+.numbers{padding:60px 5%;max-width:900px;margin:0 auto}
+.numbers-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--bdr);border-radius:14px;overflow:hidden;box-shadow:var(--sh)}
+.num-card{background:#fff;padding:36px 24px;text-align:center}
+.num-val{font-family:"Barlow Condensed",sans-serif;font-size:52px;font-weight:900;color:var(--teal);line-height:1}
+.num-unit{font-size:14px;color:var(--amber2);font-weight:700;margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+.num-label{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5}
+
+/* ── HOW IT WORKS ── */
+.how{padding:70px 5%;background:var(--steel);border-top:1px solid var(--bdr)}
+.how-inner{max-width:1000px;margin:0 auto}
+.sec-eyebrow{font-family:"Barlow Condensed",sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--amber2);margin-bottom:10px}
+.sec-h2{font-family:"Barlow Condensed",sans-serif;font-size:clamp(26px,4vw,40px);font-weight:800;color:var(--teal);margin-bottom:10px;line-height:1.1}
+.sec-sub{font-size:15px;color:var(--text2);line-height:1.6;max-width:500px;margin-bottom:48px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;position:relative}
+.steps::before{content:"";position:absolute;top:28px;left:calc(16.66% + 20px);right:calc(16.66% + 20px);height:2px;background:linear-gradient(90deg,var(--amber),var(--teal3));z-index:0}
+.step{text-align:center;position:relative;z-index:1}
+.step-num{width:56px;height:56px;border-radius:50%;background:var(--teal2);border:3px solid var(--amber);font-family:"Barlow Condensed",sans-serif;font-size:22px;font-weight:900;color:#fff;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 4px 16px rgba(15,76,92,.25)}
+.step-title{font-family:"Barlow Condensed",sans-serif;font-size:17px;font-weight:800;color:var(--teal);margin-bottom:8px}
+.step-desc{font-size:13px;color:var(--text2);line-height:1.6}
+
+/* ── FEATURES ── */
+.features{padding:70px 5%;max-width:1100px;margin:0 auto}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-top:48px}
+.feat-card{background:#fff;border:1px solid var(--bdr);border-radius:12px;padding:28px;box-shadow:var(--sh);transition:.2s;position:relative}
+.feat-card:hover{box-shadow:var(--sh2);transform:translateY(-2px)}
+.feat-card-accent{position:absolute;top:0;left:24px;right:24px;height:3px;border-radius:0 0 3px 3px;background:var(--amber)}
+.feat-card.teal .feat-card-accent{background:var(--teal3)}
+.feat-heading{display:flex;align-items:flex-start;gap:14px;margin-bottom:12px}
+.feat-icon-wrap{width:40px;height:40px;border-radius:10px;background:var(--sky);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.feat-title{font-family:"Barlow Condensed",sans-serif;font-size:18px;font-weight:800;color:var(--teal);margin-top:2px}
+.feat-desc{font-size:13px;color:var(--text2);line-height:1.65}
+.feat-tag{display:inline-block;background:var(--amber3);border:1px solid #fde68a;color:#92400e;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;margin-top:12px}
+.feat-tag.blue{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}
+
+/* ── VS TABLE ── */
+.vs-section{background:var(--teal2);padding:70px 5%}
+.vs-inner{max-width:860px;margin:0 auto}
+.vs-intro{margin-bottom:36px}
+.vs-intro .sec-eyebrow{color:rgba(245,158,11,.7)}
+.vs-intro .sec-h2{color:#fff}
+.vs-intro .sec-sub{color:rgba(255,255,255,.6);margin-bottom:0}
+.vs-table{width:100%;border-collapse:separate;border-spacing:0;border-radius:12px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.3)}
+.vs-table th{padding:14px 18px;font-family:"Barlow Condensed",sans-serif;font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.vs-table th:first-child{background:#1a3040;color:rgba(255,255,255,.45);text-align:left;width:42%}
+.vs-table th:nth-child(2){background:#1a3040;color:rgba(255,255,255,.45);text-align:center}
+.vs-table th:last-child{background:var(--amber);color:var(--teal2);text-align:center}
+.vs-table td{padding:12px 18px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.05)}
+.vs-table td:first-child{background:rgba(255,255,255,.04);color:rgba(255,255,255,.8);font-weight:500}
+.vs-table td:nth-child(2){background:rgba(255,255,255,.02);color:rgba(255,255,255,.35);text-align:center}
+.vs-table td:last-child{background:rgba(245,158,11,.08);color:#fff;text-align:center;font-weight:600}
+.vs-table tr:last-child td{border-bottom:none}
+.vs-note{margin-top:16px;font-size:12px;color:rgba(255,255,255,.35);text-align:center}
+
+/* ── PRICING ── */
+.pricing{padding:70px 5%;max-width:860px;margin:0 auto;text-align:center}
+.pricing-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:44px;text-align:left}
+.price-card{background:#fff;border:1.5px solid var(--bdr);border-radius:16px;padding:28px;box-shadow:var(--sh)}
+.price-card.featured{border-color:var(--amber);box-shadow:0 8px 32px rgba(245,158,11,.15);position:relative}
+.featured-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--amber);color:var(--teal2);font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:11px;letter-spacing:1px;padding:3px 16px;border-radius:20px;white-space:nowrap}
+.plan-label{font-family:"Barlow Condensed",sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.plan-price{font-family:"Barlow Condensed",sans-serif;font-size:44px;font-weight:900;color:var(--teal);line-height:1}
+.plan-price span{font-size:17px;color:var(--muted);font-weight:400}
+.plan-period{font-size:12px;color:var(--muted);margin:4px 0 16px}
+.annual-callout{background:var(--sky);border:1px solid var(--bdr2);border-radius:7px;padding:7px 12px;font-size:12px;color:var(--text2);margin-bottom:18px;display:flex;align-items:center;justify-content:space-between}
+.annual-callout b{color:var(--green)}
+.plan-feats{list-style:none;margin-bottom:22px}
+.plan-feats li{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--sky);font-size:13px;color:var(--text2);line-height:1.4}
+.plan-feats li:last-child{border-bottom:none}
+.fi{font-size:14px;flex-shrink:0;margin-top:1px}
+.locked{color:var(--muted);opacity:.55}
+.btn-free{display:block;width:100%;padding:12px;border-radius:8px;border:1.5px solid var(--bdr2);background:var(--sky);color:var(--teal);font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:15px;letter-spacing:.5px;text-align:center;cursor:pointer;transition:.15s}
+.btn-free:hover{background:var(--sky2)}
+.btn-pro{display:block;width:100%;padding:13px;border-radius:8px;background:linear-gradient(135deg,var(--amber),var(--amber2));color:var(--teal2);font-family:"Barlow Condensed",sans-serif;font-weight:900;font-size:15px;letter-spacing:.5px;text-align:center;cursor:pointer;transition:.2s;box-shadow:0 4px 14px rgba(245,158,11,.3);border:none}
+.btn-pro:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(245,158,11,.4)}
+.annual-link{display:block;text-align:center;margin-top:8px;font-size:12px;color:var(--teal3)}
+.pricing-note{font-size:12px;color:var(--muted);margin-top:18px}
+
+/* ── FAQ ── */
+.faq{padding:60px 5%;max-width:700px;margin:0 auto}
+.faq-item{border-bottom:1px solid var(--bdr);padding:20px 0;cursor:pointer}
+.faq-q{font-family:"Barlow Condensed",sans-serif;font-size:17px;font-weight:700;color:var(--teal);display:flex;justify-content:space-between;align-items:center;gap:16px}
+.faq-q::after{content:"+";font-size:20px;color:var(--amber);font-weight:400;flex-shrink:0;transition:.2s}
+.faq-item.open .faq-q::after{content:"−"}
+.faq-a{font-size:13px;color:var(--text2);line-height:1.7;padding-top:10px;display:none}
+.faq-item.open .faq-a{display:block}
+
+/* ── FOOTER ── */
+footer{background:var(--teal2);padding:44px 5% 32px}
+.footer-inner{max-width:1000px;margin:0 auto}
+.footer-top{display:flex;align-items:flex-start;justify-content:space-between;gap:32px;flex-wrap:wrap;padding-bottom:32px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:24px}
+.footer-brand-name{font-family:"Barlow Condensed",sans-serif;font-size:22px;font-weight:900;color:#fff;margin-bottom:6px}
+.footer-brand-name span{color:var(--amber)}
+.footer-brand-desc{font-size:13px;color:rgba(255,255,255,.45);max-width:260px;line-height:1.6}
+.footer-links-group h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.35);margin-bottom:12px}
+.footer-links-group a{display:block;font-size:13px;color:rgba(255,255,255,.55);margin-bottom:8px;transition:.15s}
+.footer-links-group a:hover{color:#fff}
+.footer-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.footer-copy{font-size:12px;color:rgba(255,255,255,.25)}
+.footer-made{font-size:12px;color:rgba(255,255,255,.25)}
+.footer-made span{color:rgba(255,255,255,.4)}
+
+/* ── COOKIE ── */
+.cookie{position:fixed;bottom:0;left:0;right:0;background:var(--teal2);border-top:2px solid var(--teal3);color:rgba(255,255,255,.8);padding:14px 5%;display:none;align-items:center;justify-content:space-between;gap:14px;z-index:99;font-size:13px;flex-wrap:wrap}
+.cookie.show{display:flex}
+.cookie a{color:var(--amber)}
+.btn-cookie{background:var(--amber);border:none;color:var(--teal2);font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:13px;padding:7px 18px;border-radius:7px;cursor:pointer;white-space:nowrap}
+
+/* ── MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(5,20,28,.7);z-index:200;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-hdr{background:var(--teal2);border-radius:14px 14px 0 0;padding:16px 22px;display:flex;justify-content:space-between;align-items:center}
+.modal-title{font-family:"Barlow Condensed",sans-serif;font-size:20px;font-weight:800;color:#fff}
+.modal-x{background:none;border:none;color:rgba(255,255,255,.6);font-size:22px;cursor:pointer;line-height:1}
+.modal-x:hover{color:#fff}
+.modal-body{padding:22px;font-size:13px;line-height:1.8;color:var(--text2)}
+.modal-body h4{color:var(--teal);margin:14px 0 5px;font-size:14px;font-weight:700}
+.modal-body p{margin-bottom:8px}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .hero-inner{grid-template-columns:1fr;gap:40px}
+  .hero-visual{display:none}
+  .story-inner{grid-template-columns:1fr}
+  .story-avatar{display:none}
+  .numbers-grid{grid-template-columns:1fr}
+  .numbers-grid .num-card{border-bottom:1px solid var(--bdr)}
+  .steps{grid-template-columns:1fr;gap:24px}
+  .steps::before{display:none}
+  .pricing-grid{grid-template-columns:1fr}
+  .footer-top{flex-direction:column;gap:24px}
+  .nav-link{display:none}
+}
+@media(max-width:500px){
+  .hero{padding:48px 5% 0}
+  .hero h1{font-size:38px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <a class="brand" href="/">
+    <svg class="brand-logo" viewBox="0 0 36 36" fill="none">
+      <rect width="36" height="36" rx="8" fill="#0f4c5c"/>
+      <rect x="4" y="4" width="13" height="9" rx="2" fill="#f59e0b"/>
+      <rect x="19" y="4" width="13" height="15" rx="2" fill="white" opacity=".9"/>
+      <rect x="4" y="15" width="13" height="17" rx="2" fill="white" opacity=".9"/>
+      <rect x="19" y="21" width="13" height="11" rx="2" fill="#f59e0b" opacity=".8"/>
+    </svg>
+    <div class="brand-name">Cut<span>Nest</span></div>
+  </a>
+  <div class="nav-links">
+    <a href="#how" class="nav-link">How it works</a>
+    <a href="#features" class="nav-link">Features</a>
+    <a href="#pricing" class="nav-link">Pricing</a>
+    <a href="app.html" class="btn-try">Try Free &rarr;</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-text">
+      <div class="hero-origin">
+        <div class="hero-origin-dot"></div>
+        <span>Built in Salford &middot; Used in real fabrication shops</span>
+      </div>
+      <h1>Stop guessing<br>how much<br>steel to order</h1>
+      <p class="hero-sub">
+        I got fed up quoting jobs on a spreadsheet and consistently over-ordering.
+        So I built CutNest. <strong>It tells you exactly which sheets to cut &mdash; before you order.</strong>
+      </p>
+      <div class="hero-ctas">
+        <a href="app.html" class="btn-primary">Try Free &mdash; No Sign Up</a>
+        <a href="#how" class="btn-secondary">See How It Works</a>
+      </div>
+      <div class="hero-trust">
+        <div class="trust-item"><span class="trust-check">&#10003;</span> Works in your browser</div>
+        <div class="trust-item"><span class="trust-check">&#10003;</span> No install needed</div>
+        <div class="trust-item"><span class="trust-check">&#10003;</span> Free forever on 1 material</div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="app-window">
+        <div class="app-titlebar">
+          <div class="app-titlebar-dot" style="background:#ef4444"></div>
+          <div class="app-titlebar-dot" style="background:#f59e0b;margin-left:4px"></div>
+          <div class="app-titlebar-dot" style="background:#22c55e;margin-left:4px"></div>
+          <div class="app-titlebar-title">cutnest.co.uk/app</div>
+        </div>
+        <div class="app-body">
+          <div class="app-mat-header">
+            <div class="app-mat-num">1</div>
+            <div>
+              <div class="app-mat-label">S/S 2mm &mdash; 316 Brushed</div>
+              <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:1px">No rotation &middot; Grain locked</div>
+            </div>
+            <div class="app-mat-sub">3 pieces entered</div>
+          </div>
+          <div class="app-sizes">
+            <div class="app-size-chip"><span class="sl">Sheet Size 1 &middot; &pound;225</span><span class="sv">2450 &times; 1150mm</span></div>
+            <div class="app-size-chip"><span class="sl">Sheet Size 2 &middot; &pound;132</span><span class="sv">1950 &times; 900mm</span></div>
+          </div>
+          <table class="app-table">
+            <thead><tr><th>#</th><th>Width</th><th>Height</th><th>Qty</th></tr></thead>
+            <tbody>
+              <tr><td style="color:var(--muted)">1</td><td style="color:var(--teal);font-weight:600">800</td><td style="color:var(--teal);font-weight:600">600</td><td>4</td></tr>
+              <tr><td style="color:var(--muted)">2</td><td style="color:var(--teal);font-weight:600">450</td><td style="color:var(--teal);font-weight:600">380</td><td>6</td></tr>
+              <tr><td style="color:var(--muted)">3</td><td style="color:var(--teal);font-weight:600">1100</td><td style="color:var(--teal);font-weight:600">200</td><td>2</td></tr>
+            </tbody>
+          </table>
+          <button class="app-calc-btn">&#10002; CALCULATE LAYOUTS</button>
+          <div class="app-result">
+            <div>
+              <div class="app-result-label">Sheets required</div>
+              <div class="app-result-val">3 <span>sheets &times; &pound;225 = &pound;675</span></div>
+            </div>
+            <div class="app-result-saving">84% utilisation</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STORY / FOUNDER -->
+<div class="story">
+  <div class="story-inner">
+    <div class="story-avatar">R</div>
+    <div>
+      <div class="story-quote">
+        &ldquo;I work in sheet metal fabrication. Every week we&rsquo;d quote a job, order steel, and end up with offcuts we couldn&rsquo;t use. I built CutNest to solve that. The first job we ran through it, <strong>we saved three sheets of stainless</strong>. That&rsquo;s about &pound;675 we&rsquo;d have wasted.&rdquo;
+      </div>
+      <div class="story-attr">Ryan &mdash; Sheet Metal Fabricator &middot; <span>Salford, UK</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- NUMBERS -->
+<div class="numbers">
+  <div class="numbers-grid">
+    <div class="num-card">
+      <div class="num-val">2&ndash;4</div>
+      <div class="num-unit">sheets saved</div>
+      <div class="num-label">Typical saving per job on mixed-material work</div>
+    </div>
+    <div class="num-card">
+      <div class="num-val">&lt;30s</div>
+      <div class="num-unit">to calculate</div>
+      <div class="num-label">Enter your pieces, hit calculate, get your cut list</div>
+    </div>
+    <div class="num-card">
+      <div class="num-val">&pound;0</div>
+      <div class="num-unit">to start</div>
+      <div class="num-label">Free forever on 1 material. No card needed to try it.</div>
+    </div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how">
+  <div class="how-inner">
+    <div class="sec-eyebrow">How it works</div>
+    <h2 class="sec-h2">Three steps. No training needed.</h2>
+    <p class="sec-sub">If you can fill in a spreadsheet, you can use CutNest. There&rsquo;s nothing to install and no account to create.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-title">Add your pieces</div>
+        <div class="step-desc">Type in the width, height and quantity of each piece you need to cut. Set your material and sheet sizes once, save them for next time.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-title">Hit calculate</div>
+        <div class="step-desc">CutNest works out the most efficient way to fit everything onto the fewest sheets. It takes about 20 seconds and runs entirely in your browser.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-title">Order with confidence</div>
+        <div class="step-desc">You get an exact sheet count, total material cost and a visual layout showing where every piece goes. Export to CSV or print it for the shop floor.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="sec-eyebrow">Features</div>
+  <h2 class="sec-h2">Built for how fabricators actually work</h2>
+  <p class="sec-sub">Not a generic tool ported from woodworking. Every feature exists because someone in a real fab shop needed it.</p>
+  <div class="feat-grid">
+    <div class="feat-card">
+      <div class="feat-card-accent"></div>
+      <div class="feat-heading">
+        <div class="feat-icon-wrap">&#9986;</div>
+        <div class="feat-title">Grain direction lock</div>
+      </div>
+      <div class="feat-desc">Brushed stainless and patterned finishes can&rsquo;t be rotated. Tick &ldquo;no rotation&rdquo; on any material and CutNest will never flip your pieces against the grain. Every other nesting tool ignores this.</div>
+      <div class="feat-tag">Only on CutNest</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-card-accent"></div>
+      <div class="feat-heading">
+        <div class="feat-icon-wrap">&#128176;</div>
+        <div class="feat-title">Cost-aware optimisation</div>
+      </div>
+      <div class="feat-desc">Enter your sheet prices and CutNest minimises your total spend &mdash; not just sheet count. A cheaper smaller sheet that creates more waste isn&rsquo;t always better. CutNest knows the difference.</div>
+      <div class="feat-tag">Only on CutNest</div>
+    </div>
+    <div class="feat-card teal">
+      <div class="feat-card-accent"></div>
+      <div class="feat-heading">
+        <div class="feat-icon-wrap">&#128296;</div>
+        <div class="feat-title">Guillotine mode</div>
+      </div>
+      <div class="feat-desc">Running a guillotine shear as well as a punch press? Set cutting method per material. Free placement for punch and laser, guillotine mode for the shear. Mix both in the same job.</div>
+      <div class="feat-tag">Only on CutNest</div>
+    </div>
+    <div class="feat-card teal">
+      <div class="feat-card-accent"></div>
+      <div class="feat-heading">
+        <div class="feat-icon-wrap">&#9889;</div>
+        <div class="feat-title">Fast. Always.</div>
+      </div>
+      <div class="feat-desc">CutNest runs in your browser, not on a shared server. A 50-piece job across three materials calculates in under 30 seconds. No queue, no waiting, works offline once loaded.</div>
+      <div class="feat-tag blue">Works offline</div>
+    </div>
+    <div class="feat-card teal">
+      <div class="feat-card-accent"></div>
+      <div class="feat-heading">
+        <div class="feat-icon-wrap">&#128230;</div>
+        <div class="feat-title">Your materials, your prices</div>
+      </div>
+      <div class="feat-desc">Set up your stock library once with your actual sheet sizes and what you pay for them. CutNest uses your real prices, not estimates. Pro users get a pre-built UK library of 16 common grades to start from.</div>
+    </div>
+    <div class="feat-card teal">
+      <div class="feat-card-accent"></div>
+      <div class="feat-heading">
+        <div class="feat-icon-wrap">&#128203;</div>
+        <div class="feat-title">Quote-ready output</div>
+      </div>
+      <div class="feat-desc">Visual layout showing exactly where every piece lands. Total sheets, total cost, waste percentage. Export to CSV or print direct to PDF. Everything you need to quote with confidence.</div>
+    </div>
+  </div>
+</section>
+
+<!-- VS TABLE -->
+<div class="vs-section">
+  <div class="vs-inner">
+    <div class="vs-intro">
+      <div class="sec-eyebrow">Comparison</div>
+      <h2 class="sec-h2">CutNest vs opticutter</h2>
+      <p class="sec-sub">opticutter is the main alternative. Here&rsquo;s an honest comparison.</p>
+    </div>
+    <table class="vs-table">
+      <thead><tr>
+        <th>Feature</th>
+        <th>opticutter Pro (~&pound;16/mo)</th>
+        <th>CutNest Pro (&pound;15/mo)</th>
+      </tr></thead>
+      <tbody>
+        <tr><td>Sheet metal nesting</td><td>&#10003;</td><td>&#10003;</td></tr>
+        <tr><td>Free placement (punch &amp; laser)</td><td>&#10003;</td><td>&#10003;</td></tr>
+        <tr><td>Multiple materials per job</td><td>&#10003;</td><td>&#10003;</td></tr>
+        <tr><td>Grain direction lock per material</td><td style="color:rgba(255,255,255,.25)">&#10007;</td><td>&#10003;</td></tr>
+        <tr><td>Cost-aware optimisation</td><td style="color:rgba(255,255,255,.25)">&#10007;</td><td>&#10003;</td></tr>
+        <tr><td>Guillotine shear mode</td><td style="color:rgba(255,255,255,.25)">&#10007;</td><td>&#10003;</td></tr>
+        <tr><td>Speed on large jobs</td><td style="color:#f59e0b">Slows down</td><td>Always fast</td></tr>
+        <tr><td>Pre-built UK material library</td><td style="color:rgba(255,255,255,.25)">&#10007;</td><td>16 grades included</td></tr>
+        <tr><td>Works offline</td><td style="color:rgba(255,255,255,.25)">&#10007;</td><td>&#10003;</td></tr>
+        <tr><td>Price</td><td style="color:rgba(255,255,255,.4)">&euro;19/month</td><td style="color:var(--amber);font-weight:800">&pound;15/month</td></tr>
+      </tbody>
+    </table>
+    <div class="vs-note">Opticutter is a good product. This is an honest comparison based on features at time of writing.</div>
+  </div>
+</div>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+  <div class="sec-eyebrow">Pricing</div>
+  <h2 class="sec-h2">Start free. Upgrade when it&rsquo;s earning its keep.</h2>
+  <p class="sec-sub" style="margin:0 auto">No subscription tricks. No hidden fees. Cancel any time.</p>
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="plan-label">Free</div>
+      <div class="plan-price">&pound;0</div>
+      <div class="plan-period">No card needed &middot; forever free</div>
+      <ul class="plan-feats">
+        <li><span class="fi">&#10003;</span>Full nesting algorithm</li>
+        <li><span class="fi">&#10003;</span>1 material per job</li>
+        <li><span class="fi">&#10003;</span>2 sheet sizes per material</li>
+        <li><span class="fi">&#10003;</span>Your own stock library (5 materials)</li>
+        <li><span class="fi">&#10003;</span>Visual cut layouts</li>
+        <li><span class="fi">&#10003;</span>CSV export</li>
+        <li><span class="fi locked">&#128274;</span><span class="locked">Multiple materials per job</span></li>
+        <li><span class="fi locked">&#128274;</span><span class="locked">Pre-built UK material library</span></li>
+        <li><span class="fi locked">&#128274;</span><span class="locked">Job history</span></li>
+      </ul>
+      <a href="app.html" class="btn-free">Start Free &rarr;</a>
+    </div>
+    <div class="price-card featured">
+      <div class="featured-badge">Most Popular</div>
+      <div class="plan-label">Pro</div>
+      <div class="plan-price">&pound;15<span>/mo</span></div>
+      <div class="plan-period">Per company &middot; cancel any time</div>
+      <div class="annual-callout"><span>Pay annually &mdash; save &pound;51</span><b>&pound;129/year</b></div>
+      <ul class="plan-feats">
+        <li><span class="fi">&#10003;</span>Everything in Free</li>
+        <li><span class="fi">&#10003;</span>Up to 5 materials per job</li>
+        <li><span class="fi">&#10003;</span>Unlimited stock library</li>
+        <li><span class="fi">&#10003;</span>Pre-built UK library (16 grades + prices)</li>
+        <li><span class="fi">&#10003;</span>Job history (last 50 jobs)</li>
+        <li><span class="fi">&#10003;</span>Unit quantity multiplier</li>
+        <li><span class="fi">&#10003;</span>Grain direction lock</li>
+        <li><span class="fi">&#10003;</span>Email support</li>
+      </ul>
+      <a href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank" class="btn-pro">Get Pro &mdash; &pound;15/month &rarr;</a>
+      <a href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank" class="annual-link">Or &pound;129/year (save &pound;51)</a>
+    </div>
+  </div>
+  <p class="pricing-note">&#128274; Secure payment via Lemon Squeezy &middot; VAT included &middot; Licence key emailed instantly</p>
+</section>
+
+<!-- FAQ -->
+<section class="faq">
+  <div class="sec-eyebrow">FAQ</div>
+  <h2 class="sec-h2" style="margin-bottom:24px">Straight answers</h2>
+
+  <div class="faq-item">
+    <div class="faq-q">Will it work for guillotine shearing, not just punch press?</div>
+    <div class="faq-a">Yes. You set the cutting method per material in your library. &ldquo;Free placement&rdquo; for punch press and laser, &ldquo;Guillotine&rdquo; for shear cutting where every cut goes edge to edge. You can mix both in the same job.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Can I use my own sheet sizes and prices?</div>
+    <div class="faq-a">Yes &mdash; that&rsquo;s the whole point. Go to Library, enter your sheet sizes and what you actually pay for them. CutNest uses your numbers, not generic estimates. Pro users also get a pre-built library of 16 common UK grades as a starting point.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">What if I have brushed stainless that can&rsquo;t be rotated?</div>
+    <div class="faq-a">Tick &ldquo;No rotation&rdquo; on that material in your library. CutNest will never rotate pieces on that sheet, so the grain direction is always maintained. Most nesting tools don&rsquo;t have this &mdash; it&rsquo;s one of the main reasons we built CutNest.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Do I need to install anything or create an account?</div>
+    <div class="faq-a">No to both. Open cutnest.co.uk/app in any browser and start using it. Your library and job history are saved in your browser &mdash; nothing is sent to a server. For Pro, you just enter a licence key in Settings after purchase.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">How does the Pro licence work?</div>
+    <div class="faq-a">After payment you&rsquo;ll get a licence key by email within a minute. Open the app, tap Settings, paste the key. Pro unlocks immediately. One key works for your whole company &mdash; share it with your team.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">What happens if I cancel?</div>
+    <div class="faq-a">Monthly plans cancel at the end of the current billing period &mdash; no awkward process, just cancel from your Lemon Squeezy account. You keep access until the period ends. Annual plans are non-refundable but access continues until the year is up.</div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div>
+        <div class="footer-brand-name">Cut<span>Nest</span></div>
+        <div class="footer-brand-desc">Sheet metal cut list optimisation. Built by a fabricator in Salford. Used by fabrication shops across the UK.</div>
+      </div>
+      <div class="footer-links-group">
+        <h4>Product</h4>
+        <a href="app.html">Open App</a>
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#how">How it works</a>
+      </div>
+      <div class="footer-links-group">
+        <h4>Company</h4>
+        <a href="mailto:hello@cutnest.co.uk">hello@cutnest.co.uk</a>
+        <a href="#" onclick="openLegal('terms');return false;">Terms of Service</a>
+        <a href="#" onclick="openLegal('privacy');return false;">Privacy Policy</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-copy">&copy; 2025 CutNest &middot; cutnest.co.uk</div>
+      <div class="footer-made">Made in <span>Salford, UK</span></div>
+    </div>
+  </div>
+</footer>
+
+<!-- COOKIE -->
+<div class="cookie" id="cookie">
+  We use your browser&rsquo;s local storage to save your settings. No tracking cookies, ever.
+  <a href="#" onclick="openLegal('privacy');return false;">Privacy Policy</a>
+  <button class="btn-cookie" onclick="acceptCookie()">Got it</button>
+</div>
+
+<!-- LEGAL MODAL -->
+<div class="overlay" id="legal-overlay">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title" id="legal-title"></div>
+      <button class="modal-x" onclick="closeLegal()">&#10005;</button>
+    </div>
+    <div class="modal-body" id="legal-body"></div>
+  </div>
+</div>
+
+<script>
+const TERMS = '<h4>CutNest Terms of Service</h4><p><b>Last updated: June 2025</b></p><h4>1. The Service</h4><p>CutNest (cutnest.co.uk) is a browser-based sheet metal nesting tool operated as a sole trader in the UK.</p><h4>2. Pro Subscription</h4><p>Pro subscriptions are billed monthly (&pound;15) or annually (&pound;129) through Lemon Squeezy. Your licence key may be shared with your team. You may not resell or distribute your key.</p><h4>3. Cancellation</h4><p>Monthly plans cancel at end of billing period. Annual plans are non-refundable. Contact hello@cutnest.co.uk within 7 days for technical issues.</p><h4>4. Accuracy</h4><p>Results are estimates. Review before ordering materials. CutNest accepts no liability for mis-ordering.</p><h4>5. Contact</h4><p><a href="mailto:hello@cutnest.co.uk" style="color:#1a6678">hello@cutnest.co.uk</a></p>';
+
+const PRIVACY = '<h4>CutNest Privacy Policy</h4><p><b>Last updated: June 2025</b></p><h4>Data We Collect</h4><p>Payments handled entirely by Lemon Squeezy &mdash; we never see your card details. Your email is collected by Lemon Squeezy for receipts and licence key delivery only.</p><h4>Local Storage</h4><p>Your library, job history, settings and licence key are stored in your browser only &mdash; never sent to any server. Clearing your browser data removes everything.</p><h4>No Tracking</h4><p>No Google Analytics. No advertising cookies. No third-party tracking of any kind.</p><h4>Your Rights (UK GDPR)</h4><p>Contact <a href="mailto:hello@cutnest.co.uk" style="color:#1a6678">hello@cutnest.co.uk</a> to access, correct or delete any data we hold.</p>';
+
+function openLegal(type) {
+  document.getElementById('legal-title').textContent = type === 'terms' ? 'Terms of Service' : 'Privacy Policy';
+  document.getElementById('legal-body').innerHTML = type === 'terms' ? TERMS : PRIVACY;
+  document.getElementById('legal-overlay').classList.add('open');
+}
+function closeLegal() {
+  document.getElementById('legal-overlay').classList.remove('open');
+}
+function acceptCookie() {
+  localStorage.setItem('cn-cookie','1');
+  document.getElementById('cookie').classList.remove('show');
+}
+if (!localStorage.getItem('cn-cookie')) {
+  setTimeout(function() { document.getElementById('cookie').classList.add('show'); }, 2000);
+}
+document.getElementById('legal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeLegal();
+});
+
+// Accordion FAQ
+document.querySelectorAll('.faq-item').forEach(function(item) {
+  item.addEventListener('click', function() {
+    var isOpen = this.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(function(i) { i.classList.remove('open'); });
+    if (!isOpen) this.classList.add('open');
+  });
+});
+</script>
+</body>
+</html>
