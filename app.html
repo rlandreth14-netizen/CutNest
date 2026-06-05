@@ -792,6 +792,13 @@ function removePiece(matId, pi) {
 function updatePiece(matId, pi, field, val) {
   const m = mats.find(m => m.id === matId);
   if (m) {
+    // Validate numeric fields
+    if (field === 'w' || field === 'h') {
+      val = Math.max(0, Math.min(99999, Number(val) || 0));
+    }
+    if (field === 'qty') {
+      val = Math.max(1, Math.min(9999, Math.round(Number(val)) || 1));
+    }
     m.pieces[pi][field] = val;
     saveState();
     if (calcResult) {
@@ -1282,18 +1289,18 @@ function renderOutput() {
               const col=COLORS[p.pieceIndex%COLORS.length];
               const show=p.w*scale>28&&p.h*scale>14;
               return `<div class="piece-rect" style="left:${p.x*scale}px;top:${p.y*scale}px;width:${p.w*scale-1}px;height:${p.h*scale-1}px;background:${col}cc;border:1.5px solid ${col}">
-                ${show?`<div class="plbl" style="font-size:${Math.min(11,p.w*scale/6)}px">${p.label||'P'+(p.pieceIndex+1)}${p.rotated?'↻':''}<br><span style="font-weight:400;font-size:.82em;opacity:.85">${p.w}×${p.h}</span></div>`:''}
+                ${show?`<div class="plbl" style="font-size:${Math.min(11,p.w*scale/6)}px">${esc(p.label||'P'+(p.pieceIndex+1))}${p.rotated?'↻':''}<br><span style="font-weight:400;font-size:.82em;opacity:.85">${p.w}×${p.h}</span></div>`:''}
               </div>`;
             }).join('')}
           </div>
           <div style="flex:1;min-width:120px">
-            ${sh.placed.map(p=>`<div class="legend-item"><div class="ldot" style="background:${COLORS[p.pieceIndex%COLORS.length]}"></div>${p.label||'P'+(p.pieceIndex+1)} — ${p.w}×${p.h}mm${p.rotated?' ↻':''}</div>`).join('')}
+            ${sh.placed.map(p=>`<div class="legend-item"><div class="ldot" style="background:${COLORS[p.pieceIndex%COLORS.length]}"></div>${esc(p.label||'P'+(p.pieceIndex+1))} — ${p.w}×${p.h}mm${p.rotated?' ↻':''}</div>`).join('')}
           </div>
         </div>
       </div>`;
     });
 
-    if (unplaced.length) html += `<div class="warn">⚠ Unplaced: ${unplaced.map(p=>p.label||p.w+'×'+p.h+'mm').join(', ')}</div>`;
+    if (unplaced.length) html += `<div class="warn">⚠ Unplaced: ${unplaced.map(p=>esc(p.label||p.w+'×'+p.h+'mm')).join(', ')}</div>`;
     sec.innerHTML = html;
     visWrap.appendChild(sec);
   });
@@ -1307,7 +1314,7 @@ function renderOutput() {
           <td style="font-weight:600;color:var(--navy);font-size:12px">${libMat.name}</td>
           <td style="color:var(--muted)">${si+1}</td>
           <td style="color:var(--muted);font-size:12px">${sh.sheetW}×${sh.sheetH}</td>
-          <td><div style="display:flex;align-items:center;gap:5px"><div style="width:9px;height:9px;border-radius:2px;background:${COLORS[p.pieceIndex%COLORS.length]};flex-shrink:0"></div>${p.label||'P'+(p.pieceIndex+1)}</div></td>
+          <td><div style="display:flex;align-items:center;gap:5px"><div style="width:9px;height:9px;border-radius:2px;background:${COLORS[p.pieceIndex%COLORS.length]};flex-shrink:0"></div>${esc(p.label||'P'+(p.pieceIndex+1))}</div></td>
           <td style="color:var(--muted)">${p.w}</td><td style="color:var(--muted)">${p.h}</td>
           <td style="color:var(--muted)">${p.x}</td><td style="color:var(--muted)">${p.y}</td>
           <td style="color:${p.rotated?'var(--ora)':'var(--muted)'}">${p.rotated?'Yes ↻':'No'}</td>
@@ -1518,6 +1525,16 @@ document.addEventListener('keydown', function(e) {
 });
 
 // ── INIT ──────────────────────────────────────
+
+// ── SECURITY: sanitise user input before injecting into HTML ──
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
 
 const KEY_STORE='cutnest-licence-v1',SETT_KEY='cutnest-settings-v1',HIST_KEY='cutnest-hist-v1',HIST_MAX=50,FREE_LIB_LIMIT=5;
 const LS_URL='https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276';
@@ -1824,6 +1841,12 @@ function updateLibLimitNotice() {
 
 document.addEventListener('keydown', function(e) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); calculate(); }
+  if (e.key === 'Escape') {
+    ['settings-modal','lib-modal','history-modal','upgrade-modal','legal-modal'].forEach(function(id) {
+      const el = document.getElementById(id);
+      if (el && el.style.display !== 'none') el.style.display = 'none';
+    });
+  }
 });
 
 

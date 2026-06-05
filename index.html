@@ -80,6 +80,16 @@ img{max-width:100%}
 .brand-name{font-family:"Barlow Condensed",sans-serif;font-size:21px;font-weight:900;color:#fff;letter-spacing:.5px}
 .brand-name span{color:var(--amber)}
 .nav-links{display:flex;align-items:center;gap:6px}
+.nav-hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;flex-direction:column;gap:5px}
+.nav-hamburger span{display:block;width:22px;height:2px;background:#fff;border-radius:2px;transition:.2s}
+.nav-mobile{display:none;position:fixed;inset:0;background:var(--teal2);z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:28px}
+.nav-mobile.open{display:flex}
+.nav-mobile a{color:#fff;font-family:"Barlow Condensed",sans-serif;font-size:26px;font-weight:700;letter-spacing:1px}
+.nav-mobile-close{position:absolute;top:18px;right:20px;background:none;border:none;color:rgba(255,255,255,.6);font-size:28px;cursor:pointer;line-height:1}
+@media(max-width:640px){
+  .nav-links{display:none}
+  .nav-hamburger{display:flex}
+}
 .nav-link{color:rgba(255,255,255,.65);font-size:14px;padding:6px 12px;border-radius:6px;transition:.15s}
 .nav-link:hover{color:#fff;background:rgba(255,255,255,.1)}
 .btn-try{background:var(--amber);color:var(--teal2);font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:15px;padding:9px 22px;border-radius:8px;letter-spacing:.5px;transition:.15s;display:inline-block}
@@ -305,7 +315,19 @@ footer{background:var(--teal2);padding:44px 5% 32px}
     <a href="#pricing" class="nav-link">Pricing</a>
     <a href="app.html" class="btn-try">Try it free &rarr;</a>
   </div>
+  <button class="nav-hamburger" onclick="document.getElementById('nav-mobile').classList.add('open')" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
+
+<!-- MOBILE NAV OVERLAY -->
+<div class="nav-mobile" id="nav-mobile">
+  <button class="nav-mobile-close" onclick="document.getElementById('nav-mobile').classList.remove('open')">&times;</button>
+  <a href="#how" onclick="document.getElementById('nav-mobile').classList.remove('open')">How it works</a>
+  <a href="#features" onclick="document.getElementById('nav-mobile').classList.remove('open')">Features</a>
+  <a href="#pricing" onclick="document.getElementById('nav-mobile').classList.remove('open')">Pricing</a>
+  <a href="app.html" style="background:var(--amber);color:var(--teal2);padding:14px 36px;border-radius:9px;font-weight:900;font-size:20px;font-family:'Barlow Condensed',sans-serif;letter-spacing:.5px">Try Free &rarr;</a>
+</div>
 
 <!-- HERO -->
 <section class="hero">
@@ -466,7 +488,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
       </div>
       <div style="background:rgba(245,158,11,.12);padding:18px 16px;border:1px solid rgba(245,158,11,.2);border-radius:0 12px 12px 0">
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);margin-bottom:14px">Pro &mdash; &pound;15/mo</div>
-        <div style="font-size:13px;color:#fff;line-height:2">&#10003; 5 materials per job<br>&#10003; Unlimited sheet sizes<br>&#10003; Visual layouts<br>&#10003; CSV export<br><span style="color:var(--amber)">&#10003; Multiple materials<br>&#10003; 16-grade UK library<br>&#10003; Job history (50 jobs)<br>&#10003; Unit multiplier</span></div>
+        <div style="font-size:13px;color:#fff;line-height:2">&#10003; 5 materials per job<br>&#10003; Unlimited sheet sizes<br>&#10003; Visual layouts<br>&#10003; CSV export<br><span style="color:var(--amber)">&#10003; Multiple materials<br>&#10003; 23-grade UK library<br>&#10003; Job history (50 jobs)<br>&#10003; Unit multiplier</span></div>
       </div>
     </div>
   </div>
@@ -601,12 +623,12 @@ footer{background:var(--teal2);padding:44px 5% 32px}
     <div class="vs-intro">
       <div class="sec-eyebrow">Comparison</div>
       <h2 class="sec-h2">CutNest vs the competition</h2>
-      <p class="sec-sub">The leading nesting tools are built for one trade. CutNest works across all of them.</p>
+      <p class="sec-sub">How we compare to Opticutter — the most direct alternative.</p>
     </div>
     <table class="vs-table">
       <thead><tr>
         <th>Feature</th>
-        <th>Leading competitor (~&pound;16/mo)</th>
+        <th>Opticutter (~&pound;16/mo)</th>
         <th>CutNest Pro (&pound;15/mo)</th>
       </tr></thead>
       <tbody>
@@ -622,7 +644,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
         <tr><td>Price</td><td style="color:rgba(255,255,255,.4)">&euro;19/month</td><td style="color:var(--amber);font-weight:800">&pound;15/month</td></tr>
       </tbody>
     </table>
-    <div class="vs-note">Opticutter exists as a comparison point. This is an honest feature comparison based on publicly available information at time of writing.</div>
+    <div class="vs-note">Opticutter exists as a comparison point. This is an honest feature comparison based on publicly available information at time of writing. Opticutter is primarily a 1D linear cut optimizer — 2D sheet nesting is not its core focus.</div>
   </div>
 </div>
 
@@ -701,17 +723,20 @@ footer{background:var(--teal2);padding:44px 5% 32px}
         <li><span class="fi">&#10003;</span>Everything in Free</li>
         <li><span class="fi">&#10003;</span>Up to 5 materials per job</li>
         <li><span class="fi">&#10003;</span>Unlimited stock library</li>
-        <li><span class="fi">&#10003;</span>Pre-built UK library (16 grades + prices)</li>
+        <li><span class="fi">&#10003;</span>Pre-built UK library (23 grades + prices)</li>
         <li><span class="fi">&#10003;</span>Job history (last 50 jobs)</li>
         <li><span class="fi">&#10003;</span>Unit quantity multiplier</li>
         <li><span class="fi">&#10003;</span>Grain direction lock</li>
+        <li><span class="fi">&#10003;</span>Guillotine mode for saws &amp; shears</li>
+        <li><span class="fi">&#10003;</span>Remnant &amp; offcut support</li>
+        <li><span class="fi">&#10003;</span>Cost-aware optimisation</li>
         <li><span class="fi">&#10003;</span>Email support</li>
       </ul>
       <a href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank" class="btn-pro">Get Pro &mdash; &pound;15/month &rarr;</a>
       <a href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank" class="annual-link">Or &pound;129/year (save &pound;51)</a>
     </div>
   </div>
-  <p class="pricing-note">&#128274; Secure payment via Lemon Squeezy &middot; VAT included &middot; Licence key emailed instantly</p>
+  <p class="pricing-note">&#128274; Secure payment via Lemon Squeezy &middot; VAT added at checkout where applicable &middot; Licence key emailed instantly</p>
 </section>
 
 <!-- FAQ -->
@@ -756,6 +781,12 @@ footer{background:var(--teal2);padding:44px 5% 32px}
       <div>
         <div class="footer-brand-name">Cut<span>Nest</span></div>
         <div class="footer-brand-desc">Cut list optimisation for any sheet material. Built by a fabricator in Newcastle upon Tyne. Used by fabricators, joiners and trades across the UK.</div>
+        <div style="margin-top:14px;display:flex;gap:10px">
+          <a href="https://www.linkedin.com/company/cutnest" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:rgba(15,76,92,.08);border:1px solid var(--bdr2);border-radius:7px;padding:6px 12px;font-size:12px;color:var(--text2);font-weight:600;transition:.15s" onmouseover="this.style.borderColor='var(--teal3)'" onmouseout="this.style.borderColor='var(--bdr2)'">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            LinkedIn
+          </a>
+        </div>
       </div>
       <div class="footer-links-group">
         <h4>Product</h4>
@@ -940,14 +971,23 @@ document.querySelectorAll('.faq-item').forEach(function(item) {
 })();
 
 function notifySignup() {
-  var email = (document.getElementById('notify-email') || {}).value;
-  if (!email || !email.includes('@')) return;
-  var confirm = document.getElementById('notify-confirm');
-  var input = document.getElementById('notify-email');
-  if (confirm) confirm.style.display = 'block';
-  if (input) input.style.display = 'none';
-  // Store locally and open mailto as fallback
+  const emailEl = document.getElementById('notify-email');
+  const confirmEl = document.getElementById('notify-confirm');
+  if (!emailEl) return;
+  const email = emailEl.value.trim();
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!re.test(email)) {
+    emailEl.style.borderColor = '#dc2626';
+    emailEl.placeholder = 'Enter a valid email';
+    return;
+  }
+  emailEl.style.borderColor = '';
+  // Store locally
   try { localStorage.setItem('cutnest-notify', email); } catch(e) {}
+  // Open mailto so the email actually lands in Ryan's inbox
+  window.location.href = 'mailto:hello@cutnest.co.uk?subject=CutNest%20Feature%20Updates&body=Please%20add%20' + encodeURIComponent(email) + '%20to%20the%20CutNest%20updates%20list.';
+  if (confirmEl) confirmEl.style.display = 'block';
+  emailEl.style.display = 'none';
 }
 
 </script>
