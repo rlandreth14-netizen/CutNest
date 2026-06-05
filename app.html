@@ -28,6 +28,7 @@
   --sky:#e8f4f8;--sky2:#d0eaf2;
   --text:#0d2d36;--text2:#2a5a6a;--muted:#6a9aaa;
   --green:#059669;--red:#dc2626;--yel:#d97706;
+  --navy:#0d2d36;--ora:#d97706;
   --sh:0 2px 8px rgba(15,76,92,.08);--sh2:0 4px 24px rgba(15,76,92,.14);
 }
 html,body{min-height:100vh}
@@ -143,6 +144,8 @@ tr:last-child td{border-bottom:none}
 .pricing-ttl::after{content:"";flex:1;height:1px;background:var(--sky2)}
 .pres-card{background:var(--sky);border:1.5px solid var(--bdr2);border-radius:12px;padding:13px 15px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:11px;flex-wrap:wrap}
 .pres-name{font-size:15px;font-weight:700;color:var(--teal);margin-bottom:5px}
+.pres-left{flex:1;min-width:0}
+.pres-right{flex-shrink:0;text-align:center;min-width:70px}
 .pres-thk{font-size:12px;color:var(--muted);font-weight:400;margin-left:5px}
 .pres-sizes{display:flex;gap:6px;flex-wrap:wrap}
 .pres-size-chip{background:#fff;border:1px solid var(--bdr);border-radius:6px;padding:3px 8px;font-size:12px;color:var(--text2)}
@@ -159,6 +162,7 @@ tr:last-child td{border-bottom:none}
 .stat-l{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
 .stat-v{font-family:"Barlow Condensed",sans-serif;font-size:21px;font-weight:800;color:var(--teal)}
 .detail-section{background:var(--white);border-top:2px solid var(--sky2);padding:16px}
+.ds-title{font-family:"Barlow Condensed",sans-serif;font-size:14px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--teal);margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .mat-section-header{font-family:"Barlow Condensed",sans-serif;font-size:13px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--teal);padding:13px 16px 6px;border-top:2px solid var(--sky2);display:flex;align-items:center;gap:7px}
 .mat-section-header:first-child{border-top:none}
 .ds-bar{width:4px;height:17px;background:var(--amber);border-radius:2px;flex-shrink:0}
@@ -281,6 +285,7 @@ tr:last-child td{border-bottom:none}
   .af-row2{grid-template-columns:1fr 1fr auto}
   .edit-basic-grid{grid-template-columns:1fr 1fr}
   .sizes-edit{grid-template-columns:1fr}
+  .calc-bar{position:sticky;bottom:0;z-index:20;border-radius:0;border-left:none;border-right:none;border-bottom:none;margin-left:-10px;margin-right:-10px;padding:10px 12px}
 }
 </style>
 </head>
@@ -786,7 +791,14 @@ function removePiece(matId, pi) {
 }
 function updatePiece(matId, pi, field, val) {
   const m = mats.find(m => m.id === matId);
-  if (m) m.pieces[pi][field] = val;
+  if (m) {
+    m.pieces[pi][field] = val;
+    saveState();
+    if (calcResult) {
+      const sb = document.getElementById('stale-banner');
+      if (sb) sb.style.display = 'block';
+    }
+  }
 }
 
 // ── ALGORITHM ─────────────────────────────────
@@ -886,7 +898,8 @@ function guillotinePackBest(sheetW, sheetH, queue, allowRotation) {
   return best;
 }
 
-function maxRectsPack(sheetW, sheetH, queue) {
+function maxRectsPack(sheetW, sheetH, queue, allowRot) {
+  const allowRotation = allowRot !== false;
   const placed = [];
   let rem = [...queue];
   let free = [{x:0, y:0, w:sheetW, h:sheetH}];
@@ -899,7 +912,7 @@ function maxRectsPack(sheetW, sheetH, queue) {
     for (let i = 0; i < rem.length; i++) {
       const pc = rem[i];
       const orientations = [{pw:pc.w, ph:pc.h, rot:false}];
-      if (pc.w !== pc.h) orientations.push({pw:pc.h, ph:pc.w, rot:true});
+      if (allowRotation && pc.w !== pc.h) orientations.push({pw:pc.h, ph:pc.w, rot:true});
 
       for (const {pw, ph, rot} of orientations) {
         for (const r of free) {
@@ -957,9 +970,10 @@ function maxRectsPack(sheetW, sheetH, queue) {
 }
 
 // Run packing with multiple piece orderings, pick best result for this sheet
-function packSheetBest(sheetW, sheetH, queue) {
-  const cm = (arguments[4] || 'free');
-  if (cm === 'guillotine') return guillotinePackBest(sheetW, sheetH, queue, allowRotation);
+function packSheetBest(sheetW, sheetH, queue, allowRot, cuttingMethod) {
+  const cm = cuttingMethod || 'free';
+  const ar = allowRot !== false;
+  if (cm === 'guillotine') return guillotinePackBest(sheetW, sheetH, queue, ar);
 
   const sorters = [
   q => [...q].sort((a,b) => b.w*b.h - a.w*a.h),                      // largest area first
@@ -973,7 +987,7 @@ function packSheetBest(sheetW, sheetH, queue) {
 ];
   let best = null;
   for (const sortFn of sorters) {
-    const result = maxRectsPack(sheetW, sheetH, sortFn(queue));
+    const result = maxRectsPack(sheetW, sheetH, sortFn(queue), ar);
     if (!best ||
         result.placed.length > best.placed.length ||
         (result.placed.length === best.placed.length &&
@@ -985,24 +999,14 @@ function packSheetBest(sheetW, sheetH, queue) {
 }
 
 // Estimate minimum sheets still needed for remaining pieces (lower bound)
-function estimateRemaining(queue, sizes) {
-
+function estimateRemaining(queue, sizes, allowRot, cm) {
   if (!queue.length) return 0;
-
   let remaining = [...queue];
   let sheetsNeeded = 0;
-
   while (remaining.length > 0 && sheetsNeeded < 10) {
-
     let bestFit = null;
-
     for (const sz of sizes) {
-
-      const r = packSheetBest(
-        sz.w,
-        sz.h,
-        remaining
-      );
+      const r = packSheetBest(sz.w, sz.h, remaining, allowRot, cm);
 
       if (
         !bestFit ||
@@ -1065,16 +1069,17 @@ function runMat(libMat, pieces, remnant) {
 
   while (queue.length > 0 && limit-- > 0) {
     let bestChoice = null;
-let bestScore = Infinity;
+    let bestScore = Infinity;
+    const _ar = libMat.allowRotation !== false;
+    const _cm = libMat.cuttingMethod || 'free';
 
-for (const sz of sizes) {
-
-  const r = packSheetBest(sz.w, sz.h, queue);
+    for (const sz of sizes) {
+      const r = packSheetBest(sz.w, sz.h, queue, _ar, _cm);
 
   if (!r.placed.length) continue;
 
   // Estimate sheets still needed after this layout
-  const estRemaining = estimateRemaining(r.unplaced, sizes);
+      const estRemaining = estimateRemaining(r.unplaced, sizes, _ar, _cm);
 
   // Prefer smaller sheets
   const sheetSizeWeight =
@@ -1124,6 +1129,24 @@ for (const sz of sizes) {
 function calculate() {
   document.getElementById('err-box').style.display='none';
   document.getElementById('output').style.display='none';
+  const overlay = document.getElementById('calc-overlay');
+  if (overlay) overlay.classList.remove('hidden');
+  const btn = document.getElementById('calc-btn');
+  if (btn) btn.disabled = true;
+
+  setTimeout(function() {
+    try {
+      _doCalculate();
+    } finally {
+      if (overlay) overlay.classList.add('hidden');
+      if (btn) btn.disabled = false;
+    }
+  }, 30);
+}
+
+function _doCalculate() {
+  document.getElementById('err-box').style.display='none';
+  document.getElementById('output').style.display='none';
 
   const errors = [];
   const results = [];
@@ -1146,6 +1169,7 @@ function calculate() {
 
   if (errors.length) { showErr(errors.join(' | ')); return; }
   calcResult = { results };
+  saveToHistory();
   renderOutput();
 }
 
@@ -1174,8 +1198,12 @@ function renderOutput() {
   document.getElementById('pricing-cards').innerHTML = results.map(({libMat, sheets, unplaced, sizeMap}) => {
     const total = sheets.length;
     const chips = Object.entries(sizeMap).map(([dim,cnt]) => {
-      quoteLines.push(`${libMat.name}: ${cnt} sheet${cnt>1?'s':''} — ${dim}mm`);
-      return `<div class="pres-size-chip"><b>${cnt}</b> × ${dim}mm</div>`;
+      const [sw, sh] = dim.split('×').map(Number);
+      const matchedSize = [libMat.size1, libMat.size2].find(s => s && s.w === sw && s.h === sh);
+      const unitPrice = matchedSize && matchedSize.price > 0 ? matchedSize.price : 0;
+      const lineTotal = unitPrice * cnt;
+      quoteLines.push(`${libMat.name}: ${cnt} sheet${cnt>1?'s':''} — ${dim}mm${unitPrice ? ' @ £'+unitPrice+' each' : ''}`);
+      return `<div class="pres-size-chip"><b>${cnt}</b> × ${dim}mm${unitPrice ? `<span style="color:var(--green);margin-left:5px">£${lineTotal.toFixed(0)}</span>` : ''}</div>`;
     }).join('');
 
     return `<div class="pres-card">
@@ -1193,7 +1221,28 @@ function renderOutput() {
     </div>`;
   }).join('');
 
-  window._quoteText = ['CutNest Cut List', 'Job: ' + ((document.getElementById('job-ref')||{}).value||'Untitled'), 'Date: ' + new Date().toLocaleDateString('en-GB'), ''].concat(quoteLines).join('\n');
+  // Total cost
+  let grandTotal = 0;
+  let allPriced = true;
+  results.forEach(({libMat, sheets}) => {
+    sheets.forEach(sh => {
+      const size = (libMat.size2 && libMat.size2.w && libMat.size2.h &&
+                    sh.sheetW === libMat.size2.w && sh.sheetH === libMat.size2.h)
+                    ? libMat.size2 : libMat.size1;
+      if (size && size.price > 0) grandTotal += size.price;
+      else allPriced = false;
+    });
+  });
+  const tcBar = document.getElementById('total-cost-bar');
+  const tcVal = document.getElementById('total-cost-val');
+  if (tcBar && tcVal && grandTotal > 0) {
+    tcVal.textContent = '£' + grandTotal.toFixed(2);
+    tcBar.style.display = 'flex';
+  } else if (tcBar) {
+    tcBar.style.display = 'none';
+  }
+
+  window._quoteText = ['CutNest Cut List', 'Job: ' + ((document.getElementById('job-ref')||{}).value||'Untitled'), 'Date: ' + new Date().toLocaleDateString('en-GB'), ''].concat(quoteLines).concat(grandTotal > 0 ? ['', 'Total Material Cost: £' + grandTotal.toFixed(2)] : []).join('\n');
 
   // Stats
   const totalSheets = results.reduce((s,r)=>s+r.sheets.length,0);
@@ -1204,7 +1253,9 @@ function renderOutput() {
   document.getElementById('s-sheets').textContent = totalSheets;
   document.getElementById('s-placed').textContent = totalPlaced;
   const su=document.getElementById('s-unplaced'); su.textContent=totalUnplaced; su.style.color=totalUnplaced>0?'var(--red)':'var(--green)';
-  const sw=document.getElementById('s-waste'); sw.textContent=avgWaste+'%'; sw.style.color=avgWaste>30?'var(--red)':'var(--navy)';
+  const sw=document.getElementById('s-waste');
+  sw.textContent=avgWaste+'%';
+  sw.style.color = avgWaste <= 15 ? 'var(--green)' : avgWaste <= 30 ? 'var(--yel)' : 'var(--red)';
 
   // Per-material visuals
   const visWrap = document.getElementById('mat-visuals');
@@ -1280,19 +1331,32 @@ function copyQuote() {
 
 function exportCSV() {
   if (!calcResult) return;
+  let csvTotal = 0;
+  const summaryRows = calcResult.results.flatMap(({libMat,sizeMap}) =>
+    Object.entries(sizeMap).map(([dim,c]) => {
+      const [sw,sh] = dim.split('×').map(Number);
+      const sz = [libMat.size1,libMat.size2].find(s=>s&&s.w===sw&&s.h===sh);
+      const lineTotal = sz && sz.price > 0 ? sz.price * c : 0;
+      csvTotal += lineTotal;
+      return [`${c}x ${libMat.name} ${dim}mm`, lineTotal > 0 ? `£${lineTotal.toFixed(2)}` : ''];
+    })
+  );
   const rows = [
-    [`CutNest — ${new Date().toLocaleDateString()}`],[`Blade Kerf: ${KERF}mm`],[],
-    ['SHEET USAGE SUMMARY'],
-    ...calcResult.results.flatMap(({libMat,sizeMap})=>Object.entries(sizeMap).map(([dim,c])=>[`${c}x ${libMat.name} ${dim}mm`])),
+    [`CutNest — ${new Date().toLocaleDateString()}`],[`Job: ${(document.getElementById('job-ref')||{}).value||'Untitled'}`],[`Blade Kerf: ${KERF}mm`],[],
+    ['SHEET USAGE SUMMARY'],['Material & Size','Cost'],
+    ...summaryRows,
+    ...(csvTotal > 0 ? [['TOTAL MATERIAL COST',`£${csvTotal.toFixed(2)}`]] : []),
     [],['PLACEMENT DETAIL'],
     ['Material','Sheet #','Sheet Size','Label','W','H','X','Y','Rotated'],
     ...calcResult.results.flatMap(({libMat,sheets})=>sheets.flatMap((sh,si)=>sh.placed.map(p=>[libMat.name,si+1,`${sh.sheetW}x${sh.sheetH}`,p.label||`P${p.pieceIndex+1}`,p.w,p.h,p.x,p.y,p.rotated?'Yes':'No']))),
   ];
   const unplAll=calcResult.results.flatMap(({libMat,unplaced})=>unplaced.map(p=>[libMat.name,p.label||'?',p.w,p.h]));
   if(unplAll.length){rows.push([],['UNPLACED'],['Material','Label','W','H'],...unplAll);}
+  const jr = (document.getElementById('job-ref')||{}).value||'cutlist';
+  const safe = jr.replace(/[^a-z0-9]/gi,'-').toLowerCase();
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'}));
-  a.download=`cutnest-cutlist-${Date.now()}.csv`; a.click();
+  a.download=`cutnest-${safe}-${new Date().toISOString().slice(0,10)}.csv`; a.click();
 }
 
 // ── LIBRARY MODAL ─────────────────────────────
@@ -1345,10 +1409,12 @@ function renderLibEntries() {
           <div class="se-box"><div class="se-title">📐 Size 1</div><div class="se-inputs" style="grid-template-columns:1fr 1fr 1fr">
             <div><label class="lbl">W (mm)</label><input type="number" value="${e.size1.w}" oninput="updSz(${e.id},1,'w',+this.value)"/></div>
             <div><label class="lbl">H (mm)</label><input type="number" value="${e.size1.h}" oninput="updSz(${e.id},1,'h',+this.value)"/></div>
+            <div><label class="lbl">Price £</label><input type="number" value="${e.size1.price||''}" placeholder="0" oninput="updSz(${e.id},1,'price',+this.value)"/></div>
           </div></div>
           <div class="se-box"><div class="se-title">📐 Size 2</div><div class="se-inputs" style="grid-template-columns:1fr 1fr 1fr">
             <div><label class="lbl">W (mm)</label><input type="number" value="${e.size2&&e.size2.w||''}" placeholder="optional" oninput="updSz(${e.id},2,'w',+this.value)"/></div>
             <div><label class="lbl">H (mm)</label><input type="number" value="${e.size2&&e.size2.h||''}" placeholder="optional" oninput="updSz(${e.id},2,'h',+this.value)"/></div>
+            <div><label class="lbl">Price £</label><input type="number" value="${e.size2&&e.size2.price||''}" placeholder="opt" oninput="updSz(${e.id},2,'price',+this.value)"/></div>
           </div></div>
         </div>
         <div style="text-align:right;margin-top:9px"><button class="btn-sm-gr" onclick="toggleEdit(${e.id})">✓ Done</button></div>
@@ -1361,20 +1427,21 @@ function flushEditForms() {
   pending.forEach(e => {
     const ed = document.getElementById(`ee-${e.id}`);
     if (!ed || ed.style.display === 'none') return;
-    // text fields
     const nameEl  = ed.querySelector('input[type=text]:nth-of-type(1)');
     const matEl   = ed.querySelector('input[type=text]:nth-of-type(2)');
     const thkEl   = ed.querySelector('input[type=text]:nth-of-type(3)');
     if (nameEl)  e.name      = nameEl.value.trim()  || e.name;
     if (matEl)   e.material  = matEl.value.trim();
     if (thkEl)   e.thickness = thkEl.value.trim();
-    // number fields — grab by position in the edit form
     const nums = ed.querySelectorAll('input[type=number]');
+    if (!e.size1) e.size1 = {w:'',h:'',price:0};
+    if (!e.size2) e.size2 = {w:'',h:'',price:0};
     if (nums[0] && nums[0].value !== '') e.size1.w = +nums[0].value;
     if (nums[1] && nums[1].value !== '') e.size1.h = +nums[1].value;
-    if (!e.size2) e.size2 = {w:'', h:''};
-    if (nums[2] && nums[2].value !== '') e.size2.w = +nums[2].value;
-    if (nums[3] && nums[3].value !== '') e.size2.h = +nums[3].value;
+    if (nums[2] && nums[2].value !== '') e.size1.price = +nums[2].value;
+    if (nums[3] && nums[3].value !== '') e.size2.w = +nums[3].value;
+    if (nums[4] && nums[4].value !== '') e.size2.h = +nums[4].value;
+    if (nums[5] && nums[5].value !== '') e.size2.price = +nums[5].value;
   });
 }
 
@@ -1394,15 +1461,17 @@ function addLibEntry(){
   const name=document.getElementById('n-name').value.trim();
   const w1=+document.getElementById('n-w1').value, h1=+document.getElementById('n-h1').value;
   if(!name||!w1||!h1){alert('Name, Size 1 Width and Height are required.');return;}
+  const pr1=+document.getElementById('n-pr1').value||0;
+  const pr2=+document.getElementById('n-pr2').value||0;
   pending.push({
     id:Date.now(), name,
     material:document.getElementById('n-mat').value.trim(),
     thickness:document.getElementById('n-thk').value.trim(),
     grade:'',
-    size1:{w:w1, h:h1},
-    size2:{w:+document.getElementById('n-w2').value||'', h:+document.getElementById('n-h2').value||''}
+    size1:{w:w1, h:h1, price:pr1},
+    size2:{w:+document.getElementById('n-w2').value||'', h:+document.getElementById('n-h2').value||'', price:pr2}
   });
-  ['n-name','n-mat','n-thk','n-w1','n-h1','n-w2','n-h2'].forEach(id=>document.getElementById(id).value='');
+  ['n-name','n-mat','n-thk','n-w1','n-h1','n-pr1','n-w2','n-h2','n-pr2'].forEach(id=>document.getElementById(id).value='');
   renderLibEntries();
 }
 
@@ -1537,6 +1606,7 @@ function updateProUI(){
   setDisplay('pro-banner',isPro?'none':'flex');
   setDisplay('history-btn',isPro?'inline-flex':'none');
   setDisplay('qty-wrap',isPro?'block':'none');
+  setDisplay('ghost-mat-block',isPro?'none':'block');
   const amw=document.getElementById('add-mat-wrap');
   if(amw)amw.style.display=(isPro&&mats&&mats.length<5)?'block':'none';
   const mlt=document.getElementById('master-lib-txt');
@@ -1550,8 +1620,36 @@ function handleRoute(){}
 function acceptCookies(){localStorage.setItem('cutnest-cookies','1');}
 
 const LEGAL_CONTENT={
-  terms:{title:'Terms of Service',body:'<p><b>CutNest Terms - June 2025.</b> Browser-based nesting, UK sole trader. Pro via Lemon Squeezy at 15/mo or 129/yr. Monthly cancels anytime. Contact hello@cutnest.co.uk.</p>'},
-  privacy:{title:'Privacy Policy',body:'<p><b>CutNest Privacy - June 2025.</b> No tracking. Payments via Lemon Squeezy only. Data in your browser only, never sent anywhere.</p>'}
+  terms:{title:'Terms of Service',body:`
+    <p style="margin-bottom:12px"><strong>CutNest Terms of Service — Effective June 2025</strong></p>
+    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest is operated as a sole trader business by Ryan Landreth, Newcastle upon Tyne, United Kingdom. By using CutNest you agree to these terms.</p>
+    <p style="margin-bottom:6px;font-weight:700;font-size:13px">The Service</p>
+    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest provides browser-based cut list optimisation software. The free tier provides limited features. The Pro tier provides full access via a paid subscription processed by Lemon Squeezy.</p>
+    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Subscriptions &amp; Payment</p>
+    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">Pro subscriptions are £15/month or £129/year, billed via Lemon Squeezy. Monthly subscriptions can be cancelled at any time — access continues until the end of the billing period. Annual subscriptions are non-refundable except where required by law. Lemon Squeezy acts as the Merchant of Record for all transactions.</p>
+    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Licence</p>
+    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">Your licence key is for personal or single-business use only. Keys may not be shared, resold, or used across multiple unrelated businesses. We reserve the right to deactivate keys used in breach of this policy.</p>
+    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Limitation of Liability</p>
+    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest is a planning aid. You are responsible for verifying all outputs before ordering materials or cutting. We accept no liability for material waste, over-ordering, or losses arising from reliance on CutNest results.</p>
+    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Contact</p>
+    <p style="font-size:13px">hello@cutnest.co.uk</p>
+  `},
+  privacy:{title:'Privacy Policy',body:`
+    <p style="margin-bottom:12px"><strong>CutNest Privacy Policy — Effective June 2025</strong></p>
+    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest is operated by Ryan Landreth, Newcastle upon Tyne, UK. We take privacy seriously. This policy explains what data we handle and why.</p>
+    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Data we do NOT collect</p>
+    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest runs entirely in your browser. Your job data, piece dimensions, and material library are stored only in your browser's local storage — never sent to our servers. We do not use tracking cookies, analytics, or advertising pixels.</p>
+    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Payment data</p>
+    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">All payments are processed by Lemon Squeezy, who act as Merchant of Record. We receive confirmation that a licence key is valid but never see your card details. Lemon Squeezy's privacy policy applies to payment processing.</p>
+    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Licence key validation</p>
+    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">When you enter a licence key, it is sent to the Lemon Squeezy API to verify it is active. This is the only external request CutNest makes. Your key is then stored in your browser's local storage only.</p>
+    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Your rights</p>
+    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">Because we hold no personal data on our servers, there is nothing for us to delete or export. You can clear all CutNest data at any time by clearing your browser's local storage.</p>
+    <p style="margin-bottom:6px;font-weight:700;font-size:13px">ICO Registration</p>
+    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest is registered with the UK Information Commissioner's Office (ICO).</p>
+    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Contact</p>
+    <p style="font-size:13px">hello@cutnest.co.uk</p>
+  `}
 };
 function openLegal(type){
   const lm=document.getElementById('legal-modal'),lt=document.getElementById('legal-modal-title'),lb=document.getElementById('legal-modal-body');
