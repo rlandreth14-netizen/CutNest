@@ -19,6 +19,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230f4c5c'/><rect x='4' y='4' width='11' height='8' rx='1' fill='%23f59e0b'/><rect x='17' y='4' width='11' height='13' rx='1' fill='white' opacity='.9'/><rect x='4' y='14' width='11' height='14' rx='1' fill='white' opacity='.9'/><rect x='17' y='19' width='11' height='9' rx='1' fill='%23f59e0b' opacity='.8'/></svg>"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script>try{if(localStorage.getItem('cutnest-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -30,6 +31,12 @@
   --green:#059669;--red:#dc2626;--yel:#d97706;
   --navy:#0d2d36;--ora:#d97706;
   --sh:0 2px 8px rgba(15,76,92,.08);--sh2:0 4px 24px rgba(15,76,92,.14);
+}
+[data-theme=dark]{
+  --bg:#0d1f26;--white:#132530;--bdr:#1e3d4d;--bdr2:#2a5a6a;
+  --sky:#111e26;--sky2:#162c38;
+  --text:#d4eaf2;--text2:#8bb8c8;--muted:#4a7a8a;
+  --sh:0 2px 8px rgba(0,0,0,.3);--sh2:0 4px 24px rgba(0,0,0,.4);
 }
 html,body{min-height:100vh}
 body{background:var(--bg);color:var(--text);font-family:"Barlow",sans-serif}
@@ -65,7 +72,8 @@ body{background:var(--bg);color:var(--text);font-family:"Barlow",sans-serif}
 
 /* ── INPUTS ── */
 .lbl{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:3px}
-input[type=text],input[type=number],select{width:100%;background:var(--sky);border:1px solid var(--bdr);color:var(--text);border-radius:7px;padding:7px 10px;font-family:"Barlow",sans-serif;font-size:13px;outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none}
+input[type=text],input[type=number],select{width:100%;background:var(--sky);border:1px solid var(--bdr);color:var(--text);border-radius:7px;padding:7px 10px;font-family:"Barlow",sans-serif;font-size:16px;outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none}
+@media(min-width:641px){input[type=text],input[type=number],select{font-size:13px}}
 input:focus,select:focus{border-color:var(--teal3);background:#fff}
 input[type=number]::-webkit-inner-spin-button{opacity:.3}
 select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath fill='%236a9aaa' d='M5 7L0 0h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer}
@@ -88,7 +96,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .add-mat-icon{width:24px;height:24px;border-radius:50%;background:var(--sky2);display:flex;align-items:center;justify-content:center;font-size:14px}
 
 /* ── MAT BLOCK ── */
-.mat-block{border-radius:14px;overflow:hidden;box-shadow:var(--sh2);margin-bottom:18px;border:1px solid var(--bdr)}
+.mat-block{border-radius:14px;overflow:clip;box-shadow:var(--sh2);margin-bottom:18px;border:1px solid var(--bdr);transition:box-shadow .2s}
+.mat-block:hover{box-shadow:0 6px 28px rgba(15,76,92,.18)}
 .mat-block-cap{background:var(--teal);padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
 .mat-cap-left{display:flex;align-items:center;gap:10px}
 .mat-num{width:27px;height:27px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.3);font-family:"Barlow Condensed",sans-serif;font-size:13px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -112,22 +121,21 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .bulk-add-inner span{font-size:12px;color:var(--text2);white-space:nowrap}
 .bulk-add-inner input{width:52px;padding:4px 6px;font-size:13px;text-align:center}
 .btn-bulk{background:var(--teal);border:none;color:#fff;border-radius:6px;padding:5px 12px;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:13px;white-space:nowrap}
-.btn-dup{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 4px;line-height:1;transition:color .15s}
-.btn-dup:hover{color:var(--teal3)}
 
 /* ── TABLE ── */
 table{width:100%;border-collapse:collapse}
-th{text-align:left;padding:6px 6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);border-bottom:2px solid var(--sky2)}
-td{padding:4px 5px;border-bottom:1px solid var(--sky);vertical-align:middle}
-td input{padding:6px 8px;font-size:13px}
+th{text-align:left;padding:5px 6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);border-bottom:2px solid var(--sky2)}
+td{padding:3px 4px;border-bottom:1px solid var(--sky);vertical-align:middle}
+td input{padding:5px 7px;font-size:13px}
 tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(232,244,248,.5)}
 
 /* ── CALCULATE ── */
 .calc-bar{background:var(--white);border:1px solid var(--bdr);border-radius:12px;padding:13px 16px;box-shadow:var(--sh);display:flex;gap:12px;align-items:center;margin-bottom:16px}
 .btn-calc{flex:1;background:linear-gradient(135deg,var(--teal2),var(--teal));color:#fff;font-size:17px;padding:13px;border-radius:9px;letter-spacing:2px;border:none;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-weight:900;transition:all .2s;box-shadow:0 4px 14px rgba(15,76,92,.3)}
 .btn-calc:hover{filter:brightness(1.1);transform:translateY(-1px)}
 .btn-calc:disabled{opacity:.6;cursor:not-allowed;transform:none}
-.calc-note{font-size:12px;color:var(--muted);max-width:140px;line-height:1.5;flex-shrink:0}
+.calc-note{display:flex;gap:10px;flex-wrap:wrap;flex-shrink:0;align-items:center}
 .err{background:#fff5f5;border:1.5px solid var(--red);border-radius:8px;padding:10px 13px;color:var(--red);font-size:13px;margin-bottom:13px}
 .stale-banner-inner{background:#fffbf0;border:1.5px solid var(--yel);border-radius:10px;padding:9px 14px;margin-bottom:11px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .btn-recalc{background:var(--yel);border:none;color:#fff;border-radius:7px;padding:6px 13px;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:13px;white-space:nowrap}
@@ -137,8 +145,6 @@ tr:last-child td{border-bottom:none}
 .results-hdr{background:var(--teal2);padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
 .results-title{font-family:"Barlow Condensed",sans-serif;font-size:17px;font-weight:800;color:#fff;letter-spacing:1px}
 .res-acts{display:flex;gap:6px}
-.btn-exp{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:7px;padding:5px 11px;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:12px;letter-spacing:.5px;transition:.15s}
-.btn-exp:hover{background:rgba(255,255,255,.24)}
 .pricing-wrap{background:var(--white);padding:16px}
 .pricing-ttl{font-family:"Barlow Condensed",sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--teal3);margin-bottom:12px;display:flex;align-items:center;gap:7px}
 .pricing-ttl::after{content:"";flex:1;height:1px;background:var(--sky2)}
@@ -186,7 +192,7 @@ tr:last-child td{border-bottom:none}
 .rot-badge{margin-top:2px;background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.4);border-radius:4px;padding:1px 4px;font-size:8px;letter-spacing:.5px;font-weight:700}
 
 /* ── MODALS ── */
-.overlay{position:fixed;inset:0;background:rgba(5,20,28,.65);z-index:100;display:flex;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(3px)}
+.overlay{position:fixed;inset:0;background:rgba(5,20,28,.72);z-index:100;display:flex;align-items:center;justify-content:center;padding:14px;-webkit-overflow-scrolling:touch;overflow-y:auto}
 .modal{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.25);width:100%;max-width:820px;max-height:90vh;overflow-y:auto}
 .modal-hdr{background:var(--teal2);border-radius:16px 16px 0 0;padding:15px 20px;display:flex;justify-content:space-between;align-items:center}
 .modal-title{font-family:"Barlow Condensed",sans-serif;font-size:20px;font-weight:800;color:#fff}
@@ -227,7 +233,7 @@ tr:last-child td{border-bottom:none}
 .hist-actions{display:flex;gap:6px;flex-shrink:0}
 
 /* ── SPINNER ── */
-.calc-overlay{position:fixed;inset:0;background:rgba(5,20,28,.65);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.calc-overlay{position:fixed;inset:0;background:rgba(5,20,28,.75);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;-webkit-overflow-scrolling:touch}
 .calc-overlay.hidden{display:none}
 .spinner{width:48px;height:48px;border:5px solid rgba(255,255,255,.2);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:14px}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -239,7 +245,7 @@ tr:last-child td{border-bottom:none}
 .ghost-block{border-radius:14px;overflow:hidden;margin-bottom:18px;border:2px dashed var(--bdr2);position:relative;cursor:pointer;transition:.2s}
 .ghost-block:hover{border-color:var(--amber);transform:translateY(-1px)}
 .ghost-inner{padding:20px;filter:blur(2px);opacity:.4;pointer-events:none;user-select:none}
-.ghost-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(240,247,249,.7);backdrop-filter:blur(1px)}
+.ghost-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(240,247,249,.88)}
 .ghost-lock{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--teal3));display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 14px rgba(15,76,92,.25)}
 .ghost-title{font-family:"Barlow Condensed",sans-serif;font-size:16px;font-weight:800;color:var(--teal);text-align:center}
 .ghost-desc{font-size:12px;color:var(--text2);text-align:center;max-width:240px;line-height:1.5}
@@ -250,7 +256,68 @@ tr:last-child td{border-bottom:none}
 .ghost-hist-line.short{width:40%}
 
 
-/* ── REMNANT / OFFCUT ── */
+/* ── PIECE COUNT BADGE ── */
+.pieces-label{font-family:"Barlow Condensed",sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--teal);margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.piece-count-badge{background:var(--sky2);color:var(--teal3);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.5px;font-family:"Barlow",sans-serif;text-transform:none}
+
+/* ── EXPORT BUTTONS — defined once cleanly ── */
+.btn-exp{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:7px;padding:5px 11px;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:12px;letter-spacing:.5px;transition:.15s;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.btn-exp:hover{background:rgba(255,255,255,.28)}
+.btn-exp.pdf-btn:hover{background:rgba(220,38,38,.2);border-color:rgba(220,38,38,.5)}
+
+/* ── WASTE HATCH PATTERN ── */
+.sheet-canvas{position:relative;background:repeating-linear-gradient(-45deg,rgba(15,76,92,.04),rgba(15,76,92,.04) 1px,transparent 1px,transparent 8px);border:2px solid var(--bdr2);border-radius:3px;overflow:hidden}
+
+/* ── KERF TOOLTIP ── */
+.kerf-tip{display:inline-flex;align-items:center;gap:5px}
+.kerf-tip-icon{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.2);color:rgba(255,255,255,.6);font-size:9px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;cursor:help;position:relative}
+.kerf-tip-icon:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--teal2);color:#fff;font-size:10px;font-weight:400;padding:5px 9px;border-radius:6px;white-space:nowrap;pointer-events:none;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+
+/* ── QTY TOUCH CONTROLS ── */
+.qty-wrap-mobile{display:inline-flex;align-items:center;border:1.5px solid var(--bdr);border-radius:7px;overflow:hidden;background:#fff;height:32px}
+.qty-btn{background:var(--sky);border:none;width:32px;height:32px;font-size:16px;cursor:pointer;color:var(--teal);font-weight:700;display:flex;align-items:center;justify-content:center;touch-action:manipulation;flex-shrink:0;transition:background .1s;-webkit-user-select:none}
+.qty-btn:active{background:var(--sky2)}
+.qty-input-mobile{border:none;background:#fff;text-align:center;width:40px;height:32px;font-size:13px;font-weight:700;color:var(--text);outline:none;padding:0;font-family:"Barlow",sans-serif}
+.qty-input-mobile:focus{background:var(--sky)}
+/* ── SHEET NAVIGATION ── */
+.sheet-nav{display:flex;gap:6px;flex-wrap:wrap;padding:10px 16px;background:var(--sky);border-top:1px solid var(--bdr);border-bottom:1px solid var(--bdr)}
+.sheet-nav-btn{background:var(--white);border:1px solid var(--bdr2);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;font-family:"Barlow Condensed",sans-serif;letter-spacing:.5px;transition:.15s;white-space:nowrap}
+.sheet-nav-btn:hover{background:var(--teal);color:#fff;border-color:var(--teal)}
+
+/* ── KEYBOARD SHORTCUT LEGEND ── */
+.shortcut-legend{display:flex;gap:12px;flex-wrap:wrap;padding:8px 16px;background:var(--sky);border-top:1px solid var(--bdr);font-size:11px;color:var(--muted)}
+.shortcut-item{display:flex;align-items:center;gap:4px}
+kbd{background:var(--white);border:1px solid var(--bdr2);border-radius:4px;padding:1px 5px;font-size:10px;font-family:monospace;color:var(--text2);box-shadow:0 1px 0 var(--bdr2)}
+
+/* ── DARK MODE OVERRIDES ── */
+[data-theme=dark] .mat-block-cap{background:var(--teal2)}
+[data-theme=dark] .mat-body,[data-theme=dark] .modal,[data-theme=dark] .full-table-wrap,[data-theme=dark] .pricing-wrap,[data-theme=dark] .detail-section{background:var(--white)}
+[data-theme=dark] td{border-color:var(--bdr)}
+[data-theme=dark] .pres-card{background:var(--sky);border-color:var(--bdr2)}
+[data-theme=dark] .pres-size-chip{background:var(--sky2);border-color:var(--bdr)}
+[data-theme=dark] .stat-c{background:var(--sky);border-color:var(--bdr)}
+[data-theme=dark] .lm-card{background:var(--sky);border-color:var(--bdr)}
+[data-theme=dark] .lib-entry,[data-theme=dark] .hist-entry{background:var(--sky);border-color:var(--bdr)}
+[data-theme=dark] input,[data-theme=dark] select{background:var(--sky);border-color:var(--bdr);color:var(--text)}
+[data-theme=dark] input:focus,[data-theme=dark] select:focus{background:var(--sky2)}
+[data-theme=dark] .se-box,[data-theme=dark] .edit-basic{background:var(--sky);border-color:var(--bdr)}
+[data-theme=dark] .add-form{background:var(--sky2);border-color:var(--bdr2)}
+[data-theme=dark] .calc-bar,[data-theme=dark] .stale-banner-inner{background:var(--white);border-color:var(--bdr)}
+[data-theme=dark] body{background:var(--bg)}
+[data-theme=dark] .ghost-overlay{background:rgba(13,31,38,.9)}
+[data-theme=dark] tr:hover td{background:rgba(22,44,56,.5)}
+.sheet-vis{margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--sky2)}
+.sheet-vis:last-child{border-bottom:none;margin-bottom:0}
+.sv-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);padding:3px 0;border-bottom:1px solid var(--sky);margin-bottom:2px}
+.ldot{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+.plbl{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-weight:700;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.5);padding:2px;line-height:1.2;overflow:hidden}
+.warn{background:#fff5f5;border:1.5px solid var(--red);border-radius:8px;padding:9px 12px;color:var(--red);font-size:12px;margin-top:10px;line-height:1.5}
+/* ── REMNANT FORM ── */
+.remnant-form{background:var(--sky);border:1px solid var(--bdr2);border-radius:9px;padding:12px;margin-top:8px}
+.remnant-form-grid{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}
+.remnant-active{display:inline-flex;align-items:center;gap:8px;background:#d1fae5;border:1px solid #6ee7b7;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:600;color:#065f46;margin-top:6px}
+/* ── REMNANT ROW ── */
 .remnant-row{margin-bottom:12px}
 .btn-add-remnant{background:none;border:1.5px dashed var(--bdr2);color:var(--muted);border-radius:7px;padding:5px 13px;cursor:pointer;font-size:12px;font-family:"Barlow",sans-serif;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
 .btn-add-remnant:hover{border-color:var(--teal3);color:var(--teal3)}
@@ -282,10 +349,69 @@ tr:last-child td{border-bottom:none}
   .app-hdr{padding:0 10px}
   .app-hright .kerf-pill,.app-hright .sync-pill{display:none}
   .af-row1{grid-template-columns:1fr}
-  .af-row2{grid-template-columns:1fr 1fr auto}
+  .af-row2{grid-template-columns:1fr 1fr;gap:6px}
   .edit-basic-grid{grid-template-columns:1fr 1fr}
   .sizes-edit{grid-template-columns:1fr}
-  .calc-bar{position:sticky;bottom:0;z-index:20;border-radius:0;border-left:none;border-right:none;border-bottom:none;margin-left:-10px;margin-right:-10px;padding:10px 12px}
+  .calc-bar{position:-webkit-sticky;position:sticky;bottom:0;z-index:20;border-radius:0;border-left:none;border-right:none;border-bottom:none;margin-left:-10px;margin-right:-10px;padding:10px 12px;box-shadow:0 -4px 16px rgba(15,76,92,.15)}
+  .mat-block-cap{padding:10px 12px}
+  .mat-cap-title{font-size:13px}
+  /* Hide table headers on mobile, use card layout */
+  .pieces-table-wrap thead{display:none}
+  .pieces-table-wrap table,.pieces-table-wrap tbody,.pieces-table-wrap tr{display:block;width:100%}
+  .pieces-table-wrap tr{background:var(--sky);border:1px solid var(--bdr);border-radius:10px;padding:10px 12px;margin-bottom:8px;position:relative}
+  .pieces-table-wrap td{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border:none;font-size:13px}
+  .pieces-table-wrap td:first-child{display:none}
+  .pieces-table-wrap td:before{content:attr(data-label);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);flex-shrink:0;min-width:48px}
+  .pieces-table-wrap td input{max-width:calc(100% - 56px)}
+  .pieces-table-wrap td:last-child{justify-content:flex-end;padding-top:6px;border-top:1px dashed var(--bdr);margin-top:4px}
+  .pieces-table-wrap td:last-child:before{content:""}
+  /* Touch-friendly qty controls */
+  .qty-wrap-mobile{display:flex;align-items:center;gap:0;border:1px solid var(--bdr);border-radius:7px;overflow:hidden;background:#fff}
+  .qty-btn{background:var(--sky);border:none;width:36px;height:36px;font-size:18px;cursor:pointer;color:var(--teal);font-weight:700;flex-shrink:0;display:flex;align-items:center;justify-content:center;touch-action:manipulation}
+  .qty-btn:active{background:var(--sky2)}
+  .qty-input-mobile{border:none;background:#fff;text-align:center;width:44px;font-size:14px;font-weight:700;color:var(--text);outline:none;padding:0}
+  /* Results on mobile */
+  .sheet-vis-upgraded{padding:8px}
+  .layout-metrics{flex-wrap:wrap}
+  .lm-card{min-width:60px;padding:6px 8px}
+  .stats-strip{gap:5px;padding:10px 12px}
+  .stat-c{min-width:60px;padding:6px 8px}
+  .stat-v{font-size:18px}
+  .res-acts{gap:4px}
+  .btn-exp{padding:5px 8px;font-size:11px}
+  /* Modal improvements on mobile */
+  .modal{max-height:85vh;border-radius:16px 16px 0 0;position:fixed;bottom:0;left:0;right:0;margin:0;max-width:100%!important}
+  .overlay{align-items:flex-end;padding:0}
+}
+/* Touch input auto-select */
+input[type=number]:focus{select:all}
+/* Input focus ring */
+input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 0 0 3px rgba(15,76,92,.08)}
+/* Smooth transitions on all interactive elements */
+.mat-block{transition:box-shadow .2s}
+.mat-block:hover{box-shadow:var(--sh2)}
+/* Toast notification */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--teal2);color:#fff;font-family:"Barlow Condensed",sans-serif;font-size:14px;font-weight:700;padding:10px 22px;border-radius:30px;box-shadow:0 4px 20px rgba(0,0,0,.25);opacity:0;transition:all .3s;pointer-events:none;z-index:300;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* Tooltip */
+.tip{position:relative;display:inline-flex;align-items:center;gap:4px}
+.tip-icon{width:15px;height:15px;border-radius:50%;background:var(--bdr2);color:var(--muted);font-size:9px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;cursor:help;flex-shrink:0}
+.tip-text{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--teal2);color:#fff;font-size:11px;font-weight:400;padding:6px 10px;border-radius:7px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:50;max-width:220px;white-space:normal;text-align:center;box-shadow:var(--sh2)}
+.tip:hover .tip-text{opacity:1}
+/* Piece row hover */
+tr:hover td{background:rgba(232,244,248,.5)}
+/* Sheet canvas waste hatching */
+.waste-rect{position:absolute;background:repeating-linear-gradient(-45deg,rgba(15,76,92,.06),rgba(15,76,92,.06) 2px,transparent 2px,transparent 8px)}
+/* Result success animation */
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.results-shell{animation:fadeSlideIn .3s ease}
+/* Better piece colours — more distinct */
+.piece-rect{transition:opacity .15s}
+.piece-rect:hover{opacity:.85;cursor:default}
+/* Mobile bottom sheet modal */
+@media(max-width:640px){
+  .modal{max-height:88vh;border-radius:20px 20px 0 0;position:fixed;bottom:0;left:0;right:0;margin:0;max-width:100%!important;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .overlay{align-items:flex-end;padding:0}
 }
 </style>
 </head>
@@ -314,9 +440,12 @@ tr:last-child td{border-bottom:none}
     </div>
   </a>
   <div class="app-hright">
-    <div class="kerf-pill no-print">Kerf <b id="kerf-display">20mm</b></div>
+    <div class="kerf-pill no-print">Kerf <b id="kerf-display">20mm</b>
+      <span class="kerf-tip-icon" data-tip="Blade/laser kerf — the width of material removed by each cut. Accounts for saw blade or laser beam width.">?</span>
+    </div>
     <div class="sync-pill no-print"><div class="sdot" id="sdot"></div><span id="stxt">Loading&hellip;</span></div>
     <span id="pro-badge-hdr" style="display:none" class="pro-badge no-print">PRO</span>
+    <button class="btn-hdr no-print" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode" aria-label="Toggle dark mode">☀︎</button>
     <button class="btn-hdr no-print" id="history-btn" onclick="openHistory()">&#128336;</button>
     <button class="btn-hdr no-print" onclick="openLib()">&#128230; Library</button>
     <button class="btn-hdr no-print" onclick="openSettings()">&#9881;</button>
@@ -396,7 +525,11 @@ tr:last-child td{border-bottom:none}
   <!-- Calculate -->
   <div class="calc-bar no-print">
     <button class="btn-calc" id="calc-btn" onclick="calculate()">&#10002; CALCULATE</button>
-    <div class="calc-note">Ctrl+Enter to calculate quickly</div>
+    <div class="calc-note no-print">
+      <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>↵</kbd> Calculate</div>
+      <div class="shortcut-item"><kbd>↵</kbd> New row</div>
+      <div class="shortcut-item"><kbd>Esc</kbd> Close modal</div>
+    </div>
   </div>
 
   <div class="err no-print" id="err-box" style="display:none"></div>
@@ -412,8 +545,10 @@ tr:last-child td{border-bottom:none}
       <div class="results-hdr">
         <div class="results-title">&#128203; Sheet Usage <span id="units-badge" style="font-size:13px;font-weight:400;opacity:.7;margin-left:6px"></span></div>
         <div class="res-acts">
-          <button class="btn-exp" onclick="exportCSV()">&#11015; CSV</button>
-          <button class="btn-exp" onclick="doPrint()">&#128424; Print</button>
+          <button class="btn-exp" onclick="exportCSV()">⬇ CSV</button>
+          <button class="btn-exp pdf-btn" onclick="exportPDF()" title="Download print-quality PDF">⬇ PDF</button>
+          <button class="btn-exp" onclick="shareJob()" title="Share this job">🔗 Share</button>
+          <button class="btn-exp" onclick="doPrint()">🖨 Print</button>
         </div>
       </div>
       <div class="pricing-wrap">
@@ -427,6 +562,7 @@ tr:last-child td{border-bottom:none}
           <button class="copy-btn" id="copy-btn" onclick="copyQuote()">Copy for quote</button>
         </div>
       </div>
+      <div id="sheet-nav-wrap" class="no-print"></div>
       <div class="stats-strip">
         <div class="stat-c"><div class="stat-l">Sheets</div><div class="stat-v" id="s-sheets">&mdash;</div></div>
         <div class="stat-c"><div class="stat-l">Pieces</div><div class="stat-v" id="s-placed">&mdash;</div></div>
@@ -523,7 +659,7 @@ tr:last-child td{border-bottom:none}
       <p class="modal-sub">Add your materials with sheet sizes and prices. Works for steel, timber, MDF, acrylic, glass &mdash; any sheet material.</p>
       <div id="lib-entries"></div>
       <div id="lib-limit-notice" style="display:none;background:#fff3cd;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;font-size:13px;color:#92400e;margin-bottom:8px">
-        &#128274; Free plan: up to 5 materials. <button onclick="showUpgradeModal('&#128230;','Unlock Full Library','Upgrade to Pro for unlimited library entries plus the 16-grade CutNest Master Library pre-loaded.')" style="background:none;border:none;color:var(--teal3);cursor:pointer;font-weight:700;text-decoration:underline;font-size:13px">Upgrade to Pro &rarr;</button>
+        &#128274; Free plan: up to 5 materials. <button onclick="showUpgradeModal('&#128230;','Unlock Full Library','Upgrade to Pro for unlimited library entries plus the 23-grade CutNest Master Library pre-loaded with UK steel, timber, acrylic grades and prices.')" style="background:none;border:none;color:var(--teal3);cursor:pointer;font-weight:700;text-decoration:underline;font-size:13px">Upgrade to Pro &rarr;</button>
       </div>
       <div class="add-form" id="add-form-wrap">
         <div class="add-form-title">&#10133; Add New Material</div>
@@ -643,16 +779,24 @@ function renderAll() {
   const wrap = document.getElementById('mat-blocks');
   if (!wrap) return;
   if (!library || library.length === 0) {
-    let w = '<div style="background:#fff;border:2px dashed var(--bdr2);border-radius:14px;padding:28px;text-align:center;margin-bottom:18px">';
-    w += '<div style="font-family:Barlow Condensed,sans-serif;font-size:22px;font-weight:900;color:var(--teal);margin-bottom:6px">Welcome to CutNest</div>';
-    w += '<p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;max-width:400px;margin-left:auto;margin-right:auto">What do you mainly cut? We\'ll load some starter materials so you can run your first job straight away.</p>';
-    w += '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:16px">';
-    w += '<button onclick="loadStarterPack(\'metal\')" style="background:var(--teal);border:none;color:#fff;font-family:Barlow Condensed,sans-serif;font-size:15px;font-weight:800;padding:11px 22px;border-radius:9px;cursor:pointer;letter-spacing:.5px">Sheet Metal</button>';
-    w += '<button onclick="loadStarterPack(\'timber\')" style="background:var(--teal);border:none;color:#fff;font-family:Barlow Condensed,sans-serif;font-size:15px;font-weight:800;padding:11px 22px;border-radius:9px;cursor:pointer;letter-spacing:.5px">Timber &amp; Joinery</button>';
-    w += '<button onclick="loadStarterPack(\'acrylic\')" style="background:var(--teal);border:none;color:#fff;font-family:Barlow Condensed,sans-serif;font-size:15px;font-weight:800;padding:11px 22px;border-radius:9px;cursor:pointer;letter-spacing:.5px">Acrylic &amp; Plastics</button>';
-    w += '</div>';
-    w += '<button onclick="openLib()" style="background:none;border:1.5px dashed var(--bdr2);color:var(--muted);font-family:Barlow Condensed,sans-serif;font-size:13px;font-weight:700;padding:8px 18px;border-radius:8px;cursor:pointer">Or add your own materials manually</button>';
-    w += '</div>';
+    const w = `<div style="background:var(--white);border:1px solid var(--bdr);border-radius:16px;padding:36px 28px;text-align:center;margin-bottom:18px;box-shadow:var(--sh2)">
+      <div style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,var(--teal2),var(--teal));display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 6px 20px rgba(15,76,92,.25)">
+        <svg width="30" height="30" viewBox="0 0 36 36" fill="none"><rect x="3" y="3" width="12" height="9" rx="2" fill="#f59e0b"/><rect x="18" y="3" width="15" height="15" rx="2" fill="white" opacity=".9"/><rect x="3" y="14" width="12" height="19" rx="2" fill="white" opacity=".9"/><rect x="18" y="20" width="15" height="13" rx="2" fill="#f59e0b" opacity=".85"/></svg>
+      </div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;color:var(--teal);margin-bottom:8px;letter-spacing:-.3px">Welcome to CutNest</div>
+      <p style="font-size:14px;color:var(--muted);margin-bottom:24px;line-height:1.7;max-width:420px;margin-left:auto;margin-right:auto">Pick your trade and we'll load the right sheet materials in seconds. You'll be running your first optimised cut list in under a minute.</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:20px">
+        <button onclick="loadStarterPack('metal')" style="background:var(--teal);border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;padding:13px 26px;border-radius:10px;cursor:pointer;letter-spacing:.5px;transition:.2s;box-shadow:0 4px 14px rgba(15,76,92,.25)" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''">🔩 Sheet Metal</button>
+        <button onclick="loadStarterPack('timber')" style="background:var(--teal);border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;padding:13px 26px;border-radius:10px;cursor:pointer;letter-spacing:.5px;transition:.2s;box-shadow:0 4px 14px rgba(15,76,92,.25)" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''">🪵 Timber &amp; Joinery</button>
+        <button onclick="loadStarterPack('acrylic')" style="background:var(--teal);border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;padding:13px 26px;border-radius:10px;cursor:pointer;letter-spacing:.5px;transition:.2s;box-shadow:0 4px 14px rgba(15,76,92,.25)" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''">🔵 Acrylic &amp; Plastics</button>
+      </div>
+      <div style="display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-bottom:20px;font-size:12px;color:var(--muted)">
+        <span>✓ Starter prices included</span>
+        <span>✓ Edit anytime in Library</span>
+        <span>✓ Add your own materials too</span>
+      </div>
+      <button onclick="openLib()" style="background:none;border:1.5px dashed var(--bdr2);color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;padding:8px 20px;border-radius:8px;cursor:pointer;transition:.15s" onmouseover="this.style.borderColor='var(--teal3)';this.style.color='var(--teal3)'" onmouseout="this.style.borderColor='var(--bdr2)';this.style.color='var(--muted)'">Or build your own library from scratch →</button>
+    </div>`;
     wrap.innerHTML = w;
     return;
   }
@@ -660,12 +804,6 @@ function renderAll() {
   const amw = document.getElementById('add-mat-wrap');
   if (amw) amw.style.display = (isPro && mats && mats.length < 5) ? 'block' : 'none';
 }
-function renderAll_OLD() {
-  const wrap = document.getElementById('mat-blocks');
-  wrap.innerHTML = mats.map((m, idx) => buildBlock(m, idx)).join('');
-  document.getElementById('add-mat-wrap').style.display = mats.length >= 5 ? 'none' : 'block';
-}
-
 function buildBlock(m, idx) {
   const libMat = library.find(l => l.id == m.selectedMatId);
   const opts = library.map(l =>
@@ -704,17 +842,23 @@ function buildBlock(m, idx) {
       </div>`;
   }
 
-  // pieces rows
+  // pieces rows — mobile-friendly with data-label attributes and touch qty controls
   const pRows = m.pieces.map((p, pi) => `
     <tr>
-      <td style="color:var(--muted);font-size:11px;text-align:center">${pi+1}</td>
-      <td><input type="text" value="${p.label||''}" placeholder="e.g. Side Panel" style="min-width:100px;font-size:12px" onchange="updatePiece('${m.id}',${pi},'label',this.value)"/></td>
-      <td><input type="number" value="${p.w}" placeholder="500" style="width:78px;text-align:center" onchange="updatePiece('${m.id}',${pi},'w',+this.value)"/></td>
-      <td><input type="number" value="${p.h}" placeholder="300" style="width:78px;text-align:center" onchange="updatePiece('${m.id}',${pi},'h',+this.value)"/></td>
-      <td><input type="number" value="${p.qty}" min="1" style="width:48px;text-align:center" onchange="updatePiece('${m.id}',${pi},'qty',Math.max(1,+this.value))"/></td>
-      <td style="white-space:nowrap;padding:4px 2px">
-        <button onclick="duplicatePiece('${m.id}',${pi})" title="Duplicate" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 3px">&#8645;</button>
-        <button class="btn-del" onclick="removePiece('${m.id}',${pi})">&#10005;</button>
+      <td style="color:var(--muted);font-size:11px;text-align:center" data-label="#">${pi+1}</td>
+      <td data-label="Label"><input type="text" value="${esc(p.label||'')}" placeholder="e.g. Side Panel" style="min-width:100px;font-size:12px" onchange="updatePiece('${m.id}',${pi},'label',this.value)" onfocus="this.select()" onkeydown="handlePieceKey(event,'${m.id}',${pi},'label')"/></td>
+      <td data-label="W (mm)"><input type="number" value="${p.w||''}" placeholder="500" style="width:78px;text-align:center" onchange="updatePiece('${m.id}',${pi},'w',+this.value)" onfocus="this.select()" onkeydown="handlePieceKey(event,'${m.id}',${pi},'w')"/></td>
+      <td data-label="H (mm)"><input type="number" value="${p.h||''}" placeholder="300" style="width:78px;text-align:center" onchange="updatePiece('${m.id}',${pi},'h',+this.value)" onfocus="this.select()" onkeydown="handlePieceKey(event,'${m.id}',${pi},'h')"/></td>
+      <td data-label="Qty">
+        <div class="qty-wrap-mobile">
+          <button class="qty-btn" onclick="stepQty('${m.id}',${pi},-1)" type="button">−</button>
+          <input class="qty-input-mobile" type="number" value="${p.qty||1}" min="1" max="9999" onchange="updatePiece('${m.id}',${pi},'qty',Math.max(1,+this.value))" onfocus="this.select()"/>
+          <button class="qty-btn" onclick="stepQty('${m.id}',${pi},1)" type="button">+</button>
+        </div>
+      </td>
+      <td style="white-space:nowrap;padding:4px 2px" data-label="Actions">
+        <button onclick="duplicatePiece('${m.id}',${pi})" title="Duplicate piece" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:2px 5px" aria-label="Duplicate">⧉</button>
+        <button class="btn-del" onclick="removePiece('${m.id}',${pi})" aria-label="Remove piece">&#10005;</button>
       </td>
     </tr>`).join('');
 
@@ -753,14 +897,21 @@ function buildBlock(m, idx) {
         <hr class="block-divider"/>
 
         <!-- Pieces -->
-        <div class="pieces-label">Required Pieces for This Material</div>
-        <div style="overflow-x:auto">
+        <div class="pieces-label">Required Pieces for This Material
+          <span class="piece-count-badge">${m.pieces.filter(p=>p.w>0&&p.h>0).length} piece${m.pieces.filter(p=>p.w>0&&p.h>0).length!==1?'s':''} · ${m.pieces.reduce((s,p)=>s+(+p.qty||1),0)} total cuts</span>
+        </div>
+        <div class="pieces-table-wrap" style="overflow-x:auto">
           <table>
-            <thead><tr><th style="width:26px">#</th><th>Label</th><th>W (mm)</th><th>H (mm)</th><th style="width:50px">Qty</th><th style="width:52px"></th></tr></thead>
+            <thead><tr><th style="width:26px">#</th><th>Label</th><th>W (mm)</th><th>H (mm)</th><th style="width:90px">Qty</th><th style="width:52px"></th></tr></thead>
             <tbody id="ptbody-${m.id}">${pRows}</tbody>
           </table>
         </div>
-        <button class="btn-add-piece" onclick="addPiece('${m.id}')">+ Add Piece</button>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <button class="btn-add-piece" onclick="addPiece('${m.id}')">+ Add Piece</button>
+          <button class="btn-add-piece" onclick="addMultiplePieces('${m.id}')" style="font-size:12px">+ Add
+            <input type="number" id="bulk-qty-${m.id}" value="5" min="2" max="50" style="width:36px;margin:0 2px;padding:2px 4px;font-size:12px;display:inline-block" onclick="event.stopPropagation()" /> rows
+          </button>
+        </div>
       </div>
     </div>`;
 }
@@ -783,11 +934,81 @@ function onMatSelect(id, val) {
 // ── PIECE MANAGEMENT ─────────────────────────
 function addPiece(matId) {
   const m = mats.find(m => m.id === matId);
-  if (m) { m.pieces.push({w:'',h:'',qty:1,label:''}); renderAll(); }
+  if (m) { m.pieces.push({w:'',h:'',qty:1,label:''}); renderAll(); saveState(); }
 }
 function removePiece(matId, pi) {
   const m = mats.find(m => m.id === matId);
-  if (m && m.pieces.length > 1) { m.pieces.splice(pi,1); renderAll(); }
+  if (m && m.pieces.length > 1) { m.pieces.splice(pi,1); renderAll(); saveState(); }
+}
+function stepQty(matId, pi, delta) {
+  const m = mats.find(m => m.id === matId);
+  if (!m) return;
+  const cur = Math.max(1, (+m.pieces[pi].qty || 1) + delta);
+  m.pieces[pi].qty = cur;
+  // Update input directly for speed without full re-render
+  const tbody = document.getElementById('ptbody-' + matId);
+  if (tbody) {
+    const row = tbody.rows[pi];
+    if (row) {
+      const inp = row.querySelector('.qty-input-mobile');
+      if (inp) inp.value = cur;
+    }
+  }
+  saveState();
+  if (calcResult) {
+    const sb = document.getElementById('stale-banner');
+    if (sb) sb.style.display = 'block';
+  }
+}
+
+function handlePieceKey(e, matId, pi, field) {
+  // Enter or Tab on last field (h) → add new piece and focus first field of it
+  if (e.key === 'Enter' || (e.key === 'Tab' && !e.shiftKey && field === 'h')) {
+    e.preventDefault();
+    const m = mats.find(m => m.id === matId);
+    if (!m) return;
+    m.pieces[pi][field] = field === 'label' ? e.target.value : +e.target.value;
+    if (e.key === 'Enter' || field === 'h') {
+      addPiece(matId);
+      // Focus the label field of the new row after render
+      requestAnimationFrame(() => {
+        const tbody = document.getElementById('ptbody-' + matId);
+        if (tbody) {
+          const newRow = tbody.rows[pi + 1];
+          if (newRow) {
+            const inp = newRow.querySelector('input[type=text]');
+            if (inp) inp.focus();
+          }
+        }
+      });
+    }
+  }
+  // Shift+Tab on label goes to previous row's h
+  if (e.key === 'Tab' && e.shiftKey && field === 'label' && pi > 0) {
+    e.preventDefault();
+    const tbody = document.getElementById('ptbody-' + matId);
+    if (tbody) {
+      const prevRow = tbody.rows[pi - 1];
+      if (prevRow) {
+        const inputs = prevRow.querySelectorAll('input[type=number]');
+        if (inputs.length >= 2) inputs[1].focus();
+      }
+    }
+  }
+}
+
+function showToast(msg, duration) {
+  let t = document.getElementById('cn-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'cn-toast';
+    t.className = 'toast';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), duration || 2200);
 }
 function updatePiece(matId, pi, field, val) {
   const m = mats.find(m => m.id === matId);
@@ -1264,43 +1485,84 @@ function renderOutput() {
   sw.textContent=avgWaste+'%';
   sw.style.color = avgWaste <= 15 ? 'var(--green)' : avgWaste <= 30 ? 'var(--yel)' : 'var(--red)';
 
+  // Build sheet navigation if multiple sheets
+  const totalSheetsAll = results.reduce((s,r)=>s+r.sheets.length,0);
+  if (totalSheetsAll > 3) {
+    let navHtml = '<div class="sheet-nav no-print">';
+    let sheetIdx = 0;
+    results.forEach(({libMat, sheets}) => {
+      sheets.forEach((sh, si) => {
+        const id = 'sheet-anchor-' + sheetIdx;
+        navHtml += `<button class="sheet-nav-btn" onclick="document.getElementById('${id}').scrollIntoView({behavior:'smooth',block:'start'})">${esc(libMat.name.split(' ').slice(0,2).join(' '))} S${si+1}</button>`;
+        sheetIdx++;
+      });
+    });
+    navHtml += '</div>';
+    const navEl = document.getElementById('sheet-nav-wrap');
+    if (navEl) navEl.innerHTML = navHtml;
+  } else {
+    const navEl = document.getElementById('sheet-nav-wrap');
+    if (navEl) navEl.innerHTML = '';
+  }
+
   // Per-material visuals
   const visWrap = document.getElementById('mat-visuals');
   visWrap.innerHTML='';
-  const MAX_W=500, MAX_H=220;
+  // Responsive: use container width for scaling
+  const containerW = visWrap.parentElement ? Math.min(visWrap.parentElement.offsetWidth - 32, 700) : 500;
+  const MAX_W = Math.max(280, containerW * 0.62);
+  const MAX_H = 240;
 
+  let globalSheetIdx = 0;
   results.forEach(({libMat, sheets, unplaced}) => {
     const sec = document.createElement('div');
     sec.className = 'detail-section';
-    let html = `<div class="ds-title"><div class="ds-bar"></div>${libMat.name} — ${sheets.length} sheet${sheets.length!==1?'s':''}</div>`;
+    const wasteCol = sheets.length ? (sheets.reduce((a,s)=>a+s.wastePercent,0)/sheets.length > 30 ? 'var(--red)' : sheets.reduce((a,s)=>a+s.wastePercent,0)/sheets.length > 15 ? 'var(--yel)' : 'var(--green)') : 'var(--muted)';
+    let html = `<div class="ds-title"><div class="ds-bar"></div>${esc(libMat.name)} — ${sheets.length} sheet${sheets.length!==1?'s':''}</div>`;
 
     sheets.forEach((sh, si) => {
-      const scale = Math.min(MAX_W/sh.sheetW, MAX_H/sh.sheetH, 0.28);
+      const anchorId = 'sheet-anchor-' + globalSheetIdx++;
+      const scale = Math.min(MAX_W/sh.sheetW, MAX_H/sh.sheetH, 0.35);
       const cw=Math.round(sh.sheetW*scale), ch=Math.round(sh.sheetH*scale);
-      html += `<div class="sheet-vis">
-        <div class="sv-title">
-          Sheet ${si+1} &nbsp;·&nbsp; ${sh.sheetW}×${sh.sheetH}mm
-          &nbsp;·&nbsp; ${sh.placed.length} piece${sh.placed.length!==1?'s':''}
-          &nbsp;·&nbsp; <span style="color:${sh.wastePercent>30?'var(--red)':'var(--green)'}">${sh.wastePercent}% waste</span>
+      const wasteColor = sh.wastePercent>30?'var(--red)':sh.wastePercent>15?'var(--yel)':'var(--green)';
+
+      // Build placed piece rects
+      const pieceRects = sh.placed.map(p=>{
+        const col=COLORS[p.pieceIndex%COLORS.length];
+        const show=p.w*scale>28&&p.h*scale>16;
+        const px=Math.round(p.x*scale), py=Math.round(p.y*scale);
+        const pw=Math.max(2,Math.round(p.w*scale)-1), ph=Math.max(2,Math.round(p.h*scale)-1);
+        return `<div class="piece-rect" title="${esc(p.label||'P'+(p.pieceIndex+1))}: ${p.w}×${p.h}mm${p.rotated?' (rotated)':''}" style="left:${px}px;top:${py}px;width:${pw}px;height:${ph}px;background:${col}d0;border:1.5px solid ${col};position:absolute;border-radius:2px">
+          ${show?`<div class="plbl" style="font-size:${Math.min(11,pw/7)}px;line-height:1.2;padding:2px 3px">${esc(p.label||'P'+(p.pieceIndex+1))}${p.rotated?'<span style="font-size:.75em">↻</span>':''}<br><span style="font-weight:400;font-size:.8em;opacity:.8">${p.w}×${p.h}</span></div>`:''}
+        </div>`;
+      }).join('');
+
+      html += `<div class="sheet-vis" id="${anchorId}">
+        <div class="sv-title" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+          <span>Sheet ${si+1}</span>
+          <span style="color:var(--muted)">·</span>
+          <span>${sh.sheetW}×${sh.sheetH}mm${sh.isRemnant?' <span style="color:var(--green);font-size:10px;background:#d1fae5;padding:1px 6px;border-radius:4px">REMNANT</span>':''}</span>
+          <span style="color:var(--muted)">·</span>
+          <span>${sh.placed.length} piece${sh.placed.length!==1?'s':''}</span>
+          <span style="color:var(--muted)">·</span>
+          <span style="color:${wasteColor};font-weight:700">${sh.wastePercent}% waste</span>
         </div>
-        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start">
-          <div class="sheet-canvas" style="width:${cw}px;height:${ch}px">
-            ${sh.placed.map(p=>{
-              const col=COLORS[p.pieceIndex%COLORS.length];
-              const show=p.w*scale>28&&p.h*scale>14;
-              return `<div class="piece-rect" style="left:${p.x*scale}px;top:${p.y*scale}px;width:${p.w*scale-1}px;height:${p.h*scale-1}px;background:${col}cc;border:1.5px solid ${col}">
-                ${show?`<div class="plbl" style="font-size:${Math.min(11,p.w*scale/6)}px">${esc(p.label||'P'+(p.pieceIndex+1))}${p.rotated?'↻':''}<br><span style="font-weight:400;font-size:.82em;opacity:.85">${p.w}×${p.h}</span></div>`:''}
-              </div>`;
-            }).join('')}
+        <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
+          <div style="flex-shrink:0">
+            <div class="sheet-canvas" style="width:${cw}px;height:${ch}px;position:relative">
+              ${pieceRects}
+            </div>
+            <div style="margin-top:5px;font-size:10px;color:var(--muted);text-align:center">${sh.sheetW}×${sh.sheetH}mm &nbsp;·&nbsp; scale 1:${Math.round(1/scale)}</div>
           </div>
-          <div style="flex:1;min-width:120px">
-            ${sh.placed.map(p=>`<div class="legend-item"><div class="ldot" style="background:${COLORS[p.pieceIndex%COLORS.length]}"></div>${esc(p.label||'P'+(p.pieceIndex+1))} — ${p.w}×${p.h}mm${p.rotated?' ↻':''}</div>`).join('')}
+          <div style="flex:1;min-width:140px;max-width:280px">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px">Pieces on this sheet</div>
+            ${sh.placed.map(p=>`<div class="legend-item"><div class="ldot" style="background:${COLORS[p.pieceIndex%COLORS.length]}"></div><span style="font-size:12px">${esc(p.label||'P'+(p.pieceIndex+1))}</span><span style="color:var(--muted);font-size:11px;margin-left:auto">${p.w}×${p.h}mm${p.rotated?' ↻':''}</span></div>`).join('')}
           </div>
         </div>
       </div>`;
     });
 
-    if (unplaced.length) html += `<div class="warn">⚠ Unplaced: ${unplaced.map(p=>esc(p.label||p.w+'×'+p.h+'mm')).join(', ')}</div>`;
+    if (unplaced.length) html += `<div class="warn">⚠ ${unplaced.length} piece${unplaced.length!==1?'s':''} could not be placed — check dimensions are smaller than your sheet sizes: ${unplaced.map(p=>esc(p.label||p.w+'×'+p.h+'mm')).join(', ')}</div>`;
     sec.innerHTML = html;
     visWrap.appendChild(sec);
   });
@@ -1333,6 +1595,107 @@ function copyQuote() {
     b.textContent='✓ Copied!'; b.classList.add('copied');
     setTimeout(()=>{ b.textContent='Copy for quote'; b.classList.remove('copied'); },2000);
   });
+}
+
+function exportPDF() {
+  if (!calcResult) return;
+  // Build a clean print-optimised HTML page and open in new tab for browser PDF save
+  const jr = (document.getElementById('job-ref')||{}).value || 'Untitled';
+  const dt = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  const co = (settings && settings.companyName) ? settings.companyName + '  ·  ' : '';
+
+  let body = `<div class="hdr"><div class="hdr-logo">CutNest</div><div class="hdr-meta">${co}Job: ${jr}  ·  ${dt}  ·  Kerf: ${KERF}mm</div></div>`;
+
+  // Summary table
+  body += `<table class="sum-tbl"><thead><tr><th>Material</th><th>Sheets</th><th>Size</th><th>Cost</th></tr></thead><tbody>`;
+  let grandTotal = 0;
+  calcResult.results.forEach(({libMat, sheets, sizeMap}) => {
+    Object.entries(sizeMap).forEach(([dim,cnt]) => {
+      const [sw,sh] = dim.split('×').map(Number);
+      const sz = [libMat.size1,libMat.size2].find(s=>s&&s.w===sw&&s.h===sh);
+      const lineTotal = sz && sz.price > 0 ? sz.price * cnt : 0;
+      grandTotal += lineTotal;
+      body += `<tr><td>${libMat.name} ${libMat.thickness||''}</td><td>${cnt}</td><td>${dim}mm</td><td>${lineTotal>0?'£'+lineTotal.toFixed(2):'—'}</td></tr>`;
+    });
+  });
+  if (grandTotal > 0) body += `<tr class="total-row"><td colspan="3">Total Material Cost</td><td>£${grandTotal.toFixed(2)}</td></tr>`;
+  body += `</tbody></table>`;
+
+  // Sheet visuals per material
+  calcResult.results.forEach(({libMat, sheets, unplaced}) => {
+    body += `<div class="mat-sec"><div class="mat-hdr">${libMat.name} — ${sheets.length} sheet${sheets.length!==1?'s':''}</div>`;
+    sheets.forEach((sh,si) => {
+      const scale = Math.min(480/sh.sheetW, 200/sh.sheetH, 0.32);
+      const cw=Math.round(sh.sheetW*scale), ch=Math.round(sh.sheetH*scale);
+      body += `<div class="sh-block"><div class="sh-title">Sheet ${si+1} — ${sh.sheetW}×${sh.sheetH}mm · ${sh.placed.length} pieces · ${sh.wastePercent}% waste</div>`;
+      body += `<div class="sh-canvas" style="width:${cw}px;height:${ch}px;position:relative">`;
+      sh.placed.forEach(p => {
+        const col = COLORS[p.pieceIndex%COLORS.length];
+        const px=Math.round(p.x*scale),py=Math.round(p.y*scale),pw=Math.max(2,Math.round(p.w*scale)-1),ph=Math.max(2,Math.round(p.h*scale)-1);
+        const show = pw>24&&ph>14;
+        body += `<div style="position:absolute;left:${px}px;top:${py}px;width:${pw}px;height:${ph}px;background:${col}cc;border:1.5px solid ${col};border-radius:2px;overflow:hidden;box-sizing:border-box">`;
+        if (show) body += `<div style="font-size:${Math.min(10,pw/7)}px;font-weight:700;color:#fff;padding:2px 3px;line-height:1.2;text-shadow:0 1px 2px rgba(0,0,0,.4)">${p.label||'P'+(p.pieceIndex+1)}${p.rotated?'↻':''}<br><span style="font-weight:400;font-size:.8em;opacity:.85">${p.w}×${p.h}</span></div>`;
+        body += `</div>`;
+      });
+      body += `</div></div>`;
+    });
+    if (unplaced.length) body += `<div class="warn-row">⚠ Unplaced: ${unplaced.map(p=>p.label||p.w+'×'+p.h+'mm').join(', ')}</div>`;
+    body += `</div>`;
+  });
+
+  // Placement detail table
+  body += `<div class="mat-sec"><div class="mat-hdr">Placement Detail</div><table class="sum-tbl"><thead><tr><th>Material</th><th>Sheet</th><th>Part</th><th>W</th><th>H</th><th>X</th><th>Y</th><th>Rotated</th></tr></thead><tbody>`;
+  calcResult.results.forEach(({libMat,sheets}) => {
+    sheets.forEach((sh,si) => {
+      sh.placed.forEach(p => {
+        body += `<tr><td>${libMat.name}</td><td>${si+1}</td><td>${p.label||'P'+(p.pieceIndex+1)}</td><td>${p.w}</td><td>${p.h}</td><td>${p.x}</td><td>${p.y}</td><td>${p.rotated?'Yes':''}</td></tr>`;
+      });
+    });
+  });
+  body += `</tbody></table></div>`;
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>CutNest — ${jr}</title><style>
+    *{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:11px;color:#0d2d36;padding:20px}
+    .hdr{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #0f4c5c;padding-bottom:10px;margin-bottom:18px}
+    .hdr-logo{font-size:22px;font-weight:900;color:#0f4c5c;font-family:Arial Black,sans-serif}
+    .hdr-meta{font-size:11px;color:#6a9aaa}
+    .sum-tbl{width:100%;border-collapse:collapse;margin-bottom:18px;font-size:11px}
+    .sum-tbl th{background:#0a3a47;color:#fff;padding:6px 10px;text-align:left}
+    .sum-tbl td{padding:5px 10px;border-bottom:1px solid #e2ecef}
+    .sum-tbl tr:nth-child(even) td{background:#f0f7f9}
+    .total-row td{font-weight:700;background:#fef3c7!important;color:#92400e}
+    .mat-sec{margin-bottom:24px;break-inside:avoid}
+    .mat-hdr{font-size:13px;font-weight:700;color:#0f4c5c;border-left:4px solid #f59e0b;padding:4px 10px;margin-bottom:10px;background:#f0f7f9}
+    .sh-block{margin-bottom:14px;break-inside:avoid}
+    .sh-title{font-size:10px;color:#6a9aaa;margin-bottom:6px;font-weight:600}
+    .sh-canvas{border:2px solid #cde4ea;border-radius:3px;background:repeating-linear-gradient(-45deg,rgba(15,76,92,.04),rgba(15,76,92,.04) 1px,transparent 1px,transparent 8px)}
+    .warn-row{color:#dc2626;font-size:11px;padding:6px 0}
+    @media print{body{padding:10px}.sh-block{break-inside:avoid}div{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  </style></head><body>${body}<div style="margin-top:24px;padding-top:12px;border-top:1px solid #e2ecef;font-size:10px;color:#9dcad6;text-align:center">Generated by CutNest — cutnest.co.uk</div></body></html>`;
+
+  const w = window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(() => w.print(), 600);
+}
+
+function shareJob() {
+  try {
+    const state = {
+      jobRef: (document.getElementById('job-ref')||{}).value||'',
+      mats: JSON.parse(JSON.stringify(mats)),
+      lib: JSON.parse(JSON.stringify(library))
+    };
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+    const url = window.location.origin + window.location.pathname + '?job=' + encoded;
+    if (navigator.share) {
+      navigator.share({ title: 'CutNest Job', url });
+    } else {
+      navigator.clipboard.writeText(url).then(() => showToast('🔗 Job link copied to clipboard'));
+    }
+  } catch(e) {
+    showToast('Could not generate share link');
+  }
 }
 
 
@@ -1383,6 +1746,7 @@ async function saveLibClose() {
   await persistLib(library);
   renderAll();
   closeLib();
+  showToast('✓ Library saved — ' + library.length + ' material' + (library.length!==1?'s':''));
 }
 function renderLibEntries() {
   const wrap=document.getElementById('lib-entries');
@@ -1526,6 +1890,26 @@ document.addEventListener('keydown', function(e) {
 
 // ── INIT ──────────────────────────────────────
 
+function toggleDark() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const next = isDark ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  const btn = document.getElementById('dark-toggle');
+  if (btn) btn.textContent = next === 'dark' ? '☀︎' : '☾';
+  try { localStorage.setItem('cutnest-theme', next); } catch(e) {}
+}
+// Apply saved theme on load
+(function(){
+  try {
+    const saved = localStorage.getItem('cutnest-theme');
+    if (saved === 'dark') {
+      document.documentElement.setAttribute('data-theme','dark');
+      const btn = document.getElementById('dark-toggle');
+      if (btn) btn.textContent = '☀︎';
+    }
+  } catch(e) {}
+})();
+
 // ── SECURITY: sanitise user input before injecting into HTML ──
 function esc(str) {
   return String(str)
@@ -1623,11 +2007,12 @@ function updateProUI(){
   setDisplay('pro-banner',isPro?'none':'flex');
   setDisplay('history-btn',isPro?'inline-flex':'none');
   setDisplay('qty-wrap',isPro?'block':'none');
+  setDisplay('qty-ghost',isPro?'none':'block');
   setDisplay('ghost-mat-block',isPro?'none':'block');
   const amw=document.getElementById('add-mat-wrap');
   if(amw)amw.style.display=(isPro&&mats&&mats.length<5)?'block':'none';
   const mlt=document.getElementById('master-lib-txt');
-  if(mlt)mlt.textContent=isPro?'Active - '+MASTER_LIBRARY.length+' UK grades loaded':'Upgrade to Pro for the master library';
+  if(mlt)mlt.textContent=isPro?'Active — '+MASTER_LIBRARY.length+' UK grades loaded':'Upgrade to Pro to unlock the master library';
   updateLibLimitNotice();
 }
 
@@ -1891,7 +2276,26 @@ document.addEventListener('DOMContentLoaded',function(){
   checkLicence();
   loadSettings();
   loadLib().then(function(){
+    // Load shared job from URL if present
+  const urlParams = new URLSearchParams(window.location.search);
+  const sharedJob = urlParams.get('job');
+  if (sharedJob) {
+    try {
+      const state = JSON.parse(decodeURIComponent(escape(atob(sharedJob))));
+      if (state.mats) mats = state.mats;
+      if (state.lib && state.lib.length) library = state.lib;
+      if (state.jobRef) {
+        const jr = document.getElementById('job-ref');
+        if (jr) jr.value = state.jobRef;
+      }
+      renderAll();
+      showToast('📋 Shared job loaded');
+      // Clean URL without reloading
+      window.history.replaceState({}, '', window.location.pathname);
+    } catch(e) { /* ignore malformed */ }
+  } else {
     restoreState();
+  }
     updateProUI();
   });
 });

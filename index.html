@@ -288,11 +288,21 @@ footer{background:var(--teal2);padding:44px 5% 32px}
   .pricing-grid{grid-template-columns:1fr}
   .footer-top{flex-direction:column;gap:24px}
   .nav-link{display:none}
+  .feat-grid{grid-template-columns:1fr}
+  .vs-table{font-size:12px}
+  .vs-table th,.vs-table td{padding:8px 10px}
+  .sec-h2{font-size:26px}
+  body{padding-bottom:74px}
+  .mobile-cta-bar{display:flex!important}
 }
 @media(max-width:500px){
   .hero{padding:48px 5% 0}
   .hero h1{font-size:38px}
 }
+/* Mobile sticky CTA bar — hidden on desktop */
+.mobile-cta-bar{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--teal2);border-top:3px solid var(--amber);padding:10px 14px;z-index:50;gap:8px;align-items:center;box-shadow:0 -4px 20px rgba(0,0,0,.25)}
+.mobile-cta-bar a.mcta-free{flex:1;text-align:center;padding:11px;font-family:"Barlow Condensed",sans-serif;font-weight:900;font-size:16px;letter-spacing:.5px;border-radius:8px;background:var(--amber);color:var(--teal2)}
+.mobile-cta-bar a.mcta-pro{font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:13px;color:rgba(255,255,255,.65);padding:4px 10px;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -339,17 +349,19 @@ footer{background:var(--teal2);padding:44px 5% 32px}
       </div>
       <h1>Stop guessing<br>how much<br>material to order</h1>
       <p class="hero-sub">
-        I got fed up quoting jobs on a spreadsheet and consistently over-ordering steel.
-        So I built CutNest. <strong>You get a cut list before you order a single sheet.</strong>
+        Know exactly what to order <strong>before you cut a single sheet.</strong>
+        Works for steel, timber, acrylic, glass and more.
       </p>
       <div class="hero-ctas">
-        <a href="app.html" class="btn-primary">Try it on a real job &rarr;</a>
-        <a href="#how" class="btn-secondary">See How It Works</a>
+        <a href="app.html" class="btn-primary">Try it free &rarr;</a>
+        <a href="#how" class="btn-secondary">See how it works</a>
       </div>
       <div class="hero-trust">
-        <div class="trust-item"><span class="trust-check">&#10003;</span> Works in any browser</div>
-        <div class="trust-item"><span class="trust-check">&#10003;</span> No install needed</div>
-        <div class="trust-item"><span class="trust-check">&#10003;</span> Free on 1 material &middot; <b style="color:var(--amber)">Pro from &pound;15/mo</b></div>
+        <div class="trust-item"><span class="trust-check">✓</span> No install</div>
+        <div class="trust-item"><span class="trust-check">✓</span> No account needed</div>
+        <div class="trust-item"><span class="trust-check">✓</span> Works offline</div>
+        <div class="trust-item"><span class="trust-check">✓</span> Made in the UK</div>
+        <div class="trust-item"><span class="trust-check">✓</span> Free forever tier</div>
       </div>
       <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:20px">
         <span style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.6);border-radius:4px;padding:4px 11px;font-size:12px;font-weight:600;letter-spacing:.3px">Sheet Metal</span>
@@ -769,10 +781,16 @@ footer{background:var(--teal2);padding:44px 5% 32px}
     <div class="faq-a">No &mdash; CutNest works at the quoting stage, before production starts. Your tooler keeps using whatever they already run (Dr. ABE Blank, AP100, SigmaNEST etc) for punch programming and NC code. The two tools serve completely different purposes and never overlap.</div>
   </div>
   <div class="faq-item">
-    <div class="faq-q">What happens if I cancel?</div>
-    <div class="faq-a">Monthly plans cancel at the end of the current billing period &mdash; no awkward process, just cancel from your Lemon Squeezy account. You keep access until the period ends. Annual plans are non-refundable but access continues until the year is up.</div>
+    <div class="faq-q">What&rsquo;s the difference between free placement and guillotine mode?</div>
+    <div class="faq-a">Free placement uses the MaxRects algorithm to pack pieces anywhere on the sheet &mdash; the same approach used in industrial nesting software. It&rsquo;s ideal for CNC punch presses, plasma cutters, lasers, and routers where you can cut in any direction. Guillotine mode restricts cuts to full edge-to-edge straight lines, just like a manual guillotine shear or panel saw. Use guillotine mode for timber, MDF, and sheet cutting on saws where you can only make straight cuts across the full sheet. You set the cutting method per material in your library.</div>
   </div>
 </section>
+
+<!-- MOBILE STICKY CTA BAR -->
+<div class="mobile-cta-bar" id="mobile-cta">
+  <a href="app.html" class="mcta-free">Try Free &rarr;</a>
+  <a href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank" class="mcta-pro">Pro £15/mo</a>
+</div>
 
 <!-- FOOTER -->
 <footer>
