@@ -248,6 +248,8 @@ footer{background:var(--teal2);padding:44px 5% 32px}
 .footer-links-group h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.35);margin-bottom:12px}
 .footer-links-group a{display:block;font-size:13px;color:rgba(255,255,255,.55);margin-bottom:8px;transition:.15s}
 .footer-links-group a:hover{color:#fff}
+.footer-links-group button{display:block;font-size:13px;color:rgba(255,255,255,.55);margin-bottom:8px;transition:.15s;background:none;border:none;cursor:pointer;font-family:inherit;padding:0;text-align:left}
+.footer-links-group button:hover{color:#fff}
 .footer-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
 .footer-copy{font-size:12px;color:rgba(255,255,255,.25)}
 .footer-made{font-size:12px;color:rgba(255,255,255,.25)}
@@ -260,7 +262,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
 .btn-cookie{background:var(--amber);border:none;color:var(--teal2);font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:13px;padding:7px 18px;border-radius:7px;cursor:pointer;white-space:nowrap}
 
 /* ── MODAL ── */
-.overlay{display:none;position:fixed;inset:0;background:rgba(5,20,28,.7);z-index:200;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)}
+.overlay{display:none;position:fixed;inset:0;background:rgba(5,20,28,.78);z-index:200;align-items:center;justify-content:center;padding:16px;-webkit-overflow-scrolling:touch}
 .overlay.open{display:flex}
 .modal{background:#fff;border-radius:14px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .modal-hdr{background:var(--teal2);border-radius:14px 14px 0 0;padding:16px 22px;display:flex;justify-content:space-between;align-items:center}
@@ -821,7 +823,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
       </div>
     </div>
     <div class="footer-bottom">
-      <div class="footer-copy">&copy; 2025 CutNest &middot; cutnest.co.uk</div>
+      <div class="footer-copy">&copy; 2025&ndash;2026 CutNest &middot; cutnest.co.uk</div>
       <div class="footer-made">Made in <span>Newcastle upon Tyne, UK</span></div>
     </div>
   </div>
@@ -940,6 +942,9 @@ if (!localStorage.getItem('cn-cookie')) {
 document.getElementById('legal-overlay').addEventListener('click', function(e) {
   if (e.target === this) closeLegal();
 });
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeLegal();
+});
 
 // Accordion FAQ
 document.querySelectorAll('.faq-item').forEach(function(item) {
@@ -975,8 +980,14 @@ document.querySelectorAll('.faq-item').forEach(function(item) {
     var frame = document.getElementById('demo-frame');
     if (!label || !frame) return;
     var step = demoSteps[i % demoSteps.length];
-    label.textContent = step.label;
-    frame.innerHTML = step.html;
+    // Fade out
+    frame.style.opacity = '0';
+    frame.style.transition = 'opacity .25s';
+    setTimeout(function() {
+      label.textContent = step.label;
+      frame.innerHTML = step.html;
+      frame.style.opacity = '1';
+    }, 250);
   }
   function advanceDemo() {
     currentStep = (currentStep + 1) % demoSteps.length;

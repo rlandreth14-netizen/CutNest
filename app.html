@@ -141,7 +141,7 @@ tr:hover td{background:rgba(232,244,248,.5)}
 .btn-recalc{background:var(--yel);border:none;color:#fff;border-radius:7px;padding:6px 13px;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:13px;white-space:nowrap}
 
 /* ── RESULTS ── */
-.results-shell{border-radius:14px;overflow:hidden;box-shadow:var(--sh2);border:1px solid var(--bdr);margin-bottom:8px}
+.results-shell{border-radius:14px;overflow:clip;box-shadow:var(--sh2);border:1px solid var(--bdr);margin-bottom:8px}
 .results-hdr{background:var(--teal2);padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
 .results-title{font-family:"Barlow Condensed",sans-serif;font-size:17px;font-weight:800;color:#fff;letter-spacing:1px}
 .res-acts{display:flex;gap:6px}
@@ -2081,8 +2081,21 @@ function closeSettings(){
   const kd=document.getElementById('kerf-display');if(kd)kd.textContent=KERF+'mm';
   const sm=document.getElementById('settings-modal');if(sm)sm.style.display='none';
 }
-function saveSettings(){}
-function saveSettingsAndClose(){closeSettings();}
+function saveSettings() {
+  const kf = document.getElementById('kerf-setting');
+  const cn = document.getElementById('company-name');
+  if (kf) { settings.kerf = Math.max(0, Math.min(100, parseInt(kf.value) || 0)); KERF = settings.kerf; }
+  if (cn) settings.companyName = cn.value ? cn.value.trim() : '';
+  localStorage.setItem(SETT_KEY, JSON.stringify(settings));
+  const kd = document.getElementById('kerf-display');
+  if (kd) kd.textContent = KERF + 'mm';
+}
+function saveSettingsAndClose() {
+  saveSettings();
+  const sm = document.getElementById('settings-modal');
+  if (sm) sm.style.display = 'none';
+  showToast('✓ Settings saved');
+}
 
 async function saveData(lib){localStorage.setItem(STOR_KEY,JSON.stringify(lib));}
 
