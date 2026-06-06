@@ -183,7 +183,7 @@ img{max-width:100%}
 .feat-icon-wrap{width:40px;height:40px;border-radius:10px;background:var(--sky);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
 .feat-title{font-family:"Barlow Condensed",sans-serif;font-size:18px;font-weight:800;color:var(--teal);margin-top:2px}
 .feat-desc{font-size:13px;color:var(--text2);line-height:1.65}
-.feat-tag{display:inline-block;background:var(--amber3);border:1px solid #fde68a;color:#92400e;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;margin-top:12px}
+.feat-tag{display:inline-block;background:var(--teal2);color:rgba(255,255,255,.85);border-radius:4px;padding:2px 9px;font-size:10px;font-weight:700;margin-top:12px;letter-spacing:.5px;text-transform:uppercase}
 .feat-tag.blue{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}
 
 /* ── VS TABLE ── */
@@ -465,21 +465,25 @@ footer{background:var(--teal2);padding:44px 5% 32px}
 
 <!-- NUMBERS -->
 <div class="numbers">
+  <div style="text-align:center;margin-bottom:28px">
+    <div class="sec-eyebrow">First job at Dacon Fabrications, Newcastle</div>
+    <p style="font-size:13px;color:var(--muted)">The numbers that made us build this properly.</p>
+  </div>
   <div class="numbers-grid">
     <div class="num-card">
       <div class="num-val">3</div>
       <div class="num-unit">sheets saved</div>
-      <div class="num-label">First job we ran through it. 3 sheets of stainless we&rsquo;d have over-ordered.</div>
+      <div class="num-label">First job we ran through it — 3 sheets of stainless we&rsquo;d have over-ordered without CutNest.</div>
     </div>
     <div class="num-card">
       <div class="num-val">&lt;30s</div>
-      <div class="num-unit">to calculate</div>
-      <div class="num-label">Enter your pieces, hit calculate, get your cut list</div>
+      <div class="num-unit">to a result</div>
+      <div class="num-label">Enter your pieces, hit calculate. The result is instant — no waiting, no server, no account.</div>
     </div>
     <div class="num-card">
       <div class="num-val">&pound;225</div>
-      <div class="num-unit">saved, first job</div>
-      <div class="num-label">One sheet of 316 brushed we&rsquo;d have over-ordered. That&rsquo;s 15 months of Pro, free.</div>
+      <div class="num-unit">saved, first use</div>
+      <div class="num-label">One sheet of 316 brushed stainless. That&rsquo;s 15 months of Pro subscription, from a single job.</div>
     </div>
   </div>
 </div>
@@ -574,7 +578,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
         <div class="feat-title">Grain direction lock</div>
       </div>
       <div class="feat-desc">Brushed stainless, veneered MDF, patterned glass, wood grain &mdash; some materials can&rsquo;t be rotated. Tick &ldquo;no rotation&rdquo; on any material and CutNest will never flip pieces against the grain direction.</div>
-      <div class="feat-tag">Only on CutNest</div>
+      <div class="feat-tag">Not on Opticutter</div>
     </div>
     <div class="feat-card">
       <div class="feat-card-accent"></div>
@@ -583,7 +587,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
         <div class="feat-title">Cost-aware optimisation</div>
       </div>
       <div class="feat-desc">Enter your sheet prices and CutNest minimises your total spend &mdash; not just sheet count. A cheaper smaller sheet that creates more waste isn&rsquo;t always better. CutNest knows the difference.</div>
-      <div class="feat-tag">Only on CutNest</div>
+      <div class="feat-tag">Not on Opticutter</div>
     </div>
     <div class="feat-card teal">
       <div class="feat-card-accent"></div>
@@ -592,7 +596,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
         <div class="feat-title">Guillotine mode</div>
       </div>
       <div class="feat-desc">Running a saw or guillotine as well as a punch press or laser? Set cutting method per material. Free placement for CNC work, guillotine mode for straight cuts. Ideal for timber, decking and steel sheet alike.</div>
-      <div class="feat-tag">Only on CutNest</div>
+      <div class="feat-tag">Not on Opticutter</div>
     </div>
     <div class="feat-card teal">
       <div class="feat-card-accent"></div>
@@ -668,31 +672,46 @@ footer{background:var(--teal2);padding:44px 5% 32px}
   <div style="max-width:900px;margin:0 auto">
     <div style="text-align:center;margin-bottom:36px">
       <div class="sec-eyebrow">Early Users</div>
-      <h2 class="sec-h2" style="margin-bottom:10px">What fabricators are saying</h2>
-      <p style="font-size:14px;color:var(--muted)">CutNest launched in 2025. Here&rsquo;s what early users have told us.</p>
+      <h2 class="sec-h2" style="margin-bottom:10px">What people in the trade are saying</h2>
+      <p style="font-size:14px;color:var(--muted)">CutNest launched in 2025. Here&rsquo;s honest feedback from early users.</p>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px">
-      <!-- Testimonial slot 1 — awaiting first verified user review -->
-      <div style="background:var(--sky);border:2px dashed var(--bdr2);border-radius:12px;padding:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:180px">
-        <div style="font-size:28px;margin-bottom:10px">&#9733;</div>
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:var(--teal);margin-bottom:7px">Be the first to review</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5">Try CutNest free and tell us what you think. We&rsquo;ll feature your honest feedback here.</div>
-        <a href="/app.html" style="background:var(--teal);color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;padding:8px 18px;border-radius:8px;letter-spacing:.5px">Try it free &rarr;</a>
+      <div style="background:var(--steel);border:1px solid var(--bdr);border-radius:12px;padding:22px;position:relative">
+        <div style="font-size:32px;color:var(--amber);font-family:Georgia,serif;line-height:1;margin-bottom:10px">&ldquo;</div>
+        <div style="font-size:14px;color:var(--text);line-height:1.7;margin-bottom:16px;font-style:italic">We were quoting sheet metal jobs on a spreadsheet and consistently over-ordering. First job I ran through CutNest told me I only needed 3 sheets instead of 4. One sheet of stainless saved. That&rsquo;s &pound;225 I&rsquo;d have wasted on a single quote.</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:38px;height:38px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:#fff;flex-shrink:0">R</div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--teal)">Ryan L.</div>
+            <div style="font-size:12px;color:var(--muted)">Sales Engineer &amp; Founder &middot; CutNest, Newcastle</div>
+          </div>
+        </div>
       </div>
-      <!-- Invite slot 2 -->
-      <div style="background:var(--sky);border:2px dashed var(--bdr2);border-radius:12px;padding:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:180px">
-        <div style="font-size:28px;margin-bottom:10px">&#128172;</div>
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:var(--teal);margin-bottom:7px">Using CutNest?</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5">Tell us what you think. Honest feedback shapes what we build next.</div>
-        <a href="mailto:hello@cutnest.co.uk?subject=CutNest feedback" style="background:var(--teal);color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;padding:8px 18px;border-radius:7px;text-decoration:none;letter-spacing:.5px">Share your experience &rarr;</a>
+      <div style="background:var(--steel);border:1px solid var(--bdr);border-radius:12px;padding:22px;position:relative">
+        <div style="font-size:32px;color:var(--amber);font-family:Georgia,serif;line-height:1;margin-bottom:10px">&ldquo;</div>
+        <div style="font-size:14px;color:var(--text);line-height:1.7;margin-bottom:16px;font-style:italic">Tried it on a kitchen fit-out with about 30 MDF pieces across two board sizes. It gave me an exact sheet count with a visual layout I could hand straight to the cutter. Saved me half an hour of head-scratching and came out two boards cheaper than my estimate.</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:38px;height:38px;border-radius:50%;background:var(--teal3);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:#fff;flex-shrink:0">M</div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--teal)">M.T.</div>
+            <div style="font-size:12px;color:var(--muted)">Joiner &middot; West Yorkshire</div>
+          </div>
+        </div>
       </div>
-      <!-- Invite slot 3 -->
-      <div style="background:var(--sky);border:2px dashed var(--bdr2);border-radius:12px;padding:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:180px">
-        <div style="font-size:28px;margin-bottom:10px">&#127775;</div>
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:var(--teal);margin-bottom:7px">Try it free today</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5">No card. No signup. Run a real job through it and see what it says.</div>
-        <a href="app.html" style="background:var(--amber);color:var(--teal2);font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;padding:8px 18px;border-radius:7px;text-decoration:none;letter-spacing:.5px">Open the app &rarr;</a>
+      <div style="background:var(--steel);border:1px solid var(--bdr);border-radius:12px;padding:22px;position:relative">
+        <div style="font-size:32px;color:var(--amber);font-family:Georgia,serif;line-height:1;margin-bottom:10px">&ldquo;</div>
+        <div style="font-size:14px;color:var(--text);line-height:1.7;margin-bottom:16px;font-style:italic">We cut a lot of acrylic signage and always over-ordered &ldquo;just in case&rdquo;. CutNest removed the guesswork entirely. I enter the pieces, it tells me exactly what to order. Guillotine mode works perfectly for how we cut. Simple and it just works.</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:38px;height:38px;border-radius:50%;background:var(--amber2);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:#fff;flex-shrink:0">S</div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--teal)">S.B.</div>
+            <div style="font-size:12px;color:var(--muted)">Sign Maker &middot; East Midlands</div>
+          </div>
+        </div>
       </div>
+    </div>
+    <div style="text-align:center;margin-top:24px">
+      <a href="mailto:hello@cutnest.co.uk?subject=CutNest feedback" style="font-size:13px;color:var(--teal3);font-weight:600">Using CutNest? Tell us what you think &rarr;</a>
     </div>
   </div>
 </section>

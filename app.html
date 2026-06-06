@@ -445,6 +445,8 @@ tr:hover td{background:rgba(232,244,248,.5)}
     </div>
     <div class="sync-pill no-print"><div class="sdot" id="sdot"></div><span id="stxt">Loading&hellip;</span></div>
     <span id="pro-badge-hdr" style="display:none" class="pro-badge no-print">PRO</span>
+    <button class="btn-hdr no-print" id="undo-btn" onclick="undo()" title="Undo (Ctrl+Z)" aria-label="Undo" disabled style="opacity:.4">↩</button>
+    <button class="btn-hdr no-print" id="redo-btn" onclick="redo()" title="Redo (Ctrl+Y)" aria-label="Redo" disabled style="opacity:.4">↪</button>
     <button class="btn-hdr no-print" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode" aria-label="Toggle dark mode">☀︎</button>
     <button class="btn-hdr no-print" id="history-btn" onclick="openHistory()">&#128336;</button>
     <button class="btn-hdr no-print" onclick="openLib()">&#128230; Library</button>
@@ -487,6 +489,7 @@ tr:hover td{background:rgba(232,244,248,.5)}
     <button class="add-mat-btn" onclick="addMat()">
       <div class="add-mat-icon">+</div>
       Add Another Material to This Job
+      <span style="font-size:11px;color:var(--muted);font-weight:400;margin-left:6px">(up to 5 per job)</span>
     </button>
   </div>
 
@@ -528,7 +531,8 @@ tr:hover td{background:rgba(232,244,248,.5)}
     <div class="calc-note no-print">
       <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>↵</kbd> Calculate</div>
       <div class="shortcut-item"><kbd>↵</kbd> New row</div>
-      <div class="shortcut-item"><kbd>Esc</kbd> Close modal</div>
+      <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>Z</kbd> Undo</div>
+      <div class="shortcut-item"><kbd>Esc</kbd> Close</div>
     </div>
   </div>
 
@@ -715,7 +719,17 @@ tr:hover td{background:rgba(232,244,248,.5)}
   </div>
 </div>
 
-<!-- FOOTER -->
+<!-- SHEET ZOOM MODAL -->
+<div class="overlay" id="zoom-modal" style="display:none" onclick="if(event.target===this)document.getElementById('zoom-modal').style.display='none'">
+  <div style="background:#fff;border-radius:14px;max-width:98vw;max-height:96vh;overflow:auto;padding:16px;position:relative">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div id="zoom-title" style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:var(--teal)"></div>
+      <button onclick="document.getElementById('zoom-modal').style.display='none'" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1">✕</button>
+    </div>
+    <div id="zoom-canvas" style="overflow:auto"></div>
+    <div id="zoom-legend" style="margin-top:14px;display:flex;flex-wrap:wrap;gap:6px"></div>
+  </div>
+</div>
 <footer style="text-align:center;padding:13px;font-size:11px;color:var(--muted);border-top:1px solid var(--bdr)" class="no-print">
   CutNest v1.0 &nbsp;&middot;&nbsp;
   <a href="/" style="color:var(--teal3)">cutnest.co.uk</a> &nbsp;&middot;&nbsp;
@@ -918,27 +932,29 @@ function buildBlock(m, idx) {
 
 // ── MAT MANAGEMENT ────────────────────────────
 function addMat() {
+  pushUndo();
   mats.push({ id:'mat-'+Date.now(), selectedMatId:null, pieces:[{w:'',h:'',qty:1,label:''}] });
   renderAll();
 }
 function removeMat(id) {
   if (mats.length <= 1) return;
+  pushUndo();
   mats = mats.filter(m => m.id !== id);
   renderAll();
 }
 function onMatSelect(id, val) {
   const m = mats.find(m => m.id === id);
-  if (m) { m.selectedMatId = val ? parseInt(val) : null; renderAll(); }
+  if (m) { pushUndo(); m.selectedMatId = val ? parseInt(val) : null; renderAll(); }
 }
 
 // ── PIECE MANAGEMENT ─────────────────────────
 function addPiece(matId) {
   const m = mats.find(m => m.id === matId);
-  if (m) { m.pieces.push({w:'',h:'',qty:1,label:''}); renderAll(); saveState(); }
+  if (m) { pushUndo(); m.pieces.push({w:'',h:'',qty:1,label:''}); renderAll(); saveState(); }
 }
 function removePiece(matId, pi) {
   const m = mats.find(m => m.id === matId);
-  if (m && m.pieces.length > 1) { m.pieces.splice(pi,1); renderAll(); saveState(); }
+  if (m && m.pieces.length > 1) { pushUndo(); m.pieces.splice(pi,1); renderAll(); saveState(); }
 }
 function stepQty(matId, pi, delta) {
   const m = mats.find(m => m.id === matId);
@@ -1538,14 +1554,17 @@ function renderOutput() {
       }).join('');
 
       html += `<div class="sheet-vis" id="${anchorId}">
-        <div class="sv-title" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
-          <span>Sheet ${si+1}</span>
-          <span style="color:var(--muted)">·</span>
-          <span>${sh.sheetW}×${sh.sheetH}mm${sh.isRemnant?' <span style="color:var(--green);font-size:10px;background:#d1fae5;padding:1px 6px;border-radius:4px">REMNANT</span>':''}</span>
-          <span style="color:var(--muted)">·</span>
-          <span>${sh.placed.length} piece${sh.placed.length!==1?'s':''}</span>
-          <span style="color:var(--muted)">·</span>
-          <span style="color:${wasteColor};font-weight:700">${sh.wastePercent}% waste</span>
+        <div class="sv-title" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span>Sheet ${si+1}</span>
+            <span style="color:var(--muted)">·</span>
+            <span>${sh.sheetW}×${sh.sheetH}mm${sh.isRemnant?' <span style="color:var(--green);font-size:10px;background:#d1fae5;padding:1px 6px;border-radius:4px">REMNANT</span>':''}</span>
+            <span style="color:var(--muted)">·</span>
+            <span>${sh.placed.length} piece${sh.placed.length!==1?'s':''}</span>
+            <span style="color:var(--muted)">·</span>
+            <span style="color:${wasteColor};font-weight:700">${sh.wastePercent}% waste</span>
+          </div>
+          <button onclick="openZoom(${JSON.stringify(sh).replace(/</g,'\\u003c').replace(/>/g,'\\u003e')}, 'Sheet ${si+1} — ${sh.sheetW}×${sh.sheetH}mm')" style="background:var(--sky);border:1px solid var(--bdr2);border-radius:6px;padding:3px 9px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;white-space:nowrap;font-family:inherit;transition:.15s" onmouseover="this.style.background='var(--sky2)'" onmouseout="this.style.background='var(--sky)'">⤢ Zoom</button>
         </div>
         <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
           <div style="flex-shrink:0">
@@ -1910,6 +1929,40 @@ function toggleDark() {
   } catch(e) {}
 })();
 
+// ── UNDO STACK ────────────────────────────────
+const UNDO_MAX = 30;
+let undoStack = [];
+let redoStack = [];
+
+function pushUndo() {
+  undoStack.push(JSON.stringify({ mats, library }));
+  if (undoStack.length > UNDO_MAX) undoStack.shift();
+  redoStack = [];
+  updateUndoUI();
+}
+function undo() {
+  if (!undoStack.length) return;
+  redoStack.push(JSON.stringify({ mats, library }));
+  const prev = JSON.parse(undoStack.pop());
+  mats = prev.mats; library = prev.library;
+  renderAll(); saveState(); updateUndoUI();
+  showToast('↩ Undone');
+}
+function redo() {
+  if (!redoStack.length) return;
+  undoStack.push(JSON.stringify({ mats, library }));
+  const next = JSON.parse(redoStack.pop());
+  mats = next.mats; library = next.library;
+  renderAll(); saveState(); updateUndoUI();
+  showToast('↪ Redone');
+}
+function updateUndoUI() {
+  const u = document.getElementById('undo-btn');
+  const r = document.getElementById('redo-btn');
+  if (u) u.disabled = !undoStack.length;
+  if (r) r.disabled = !redoStack.length;
+}
+
 // ── SECURITY: sanitise user input before injecting into HTML ──
 function esc(str) {
   return String(str)
@@ -2239,14 +2292,51 @@ function updateLibLimitNotice() {
 
 document.addEventListener('keydown', function(e) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); calculate(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
   if (e.key === 'Escape') {
-    ['settings-modal','lib-modal','history-modal','upgrade-modal','legal-modal'].forEach(function(id) {
+    ['settings-modal','lib-modal','history-modal','upgrade-modal','legal-modal','zoom-modal'].forEach(function(id) {
       const el = document.getElementById(id);
       if (el && el.style.display !== 'none') el.style.display = 'none';
     });
   }
 });
 
+
+function openZoom(sheetData, title) {
+  const modal = document.getElementById('zoom-modal');
+  const canvas = document.getElementById('zoom-canvas');
+  const legend = document.getElementById('zoom-legend');
+  const titleEl = document.getElementById('zoom-title');
+  if (!modal || !canvas) return;
+
+  titleEl.textContent = title;
+  const maxW = Math.min(window.innerWidth * 0.9, 1200);
+  const maxH = window.innerHeight * 0.72;
+  const scale = Math.min(maxW / sheetData.sheetW, maxH / sheetData.sheetH, 0.85);
+  const cw = Math.round(sheetData.sheetW * scale);
+  const ch = Math.round(sheetData.sheetH * scale);
+
+  let html = `<div style="position:relative;width:${cw}px;height:${ch}px;background:repeating-linear-gradient(-45deg,rgba(15,76,92,.04),rgba(15,76,92,.04) 1px,transparent 1px,transparent 8px);border:2px solid var(--bdr2);border-radius:3px;overflow:hidden;flex-shrink:0">`;
+  sheetData.placed.forEach(p => {
+    const col = COLORS[p.pieceIndex % COLORS.length];
+    const px = Math.round(p.x * scale), py = Math.round(p.y * scale);
+    const pw = Math.max(2, Math.round(p.w * scale) - 1), ph = Math.max(2, Math.round(p.h * scale) - 1);
+    const show = pw > 32 && ph > 18;
+    html += `<div title="${esc(p.label||'P'+(p.pieceIndex+1))}: ${p.w}×${p.h}mm" style="position:absolute;left:${px}px;top:${py}px;width:${pw}px;height:${ph}px;background:${col}d0;border:1.5px solid ${col};border-radius:2px;overflow:hidden;box-sizing:border-box">`;
+    if (show) html += `<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:${Math.min(13, pw / 5)}px;text-shadow:0 1px 3px rgba(0,0,0,.5);text-align:center;padding:3px;line-height:1.2">${esc(p.label || 'P' + (p.pieceIndex + 1))}${p.rotated ? '<span style="font-size:.75em">↻</span>' : ''}<br><span style="font-weight:400;font-size:.8em;opacity:.85">${p.w}×${p.h}</span></div>`;
+    html += `</div>`;
+  });
+  html += `</div>`;
+  canvas.innerHTML = html;
+
+  legend.innerHTML = sheetData.placed.map(p => {
+    const col = COLORS[p.pieceIndex % COLORS.length];
+    return `<div style="display:inline-flex;align-items:center;gap:5px;background:var(--sky);border:1px solid var(--bdr);border-radius:6px;padding:3px 9px;font-size:12px"><div style="width:10px;height:10px;border-radius:2px;background:${col};flex-shrink:0"></div>${esc(p.label || 'P' + (p.pieceIndex + 1))} <span style="color:var(--muted)">${p.w}×${p.h}${p.rotated ? ' ↻' : ''}</span></div>`;
+  }).join('');
+
+  modal.style.display = 'flex';
+}
 
 function doPrint() {
   const meta = document.getElementById('print-header-meta');
