@@ -274,10 +274,10 @@ tr:hover td{background:rgba(232,244,248,.5)}
 .kerf-tip-icon:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--teal2);color:#fff;font-size:10px;font-weight:400;padding:5px 9px;border-radius:6px;white-space:nowrap;pointer-events:none;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
 
 /* ── QTY TOUCH CONTROLS ── */
-.qty-wrap-mobile{display:inline-flex;align-items:center;border:1.5px solid var(--bdr);border-radius:7px;overflow:hidden;background:#fff;height:32px}
+.qty-wrap-mobile{display:inline-flex;align-items:center;border:1.5px solid var(--bdr);border-radius:7px;overflow:hidden;background:#fff;height:32px;width:fit-content;flex-shrink:0}
 .qty-btn{background:var(--sky);border:none;width:32px;height:32px;font-size:16px;cursor:pointer;color:var(--teal);font-weight:700;display:flex;align-items:center;justify-content:center;touch-action:manipulation;flex-shrink:0;transition:background .1s;-webkit-user-select:none}
 .qty-btn:active{background:var(--sky2)}
-.qty-input-mobile{border:none;background:#fff;text-align:center;width:40px;height:32px;font-size:13px;font-weight:700;color:var(--text);outline:none;padding:0;font-family:"Barlow",sans-serif}
+.qty-input-mobile{border:none;background:#fff;text-align:center;width:40px!important;min-width:0;height:32px;font-size:13px;font-weight:700;color:var(--text);outline:none;padding:0;font-family:"Barlow",sans-serif;flex-shrink:0}
 .qty-input-mobile:focus{background:var(--sky)}
 /* ── SHEET NAVIGATION ── */
 .sheet-nav{display:flex;gap:6px;flex-wrap:wrap;padding:10px 16px;background:var(--sky);border-top:1px solid var(--bdr);border-bottom:1px solid var(--bdr)}
@@ -863,7 +863,7 @@ function buildBlock(m, idx) {
       <td data-label="Label"><input type="text" value="${esc(p.label||'')}" placeholder="e.g. Side Panel" style="min-width:100px;font-size:12px" onchange="updatePiece('${m.id}',${pi},'label',this.value)" onfocus="this.select()" onkeydown="handlePieceKey(event,'${m.id}',${pi},'label')"/></td>
       <td data-label="W (mm)"><input type="number" value="${p.w||''}" placeholder="500" style="width:78px;text-align:center" onchange="updatePiece('${m.id}',${pi},'w',+this.value)" onfocus="this.select()" onkeydown="handlePieceKey(event,'${m.id}',${pi},'w')"/></td>
       <td data-label="H (mm)"><input type="number" value="${p.h||''}" placeholder="300" style="width:78px;text-align:center" onchange="updatePiece('${m.id}',${pi},'h',+this.value)" onfocus="this.select()" onkeydown="handlePieceKey(event,'${m.id}',${pi},'h')"/></td>
-      <td data-label="Qty">
+      <td data-label="Qty" style="white-space:nowrap;width:108px">
         <div class="qty-wrap-mobile">
           <button class="qty-btn" onclick="stepQty('${m.id}',${pi},-1)" type="button">−</button>
           <input class="qty-input-mobile" type="number" value="${p.qty||1}" min="1" max="9999" onchange="updatePiece('${m.id}',${pi},'qty',Math.max(1,+this.value))" onfocus="this.select()"/>
