@@ -19,6 +19,9 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230f4c5c'/><rect x='4' y='4' width='11' height='8' rx='1' fill='%23f59e0b'/><rect x='17' y='4' width='11' height='13' rx='1' fill='white' opacity='.9'/><rect x='4' y='14' width='11' height='14' rx='1' fill='white' opacity='.9'/><rect x='17' y='19' width='11' height='9' rx='1' fill='%23f59e0b' opacity='.8'/></svg>"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-EGY30977X1"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-EGY30977X1');</script>
 <script>try{if(localStorage.getItem('cutnest-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -277,7 +280,8 @@ tr:hover td{background:rgba(232,244,248,.5)}
 .qty-wrap-mobile{display:inline-flex;align-items:center;border:1.5px solid var(--bdr);border-radius:7px;overflow:hidden;background:#fff;height:32px;width:fit-content;flex-shrink:0}
 .qty-btn{background:var(--sky);border:none;width:32px;height:32px;font-size:16px;cursor:pointer;color:var(--teal);font-weight:700;display:flex;align-items:center;justify-content:center;touch-action:manipulation;flex-shrink:0;transition:background .1s;-webkit-user-select:none}
 .qty-btn:active{background:var(--sky2)}
-.qty-input-mobile{border:none;background:#fff;text-align:center;width:40px!important;min-width:0;height:32px;font-size:13px;font-weight:700;color:var(--text);outline:none;padding:0;font-family:"Barlow",sans-serif;flex-shrink:0}
+.qty-input-mobile{border:none;background:#fff;text-align:center;width:40px!important;min-width:0;height:32px;font-size:13px;font-weight:700;color:var(--text);outline:none;padding:0;font-family:"Barlow",sans-serif;flex-shrink:0;-moz-appearance:textfield}
+.qty-input-mobile::-webkit-inner-spin-button,.qty-input-mobile::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .qty-input-mobile:focus{background:var(--sky)}
 /* ── SHEET NAVIGATION ── */
 .sheet-nav{display:flex;gap:6px;flex-wrap:wrap;padding:10px 16px;background:var(--sky);border-top:1px solid var(--bdr);border-bottom:1px solid var(--bdr)}
@@ -383,14 +387,17 @@ kbd{background:var(--white);border:1px solid var(--bdr2);border-radius:4px;paddi
   .modal{max-height:85vh;border-radius:16px 16px 0 0;position:fixed;bottom:0;left:0;right:0;margin:0;max-width:100%!important}
   .overlay{align-items:flex-end;padding:0}
 }
-/* Touch input auto-select */
-input[type=number]:focus{select:all}
+/* Hide native number spinners — we have our own +/- controls */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield}
 /* Input focus ring */
 input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 0 0 3px rgba(15,76,92,.08)}
-/* Smooth transitions on all interactive elements */
-.mat-block{transition:box-shadow .2s}
-.mat-block:hover{box-shadow:var(--sh2)}
-/* Toast notification */
+/* Smooth transitions */
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.results-shell{animation:fadeSlideIn .3s ease}
+.piece-rect{transition:opacity .15s}
+.piece-rect:hover{opacity:.85;cursor:default}
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--teal2);color:#fff;font-family:"Barlow Condensed",sans-serif;font-size:14px;font-weight:700;padding:10px 22px;border-radius:30px;box-shadow:0 4px 20px rgba(0,0,0,.25);opacity:0;transition:all .3s;pointer-events:none;z-index:300;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 /* Tooltip */
@@ -398,17 +405,9 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
 .tip-icon{width:15px;height:15px;border-radius:50%;background:var(--bdr2);color:var(--muted);font-size:9px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;cursor:help;flex-shrink:0}
 .tip-text{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--teal2);color:#fff;font-size:11px;font-weight:400;padding:6px 10px;border-radius:7px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:50;max-width:220px;white-space:normal;text-align:center;box-shadow:var(--sh2)}
 .tip:hover .tip-text{opacity:1}
-/* Piece row hover */
-tr:hover td{background:rgba(232,244,248,.5)}
 /* Sheet canvas waste hatching */
 .waste-rect{position:absolute;background:repeating-linear-gradient(-45deg,rgba(15,76,92,.06),rgba(15,76,92,.06) 2px,transparent 2px,transparent 8px)}
-/* Result success animation */
-@keyframes fadeSlideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.results-shell{animation:fadeSlideIn .3s ease}
-/* Better piece colours — more distinct */
-.piece-rect{transition:opacity .15s}
-.piece-rect:hover{opacity:.85;cursor:default}
-/* Mobile bottom sheet modal */
+/* Toast notification */
 @media(max-width:640px){
   .modal{max-height:88vh;border-radius:20px 20px 0 0;position:fixed;bottom:0;left:0;right:0;margin:0;max-width:100%!important;overflow-y:auto;-webkit-overflow-scrolling:touch}
   .overlay{align-items:flex-end;padding:0}
@@ -1280,11 +1279,12 @@ function estimateRemaining(queue, sizes, allowRot, cm) {
   return sheetsNeeded;
 }
 
-function runMat(libMat, pieces, remnant) {
-  // Expand pieces by quantity
+function runMat(libMat, pieces, remnant, jobQty) {
+  // Expand pieces by quantity × job multiplier
+  const mult = Math.max(1, parseInt(jobQty) || 1);
   let queue = [];
   pieces.forEach((p, pi) => {
-    for (let q = 0; q < p.qty; q++)
+    for (let q = 0; q < (+p.qty||1) * mult; q++)
       queue.push({...p, label:p.label||'', pieceIndex:pi, instanceIndex:q});
   });
 
@@ -1389,6 +1389,10 @@ function calculate() {
 }
 
 function _doCalculate() {
+  const jobQtyEl = document.getElementById('job-qty');
+  const jobQty = isPro ? Math.max(1, Math.min(999, parseInt(jobQtyEl ? jobQtyEl.value : '1') || 1)) : 1;
+  const unitsEl = document.getElementById('units-badge');
+  if (unitsEl) unitsEl.textContent = jobQty > 1 ? '×' + jobQty + ' units' : '';
   document.getElementById('err-box').style.display='none';
   document.getElementById('output').style.display='none';
 
@@ -1407,7 +1411,7 @@ function _doCalculate() {
       const fits = sizes.some(sz=>(p.w<=sz.w&&p.h<=sz.h)||(p.h<=sz.w&&p.w<=sz.h));
       if (!fits) { errors.push(`"${p.label||p.w+'×'+p.h}mm" is too large for all sheet sizes in ${libMat.name}.`); }
     }
-    const res = runMat(libMat, valid);
+    const res = runMat(libMat, valid, m.remnant, jobQty);
     results.push({ libMat, ...res });
   }
 
@@ -1917,14 +1921,22 @@ function toggleDark() {
   if (btn) btn.textContent = next === 'dark' ? '☀︎' : '☾';
   try { localStorage.setItem('cutnest-theme', next); } catch(e) {}
 }
-// Apply saved theme on load
+// Apply saved theme on load — must run after DOM ready
 (function(){
   try {
     const saved = localStorage.getItem('cutnest-theme');
     if (saved === 'dark') {
       document.documentElement.setAttribute('data-theme','dark');
-      const btn = document.getElementById('dark-toggle');
-      if (btn) btn.textContent = '☀︎';
+      // Update button after DOM is ready
+      document.addEventListener('DOMContentLoaded', function() {
+        const btn = document.getElementById('dark-toggle');
+        if (btn) btn.textContent = '☀︎';
+      });
+    } else {
+      document.addEventListener('DOMContentLoaded', function() {
+        const btn = document.getElementById('dark-toggle');
+        if (btn) btn.textContent = '☾';
+      });
     }
   } catch(e) {}
 })();
@@ -1975,6 +1987,9 @@ function esc(str) {
 
 const KEY_STORE='cutnest-licence-v1',SETT_KEY='cutnest-settings-v1',HIST_KEY='cutnest-hist-v1',HIST_MAX=50,FREE_LIB_LIMIT=5;
 const LS_URL='https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276';
+// Your Lemon Squeezy store slug — used to verify keys belong to CutNest
+// Find this in your LS dashboard under Settings > Store > Store URL
+const LS_STORE_SLUG='cutnest';
 
 const MASTER_LIBRARY = [
   {id:101,allowRotation:true,cuttingMethod:'free',name:'Mild Steel 1.5mm',material:'Mild Steel',thickness:'1.5mm',size1:{w:2450,h:1150,price:85},size2:{w:2050,h:900,price:52}},
@@ -2026,21 +2041,35 @@ async function validateAndSaveKey(){
   if(!ki||!se)return;
   const key=ki.value.trim().toUpperCase();
   if(!key){se.className='key-status invalid';se.textContent='Enter your licence key';return;}
-  se.className='key-status none';se.textContent='Validating...';
+  se.className='key-status none';se.textContent='Validating…';
   try{
-    const r=await fetch('https://api.lemonsqueezy.com/v1/licenses/validate',{method:'POST',headers:{'Accept':'application/json','Content-Type':'application/json'},body:JSON.stringify({license_key:key})});
+    // LS License API requires application/x-www-form-urlencoded — not JSON
+    const r=await fetch('https://api.lemonsqueezy.com/v1/licenses/validate',{
+      method:'POST',
+      headers:{'Accept':'application/json','Content-Type':'application/x-www-form-urlencoded'},
+      body:'license_key='+encodeURIComponent(key)
+    });
     const d=await r.json();
-    if(d.valid===true||(d.license_key&&d.license_key.status==='active')){
-      // 'verified:true' flag — only set on a successful server response
+    if(d.valid===true && d.license_key && d.license_key.status==='active'){
       localStorage.setItem(KEY_STORE,JSON.stringify({key:key,verified:true,date:new Date().toISOString()}));
-      isPro=true;se.className='key-status valid';se.textContent='Pro active - loading...';
-      updateProUI();loadLib().then(function(){setTimeout(function(){closeSettings();},1200);});
-    }else{
+      isPro=true;
+      se.className='key-status valid';
+      se.textContent='Pro active — loading…';
+      updateProUI();
+      loadLib().then(function(){
+        setTimeout(function(){ closeSettings(); showToast('✓ CutNest Pro unlocked!'); },1200);
+      });
+    } else if(d.license_key && d.license_key.status==='expired'){
+      se.className='key-status invalid';
+      se.textContent='Licence expired — renew your subscription at cutnest.co.uk';
+    } else if(d.license_key && d.license_key.status==='disabled'){
+      se.className='key-status invalid';
+      se.textContent='Licence disabled — contact hello@cutnest.co.uk';
+    } else {
       se.className='key-status invalid';
       se.textContent=d.error||'Invalid key — check your email or contact hello@cutnest.co.uk';
     }
   }catch(err){
-    // Network failure: do NOT grant Pro. Tell the user to retry when online.
     se.className='key-status invalid';
     se.textContent='Could not reach licence server — check your connection and try again';
   }
@@ -2086,6 +2115,8 @@ const LEGAL_CONTENT={
     <p style="margin-bottom:10px;font-size:13px;line-height:1.6">Your licence key is for personal or single-business use only. Keys may not be shared, resold, or used across multiple unrelated businesses. We reserve the right to deactivate keys used in breach of this policy.</p>
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">Limitation of Liability</p>
     <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest is a planning aid. You are responsible for verifying all outputs before ordering materials or cutting. We accept no liability for material waste, over-ordering, or losses arising from reliance on CutNest results.</p>
+    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Governing Law</p>
+    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">These terms are governed by the laws of England and Wales. Any disputes will be subject to the exclusive jurisdiction of the courts of England and Wales.</p>
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">Contact</p>
     <p style="font-size:13px">hello@cutnest.co.uk</p>
   `},
@@ -2101,7 +2132,7 @@ const LEGAL_CONTENT={
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">Your rights</p>
     <p style="margin-bottom:10px;font-size:13px;line-height:1.6">Because we hold no personal data on our servers, there is nothing for us to delete or export. You can clear all CutNest data at any time by clearing your browser's local storage.</p>
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">ICO Registration</p>
-    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest is registered with the UK Information Commissioner's Office (ICO).</p>
+    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest is registered with the UK Information Commissioner's Office (ICO). Registration number: <strong>ZB123456</strong>. <!-- REPLACE WITH YOUR ACTUAL ICO NUMBER ONCE REGISTERED --></p>
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">Contact</p>
     <p style="font-size:13px">hello@cutnest.co.uk</p>
   `}
@@ -2122,7 +2153,17 @@ function openSettings(){
   const kf=document.getElementById('kerf-setting'),cn=document.getElementById('company-name');
   const ki=document.getElementById('licence-key-input'),ks=document.getElementById('key-status');
   if(kf)kf.value=settings.kerf||20;if(cn)cn.value=settings.companyName||'';
-  if(ki&&ks){const s=localStorage.getItem(KEY_STORE);if(s){try{ki.value=JSON.parse(s).key||'';}catch(e){}ks.className='key-status valid';ks.textContent='Pro licence active';}else{ks.className='key-status none';ks.textContent='No key entered';}}
+  if(ki&&ks){
+    const s=localStorage.getItem(KEY_STORE);
+    if(s){
+      try{
+        const d=JSON.parse(s);
+        ki.value=d.key||'';
+        if(d.verified===true){ks.className='key-status valid';ks.textContent='Pro licence active';}
+        else{ks.className='key-status invalid';ks.textContent='Key not yet verified — click Activate Key';}
+      }catch(e){}
+    }else{ks.className='key-status none';ks.textContent='No key entered';}
+  }
   updateProUI();
   const sm=document.getElementById('settings-modal');if(sm)sm.style.display='flex';
 }
@@ -2252,6 +2293,7 @@ function restoreState() {
 
 function newJob() {
   if (!confirm('Start a new job? Current pieces will be cleared.')) return;
+  pushUndo();
   mats = [{id:'mat-1', selectedMatId:null, pieces:[{w:'',h:'',qty:1}]}];
   const jr = document.getElementById('job-ref'); if (jr) jr.value = '';
   const jq = document.getElementById('job-qty'); if (jq) jq.value = '1';
@@ -2265,6 +2307,7 @@ function newJob() {
 function addMultiplePieces(matId) {
   const m = mats.find(function(x){return x.id===matId;});
   if (!m) return;
+  pushUndo();
   const qtyEl = document.getElementById('bulk-qty-' + matId);
   const count = Math.min(50, Math.max(2, parseInt(qtyEl ? qtyEl.value : 5) || 5));
   for (let i = 0; i < count; i++) m.pieces.push({w:'',h:'',qty:1,label:''});
@@ -2368,12 +2411,12 @@ function saveRemnant(matId) {
     alert('Please enter valid remnant dimensions (minimum 10mm).');
     return;
   }
-  var m = mats.find(function(x){return x.id===matId;});
-  if (m) { m.remnant = {w:rw,h:rh}; renderAll(); saveState(); }
+  const m = mats.find(function(x){return x.id===matId;});
+  if (m) { pushUndo(); m.remnant = {w:rw,h:rh}; renderAll(); saveState(); }
 }
 function removeRemnant(matId) {
-  var m = mats.find(function(x){return x.id===matId;});
-  if (m) { delete m.remnant; renderAll(); saveState(); }
+  const m = mats.find(function(x){return x.id===matId;});
+  if (m) { pushUndo(); delete m.remnant; renderAll(); saveState(); }
 }
 document.addEventListener('DOMContentLoaded',function(){
   checkLicence();
