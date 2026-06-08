@@ -855,17 +855,47 @@ function buildBlock(m, idx) {
       </div>`;
   }
 
-  // pieces rows — mobile-friendly with data-label attributes and touch qty controls
+  // pieces rows — spreadsheet-style keyboard flow: Label→W→H→Qty→Enter=new row
   const pRows = m.pieces.map((p, pi) => `
-    <tr>
-      <td style="color:var(--muted);font-size:11px;text-align:center" data-label="#">${pi+1}</td>
-      <td data-label="Label"><input type="text" value="${esc(p.label||'')}" placeholder="e.g. Side Panel" style="min-width:100px;font-size:12px" onchange="updatePiece('${m.id}',${pi},'label',this.value)" onfocus="this.select()" onkeydown="handlePieceKey(event,'${m.id}',${pi},'label')"/></td>
-      <td data-label="W (mm)"><input type="number" value="${p.w||''}" placeholder="500" style="width:78px;text-align:center" onchange="updatePiece('${m.id}',${pi},'w',+this.value)" onfocus="this.select()" onkeydown="handlePieceKey(event,'${m.id}',${pi},'w')"/></td>
-      <td data-label="H (mm)"><input type="number" value="${p.h||''}" placeholder="300" style="width:78px;text-align:center" onchange="updatePiece('${m.id}',${pi},'h',+this.value)" onfocus="this.select()" onkeydown="handlePieceKey(event,'${m.id}',${pi},'h')"/></td>
+    <tr id="prow-${m.id}-${pi}">
+      <td style="color:var(--muted);font-size:11px;text-align:center;width:26px" data-label="#">${pi+1}</td>
+      <td data-label="Label">
+        <input type="text"
+          value="${esc(p.label||'')}"
+          placeholder="Label (optional)"
+          style="min-width:90px;font-size:12px"
+          oninput="updatePiece('${m.id}',${pi},'label',this.value)"
+          onfocus="this.select()"
+          onkeydown="handlePieceKey(event,'${m.id}',${pi},'label')"/>
+      </td>
+      <td data-label="W (mm)">
+        <input type="number"
+          value="${p.w||''}"
+          placeholder="Width"
+          style="width:78px;text-align:center"
+          oninput="updatePiece('${m.id}',${pi},'w',+this.value)"
+          onfocus="this.select()"
+          onkeydown="handlePieceKey(event,'${m.id}',${pi},'w')"/>
+      </td>
+      <td data-label="H (mm)">
+        <input type="number"
+          value="${p.h||''}"
+          placeholder="Height"
+          style="width:78px;text-align:center"
+          oninput="updatePiece('${m.id}',${pi},'h',+this.value)"
+          onfocus="this.select()"
+          onkeydown="handlePieceKey(event,'${m.id}',${pi},'h')"/>
+      </td>
       <td data-label="Qty" style="white-space:nowrap;width:108px">
         <div class="qty-wrap-mobile">
           <button class="qty-btn" onclick="stepQty('${m.id}',${pi},-1)" type="button">−</button>
-          <input class="qty-input-mobile" type="number" value="${p.qty||1}" min="1" max="9999" onchange="updatePiece('${m.id}',${pi},'qty',Math.max(1,+this.value))" onfocus="this.select()"/>
+          <input class="qty-input-mobile"
+            type="number"
+            value="${p.qty||1}"
+            min="1" max="9999"
+            oninput="updatePiece('${m.id}',${pi},'qty',Math.max(1,+this.value))"
+            onfocus="this.select()"
+            onkeydown="handlePieceKey(event,'${m.id}',${pi},'qty')"/>
           <button class="qty-btn" onclick="stepQty('${m.id}',${pi},1)" type="button">+</button>
         </div>
       </td>
@@ -977,39 +1007,82 @@ function stepQty(matId, pi, delta) {
 }
 
 function handlePieceKey(e, matId, pi, field) {
-  // Enter or Tab on last field (h) → add new piece and focus first field of it
-  if (e.key === 'Enter' || (e.key === 'Tab' && !e.shiftKey && field === 'h')) {
-    e.preventDefault();
+  const FIELDS = ['label', 'w', 'h', 'qty'];
+  const isEnter = e.key === 'Enter';
+  const isTab   = e.key === 'Tab' && !e.shiftKey;
+  const isShiftTab = e.key === 'Tab' && e.shiftKey;
+
+  // Save current value immediately before any navigation
+  if (isEnter || isTab || isShiftTab) {
     const m = mats.find(m => m.id === matId);
-    if (!m) return;
-    m.pieces[pi][field] = field === 'label' ? e.target.value : +e.target.value;
-    if (e.key === 'Enter' || field === 'h') {
-      addPiece(matId);
-      // Focus the label field of the new row after render
-      requestAnimationFrame(() => {
-        const tbody = document.getElementById('ptbody-' + matId);
-        if (tbody) {
-          const newRow = tbody.rows[pi + 1];
-          if (newRow) {
-            const inp = newRow.querySelector('input[type=text]');
-            if (inp) inp.focus();
-          }
-        }
-      });
+    if (m && m.pieces[pi]) {
+      const raw = e.target.value;
+      if (field === 'label') m.pieces[pi].label = raw;
+      else if (field === 'w') m.pieces[pi].w = +raw || '';
+      else if (field === 'h') m.pieces[pi].h = +raw || '';
+      else if (field === 'qty') m.pieces[pi].qty = Math.max(1, +raw || 1);
     }
   }
-  // Shift+Tab on label goes to previous row's h
-  if (e.key === 'Tab' && e.shiftKey && field === 'label' && pi > 0) {
+
+  // ── ENTER key ──────────────────────────────────
+  if (isEnter) {
     e.preventDefault();
-    const tbody = document.getElementById('ptbody-' + matId);
-    if (tbody) {
-      const prevRow = tbody.rows[pi - 1];
-      if (prevRow) {
-        const inputs = prevRow.querySelectorAll('input[type=number]');
-        if (inputs.length >= 2) inputs[1].focus();
-      }
+    const idx = FIELDS.indexOf(field);
+    if (field === 'qty') {
+      // Enter on Qty → add new row and focus its Label
+      addPiece(matId);
+      requestAnimationFrame(() => focusPieceField(matId, pi + 1, 'label'));
+    } else {
+      // Enter on any other field → advance to next field
+      focusPieceField(matId, pi, FIELDS[idx + 1]);
+    }
+    return;
+  }
+
+  // ── TAB key (forward) ──────────────────────────
+  if (isTab) {
+    const idx = FIELDS.indexOf(field);
+    if (idx < FIELDS.length - 1) {
+      // Advance within same row
+      e.preventDefault();
+      focusPieceField(matId, pi, FIELDS[idx + 1]);
+    }
+    // On qty tab-forward: let browser handle naturally to next focusable element
+    return;
+  }
+
+  // ── SHIFT+TAB (backward) ───────────────────────
+  if (isShiftTab) {
+    const idx = FIELDS.indexOf(field);
+    if (idx > 0) {
+      e.preventDefault();
+      focusPieceField(matId, pi, FIELDS[idx - 1]);
+    } else if (pi > 0) {
+      // At start of row → go to qty of previous row
+      e.preventDefault();
+      focusPieceField(matId, pi - 1, 'qty');
     }
   }
+}
+
+function focusPieceField(matId, pi, field) {
+  const tbody = document.getElementById('ptbody-' + matId);
+  if (!tbody) return;
+  const row = tbody.rows[pi];
+  if (!row) return;
+  let inp = null;
+  if (field === 'label') {
+    inp = row.querySelector('input[type=text]');
+  } else if (field === 'w') {
+    const nums = row.querySelectorAll('input[type=number]:not(.qty-input-mobile)');
+    inp = nums[0] || null;
+  } else if (field === 'h') {
+    const nums = row.querySelectorAll('input[type=number]:not(.qty-input-mobile)');
+    inp = nums[1] || null;
+  } else if (field === 'qty') {
+    inp = row.querySelector('.qty-input-mobile');
+  }
+  if (inp) { inp.focus(); inp.select(); }
 }
 
 function showToast(msg, duration) {
