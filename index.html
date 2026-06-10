@@ -55,6 +55,12 @@
 }
 </script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230f4c5c'/><rect x='4' y='4' width='11' height='8' rx='1' fill='%23f59e0b'/><rect x='17' y='4' width='11' height='13' rx='1' fill='white' opacity='.9'/><rect x='4' y='14' width='11' height='14' rx='1' fill='white' opacity='.9'/><rect x='17' y='19' width='11' height='9' rx='1' fill='%23f59e0b' opacity='.8'/></svg>"/>
+<link rel="manifest" href="/manifest.webmanifest"/>
+<meta name="theme-color" content="#0a3a47"/>
+<link rel="apple-touch-icon" href="/apple-touch-icon.png"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="CutNest"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
 <!-- Google tag (gtag.js) -->
@@ -973,10 +979,23 @@ if (!localStorage.getItem('cn-cookie')) {
   setTimeout(function() { document.getElementById('cookie').classList.add('show'); }, 2000);
 }
 // ── PRICING TOGGLE ──
+// ════════════════════════════════════════════════════════════════
+// ⚠️ LEMON SQUEEZY CONFIG — THE ONLY PLACE YOU EVER CHANGE URLS
+// When you switch to Live mode:
+//  1. Replace LS_MONTHLY_URL with your LIVE monthly checkout link
+//  2. Replace LS_ANNUAL_URL with your LIVE annual checkout link
+// (LS dashboard → Products → your product → Share → copy link)
+// Every Buy button on this page updates automatically from these.
+// ════════════════════════════════════════════════════════════════
 const LS_MONTHLY_URL = 'https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276';
-// ⚠️ ACTION REQUIRED: Replace the URL below with your ANNUAL variant checkout URL from Lemon Squeezy
-// Go to: Lemon Squeezy dashboard → Products → CutNest Pro → Variants → Annual → Copy checkout URL
 const LS_ANNUAL_URL  = 'https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276';
+
+// On load: point every checkout link at the monthly URL (setBilling switches the main CTA)
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('a[href*="lemonsqueezy.com/checkout"]').forEach(function(a) {
+    a.href = LS_MONTHLY_URL;
+  });
+});
 
 function setBilling(type) {
   const monthly = document.getElementById('price-monthly');
@@ -1080,6 +1099,13 @@ function notifySignup() {
   emailEl.style.display = 'none';
 }
 
+
+// ── SERVICE WORKER: offline support + installable app ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/sw.js').catch(function () { /* non-fatal */ });
+  });
+}
 </script>
 </body>
 </html>

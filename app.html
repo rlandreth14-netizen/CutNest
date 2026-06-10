@@ -17,6 +17,12 @@
 <meta name="twitter:description" content="Stop over-ordering sheet material. CutNest optimises your cut list and tells you exactly what to order."/>
 <meta name="twitter:image" content="https://cutnest.co.uk/og-image.png"/>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230f4c5c'/><rect x='4' y='4' width='11' height='8' rx='1' fill='%23f59e0b'/><rect x='17' y='4' width='11' height='13' rx='1' fill='white' opacity='.9'/><rect x='4' y='14' width='11' height='14' rx='1' fill='white' opacity='.9'/><rect x='17' y='19' width='11' height='9' rx='1' fill='%23f59e0b' opacity='.8'/></svg>"/>
+<link rel="manifest" href="/manifest.webmanifest"/>
+<meta name="theme-color" content="#0a3a47"/>
+<link rel="apple-touch-icon" href="/apple-touch-icon.png"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="CutNest"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
 <!-- Google tag (gtag.js) -->
@@ -92,6 +98,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .btn-del:hover{color:var(--red)}
 .btn-sm-gr{background:var(--green);border:none;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600;font-family:"Barlow",sans-serif}
 .btn-sm-tl{background:var(--teal3);border:none;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-family:"Barlow",sans-serif}
+.btn-sm-bl{background:var(--sky2);border:1px solid var(--bdr2);color:var(--teal3);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600;font-family:"Barlow",sans-serif;transition:.15s}
+.btn-sm-bl:hover{background:var(--teal3);color:#fff;border-color:var(--teal3)}
 .btn-add-piece{background:var(--sky);border:1.5px dashed var(--bdr2);color:var(--text2);border-radius:8px;padding:7px 14px;cursor:pointer;font-family:"Barlow",sans-serif;font-size:13px;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
 .btn-add-piece:hover{background:var(--sky2);border-color:var(--teal3);color:var(--teal)}
 .add-mat-btn{width:100%;background:var(--white);border:2px dashed var(--bdr2);border-radius:14px;padding:14px;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-size:15px;font-weight:700;color:var(--text2);letter-spacing:.5px;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:var(--sh)}
@@ -2059,10 +2067,21 @@ function esc(str) {
 }
 
 const KEY_STORE='cutnest-licence-v1',SETT_KEY='cutnest-settings-v1',HIST_KEY='cutnest-hist-v1',HIST_MAX=50,FREE_LIB_LIMIT=5;
+// ════════════════════════════════════════════════════════════════
+// ⚠️ LEMON SQUEEZY CONFIG — THE ONLY PLACE YOU EVER CHANGE THE URL
+// When you switch to Live mode: replace the UUID below with your
+// LIVE product's checkout UUID (LS dashboard → Products → Share →
+// copy checkout link). Every Buy button on this page updates
+// automatically from this one constant.
+// ════════════════════════════════════════════════════════════════
 const LS_URL='https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276';
-// Your Lemon Squeezy store slug — used to verify keys belong to CutNest
-// Find this in your LS dashboard under Settings > Store > Store URL
-const LS_STORE_SLUG='cutnest';
+
+// On load: point every checkout link on the page at LS_URL
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('a[href*="lemonsqueezy.com/checkout"]').forEach(function(a) {
+    a.href = LS_URL;
+  });
+});
 
 const MASTER_LIBRARY = [
   {id:101,allowRotation:true,cuttingMethod:'free',name:'Mild Steel 1.5mm',material:'Mild Steel',thickness:'1.5mm',size1:{w:2450,h:1150,price:85},size2:{w:2050,h:900,price:52}},
@@ -2390,6 +2409,7 @@ function addMultiplePieces(matId) {
 function duplicatePiece(matId, pi) {
   const m = mats.find(function(x){return x.id===matId;});
   if (!m || !m.pieces[pi]) return;
+  pushUndo();
   const copy = Object.assign({}, m.pieces[pi]);
   m.pieces.splice(pi + 1, 0, copy);
   renderAll(); saveState();
@@ -2524,6 +2544,13 @@ document.addEventListener('DOMContentLoaded',function(){
 
 
 
+
+// ── SERVICE WORKER: offline support + installable app ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/sw.js').catch(function () { /* non-fatal */ });
+  });
+}
 </script>
 </body>
 </html>
