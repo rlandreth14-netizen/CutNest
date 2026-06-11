@@ -1064,11 +1064,18 @@ function handlePieceKey(e, matId, pi, field) {
     e.preventDefault();
     const idx = FIELDS.indexOf(field);
     if (field === 'qty') {
-      // Enter on Qty → add new row and focus its Label
-      addPiece(matId);
-      requestAnimationFrame(() => focusPieceField(matId, pi + 1, 'label'));
+      const m = mats.find(m => m.id === matId);
+      const isLastRow = m && pi >= m.pieces.length - 1;
+      if (isLastRow) {
+        // On the last row → add a new row and focus its Label
+        addPiece(matId);
+        requestAnimationFrame(() => focusPieceField(matId, pi + 1, 'label'));
+      } else {
+        // There's already a row below → just move down to its Label
+        focusPieceField(matId, pi + 1, 'label');
+      }
     } else {
-      // Enter on any other field → advance to next field
+      // Enter on any other field → advance to next field in this row
       focusPieceField(matId, pi, FIELDS[idx + 1]);
     }
     return;
@@ -2119,45 +2126,6 @@ function addLibEntry(){
 // ── ENTER KEY NAVIGATION ──────────────────────
 // Pressing Enter in any input moves focus to the next visible input on the page.
 // Pressing Enter in the last input of a pieces row adds a new piece for that material.
-document.addEventListener('keydown', function(e) {
-  if (e.key !== 'Enter') return;
-  const tag = e.target.tagName;
-  if (tag !== 'INPUT') return;
-  e.preventDefault();
-
-  // Collect all visible, enabled inputs on the page
-  const all = Array.from(document.querySelectorAll('input:not([disabled]):not([type=hidden])'))
-    .filter(el => {
-      if (el.offsetParent === null) return false; // hidden
-      const rect = el.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0;
-    });
-
-  const idx = all.indexOf(e.target);
-  if (idx === -1) return;
-
-  const next = all[idx + 1];
-  if (next) {
-    next.focus();
-    next.select();
-  } else {
-    // Reached the last input — if it's in a pieces row, add a new piece
-    // Find which mat block the current input belongs to
-    const block = e.target.closest('.mat-block');
-    if (block) {
-      const id = block.id.replace('block-', '');
-      addPiece(id);
-      // After render, focus the first input of the new row
-      setTimeout(() => {
-        const newAll = Array.from(document.querySelectorAll('input:not([disabled])'))
-          .filter(el => el.offsetParent !== null);
-        const lastInputs = newAll.filter(el => el.closest(`#block-${id}`));
-        if (lastInputs.length) lastInputs[lastInputs.length - 3].focus();
-      }, 50);
-    }
-  }
-});
-
 // ── INIT ──────────────────────────────────────
 
 function toggleDark() {
