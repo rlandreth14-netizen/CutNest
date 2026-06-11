@@ -190,6 +190,14 @@ tr:hover td{background:rgba(232,244,248,.5)}
 .layout-title-big{font-family:"Barlow Condensed",sans-serif;font-size:23px;font-weight:800;color:var(--teal);line-height:1}
 .layout-subtitle{margin-top:3px;color:var(--muted);font-size:12px}
 .layout-metrics{display:flex;gap:7px;flex-wrap:wrap}
+.util-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin-bottom:7px;background:#e2e8f0;border:1px solid var(--bdr)}
+.util-seg{height:100%;min-width:0;transition:flex .3s}
+.util-key{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;font-size:12px;color:var(--text2)}
+.util-k{display:inline-flex;align-items:center;gap:5px}
+.util-k i{width:11px;height:11px;border-radius:3px;flex-shrink:0;display:inline-block}
+.util-k b{font-weight:700}
+[data-theme=dark] .util-bar{background:var(--bdr)}
+[data-theme=dark] .util-seg[style*="e2e8f0"]{background:var(--bdr)!important}
 .lm-card{background:#fff;border:1px solid var(--bdr2);border-radius:9px;padding:8px 12px;min-width:78px;text-align:center}
 .lm-lbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700}
 .lm-val{font-family:"Barlow Condensed",sans-serif;font-size:19px;font-weight:800;color:var(--teal);margin-top:1px}
@@ -587,7 +595,8 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
         <div class="stat-c"><div class="stat-l">Sheets</div><div class="stat-v" id="s-sheets">&mdash;</div></div>
         <div class="stat-c"><div class="stat-l">Pieces</div><div class="stat-v" id="s-placed">&mdash;</div></div>
         <div class="stat-c"><div class="stat-l">Unplaced</div><div class="stat-v" id="s-unplaced">&mdash;</div></div>
-        <div class="stat-c"><div class="stat-l">Avg Waste</div><div class="stat-v" id="s-waste">&mdash;</div></div>
+        <div class="stat-c"><div class="stat-l" id="s-waste-label">Avg Utilisation</div><div class="stat-v" id="s-waste">&mdash;</div></div>
+        <div class="stat-c"><div class="stat-l">Reclaim Offcuts</div><div class="stat-v" id="s-reclaim" style="color:var(--green)">&mdash;</div></div>
       </div>
       <div id="mat-visuals"></div>
       <div class="full-table-wrap">
@@ -656,6 +665,15 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
         <div style="display:flex;gap:11px;align-items:flex-end">
           <div style="width:100px"><label class="lbl">Kerf (mm)</label><input type="number" id="kerf-setting" value="20" min="0" max="100" oninput="saveSettings()"/></div>
           <div style="font-size:12px;color:var(--muted);padding-bottom:8px">20mm punch &middot; 3mm laser &middot; 3mm saw &middot; 5mm plasma</div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-title">&#9851; Minimum Usable Offcut</div>
+        <div class="settings-desc">The smallest leftover rectangle worth keeping as reclaimable stock. Anything smaller counts as scrap. Each sheet shows its largest usable offcut.</div>
+        <div style="display:flex;gap:11px;align-items:flex-end;flex-wrap:wrap">
+          <div style="width:110px"><label class="lbl">Long side (mm)</label><input type="number" id="offcut-long" value="1000" min="0" max="6000" oninput="saveSettings()"/></div>
+          <div style="width:110px"><label class="lbl">Short side (mm)</label><input type="number" id="offcut-short" value="300" min="0" max="6000" oninput="saveSettings()"/></div>
+          <div style="font-size:12px;color:var(--muted);padding-bottom:8px">Default 1000 &times; 300mm</div>
         </div>
       </div>
       <div class="settings-section">
@@ -1168,6 +1186,69 @@ function pruneFreeRects(rects) {
   );
 }
 
+// ── LARGEST USABLE OFFCUT ────────────────────────────────────
+// Finds the single biggest empty rectangle remaining on a sheet after
+// all pieces are placed. This is the offcut a fabricator could realistically
+// reclaim and put back on the rack — unlike raw "waste %" which counts every
+// fragmented gap. Uses a coordinate-sweep maximal-rectangle search.
+function largestEmptyRect(sheetW, sheetH, placed) {
+  if (!placed.length) return { x:0, y:0, w:sheetW, h:sheetH, area:sheetW*sheetH };
+
+  // Treat each placed piece as a blocker (include kerf so the offcut is a true clean cut)
+  const blocks = placed.map(function(p){
+    return { x:p.x, y:p.y, w:p.w + KERF, h:p.h + KERF };
+  });
+
+  // Candidate left/right (X) and top/bottom (Y) edges
+  const xs = [0, sheetW];
+  const ys = [0, sheetH];
+  blocks.forEach(function(b){
+    xs.push(b.x, b.x + b.w);
+    ys.push(b.y, b.y + b.h);
+  });
+  const xsU = Array.from(new Set(xs)).filter(function(v){return v>=0 && v<=sheetW;}).sort(function(a,b){return a-b;});
+  const ysU = Array.from(new Set(ys)).filter(function(v){return v>=0 && v<=sheetH;}).sort(function(a,b){return a-b;});
+
+  function overlapsAnyBlock(rx, ry, rw, rh) {
+    for (let i=0;i<blocks.length;i++){
+      const b = blocks[i];
+      if (!(rx+rw <= b.x || b.x+b.w <= rx || ry+rh <= b.y || b.y+b.h <= ry)) return true;
+    }
+    return false;
+  }
+
+  let best = { x:0, y:0, w:0, h:0, area:0 };
+  for (let xi=0; xi<xsU.length-1; xi++){
+    for (let xj=xi+1; xj<xsU.length; xj++){
+      const rx = xsU[xi], rw = xsU[xj]-xsU[xi];
+      if (rw <= 0) continue;
+      for (let yi=0; yi<ysU.length-1; yi++){
+        for (let yj=yi+1; yj<ysU.length; yj++){
+          const ry = ysU[yi], rh = ysU[yj]-ysU[yi];
+          if (rh <= 0) continue;
+          const area = rw*rh;
+          if (area <= best.area) continue;
+          if (!overlapsAnyBlock(rx, ry, rw, rh)) {
+            best = { x:rx, y:ry, w:rw, h:rh, area:area };
+          }
+        }
+      }
+    }
+  }
+  return best;
+}
+
+// Decide if an offcut is big enough to count as reclaimable stock.
+// Threshold is user-set (default 1000×300mm) — checked both orientations.
+function isUsableOffcut(rect) {
+  if (!rect || rect.w<=0 || rect.h<=0) return false;
+  const minL = (settings && settings.minOffcutLong)  || 1000;
+  const minS = (settings && settings.minOffcutShort) || 300;
+  const longSide  = Math.max(rect.w, rect.h);
+  const shortSide = Math.min(rect.w, rect.h);
+  return longSide >= minL && shortSide >= minS;
+}
+
 
 // GUILLOTINE PACKING — for saws and guillotine shears
 function guillotinePack(sheetW, sheetH, queue, allowRotation) {
@@ -1456,7 +1537,24 @@ function runMat(libMat, pieces, remnant, jobQty) {
     const k = `${s.sheetW}\u00d7${s.sheetH}`;
     sizeMap[k] = (sizeMap[k] || 0) + 1;
   });
-  return {sheets, unplaced:queue, sizeMap};
+
+  // Compute the largest usable offcut for every sheet (remnant sheets too).
+  // This reframes "waste" into reclaimable stock vs true scrap.
+  const allSheets = remnantSheets.concat(sheets);
+  allSheets.forEach(function(sh){
+    const offcut = largestEmptyRect(sh.sheetW, sh.sheetH, sh.placed);
+    const usable = isUsableOffcut(offcut);
+    sh.offcut = offcut;
+    sh.usableOffcut = usable ? offcut : null;
+    const sheetArea = sh.sheetW * sh.sheetH;
+    const usedArea = sh.placed.reduce(function(a,p){return a + p.w*p.h;},0);
+    sh.utilPercent = Math.round((usedArea / sheetArea) * 100);
+    sh.usablePercent = usable ? Math.round((offcut.area / sheetArea) * 100) : 0;
+    // True scrap = everything that isn't a part and isn't the reclaimable offcut
+    sh.scrapPercent = Math.max(0, 100 - sh.utilPercent - sh.usablePercent);
+  });
+
+  return {sheets: remnantSheets.concat(sheets), unplaced:queue, sizeMap};
 }
 
 // ── CALCULATE ─────────────────────────────────
@@ -1586,14 +1684,19 @@ function renderOutput() {
   const totalSheets = results.reduce((s,r)=>s+r.sheets.length,0);
   const totalPlaced = results.reduce((s,r)=>s+r.sheets.reduce((a,sh)=>a+sh.placed.length,0),0);
   const totalUnplaced = results.reduce((s,r)=>s+r.unplaced.length,0);
-  const wastes = results.flatMap(r=>r.sheets.map(sh=>sh.wastePercent));
-  const avgWaste = wastes.length ? Math.round(wastes.reduce((a,b)=>a+b,0)/wastes.length) : 0;
+  const utils = results.flatMap(r=>r.sheets.map(sh=>sh.utilPercent||0));
+  const avgUtil = utils.length ? Math.round(utils.reduce((a,b)=>a+b,0)/utils.length) : 0;
+  const reclaimable = results.reduce((s,r)=>s+r.sheets.filter(sh=>sh.usableOffcut).length,0);
   document.getElementById('s-sheets').textContent = totalSheets;
   document.getElementById('s-placed').textContent = totalPlaced;
   const su=document.getElementById('s-unplaced'); su.textContent=totalUnplaced; su.style.color=totalUnplaced>0?'var(--red)':'var(--green)';
   const sw=document.getElementById('s-waste');
-  sw.textContent=avgWaste+'%';
-  sw.style.color = avgWaste <= 15 ? 'var(--green)' : avgWaste <= 30 ? 'var(--yel)' : 'var(--red)';
+  sw.textContent=avgUtil+'%';
+  sw.style.color = avgUtil >= 70 ? 'var(--green)' : avgUtil >= 45 ? 'var(--yel)' : 'var(--red)';
+  const swl=document.getElementById('s-waste-label');
+  if(swl) swl.textContent='Avg Utilisation';
+  const sr=document.getElementById('s-reclaim');
+  if(sr) sr.textContent=reclaimable;
 
   // Build sheet navigation if multiple sheets
   const totalSheetsAll = results.reduce((s,r)=>s+r.sheets.length,0);
@@ -1627,14 +1730,12 @@ function renderOutput() {
   results.forEach(({libMat, sheets, unplaced}) => {
     const sec = document.createElement('div');
     sec.className = 'detail-section';
-    const wasteCol = sheets.length ? (sheets.reduce((a,s)=>a+s.wastePercent,0)/sheets.length > 30 ? 'var(--red)' : sheets.reduce((a,s)=>a+s.wastePercent,0)/sheets.length > 15 ? 'var(--yel)' : 'var(--green)') : 'var(--muted)';
     let html = `<div class="ds-title"><div class="ds-bar"></div>${esc(libMat.name)} — ${sheets.length} sheet${sheets.length!==1?'s':''}</div>`;
 
     sheets.forEach((sh, si) => {
       const anchorId = 'sheet-anchor-' + globalSheetIdx++;
       const scale = Math.min(MAX_W/sh.sheetW, MAX_H/sh.sheetH, 0.35);
       const cw=Math.round(sh.sheetW*scale), ch=Math.round(sh.sheetH*scale);
-      const wasteColor = sh.wastePercent>30?'var(--red)':sh.wastePercent>15?'var(--yel)':'var(--green)';
 
       // Build placed piece rects
       const pieceRects = sh.placed.map(p=>{
@@ -1647,6 +1748,20 @@ function renderOutput() {
         </div>`;
       }).join('');
 
+      // Usable offcut overlay (drawn behind pieces so pieces sit on top)
+      let offcutRect = '';
+      if (sh.usableOffcut) {
+        const o = sh.usableOffcut;
+        const ox=Math.round(o.x*scale), oy=Math.round(o.y*scale);
+        const ow=Math.max(2,Math.round(o.w*scale)-1), oh=Math.max(2,Math.round(o.h*scale)-1);
+        const oShow = ow>40 && oh>24;
+        offcutRect = `<div title="Usable offcut: ${Math.round(o.w)}×${Math.round(o.h)}mm" style="position:absolute;left:${ox}px;top:${oy}px;width:${ow}px;height:${oh}px;background:repeating-linear-gradient(45deg,rgba(5,150,105,.18),rgba(5,150,105,.18) 5px,rgba(5,150,105,.30) 5px,rgba(5,150,105,.30) 10px);border:1.5px dashed var(--green);border-radius:2px;display:flex;align-items:center;justify-content:center;text-align:center">
+          ${oShow?`<div style="font-size:${Math.min(11,ow/9)}px;font-weight:700;color:#065f46;line-height:1.2">USABLE OFFCUT<br><span style="font-weight:600;font-size:.85em">${Math.round(o.w)}×${Math.round(o.h)}</span></div>`:''}
+        </div>`;
+      }
+
+      const utilColor = sh.utilPercent >= 70 ? 'var(--green)' : sh.utilPercent >= 45 ? 'var(--yel)' : 'var(--red)';
+
       html += `<div class="sheet-vis" id="${anchorId}">
         <div class="sv-title" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;justify-content:space-between">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -1655,14 +1770,23 @@ function renderOutput() {
             <span>${sh.sheetW}×${sh.sheetH}mm${sh.isRemnant?' <span style="color:var(--green);font-size:10px;background:#d1fae5;padding:1px 6px;border-radius:4px">REMNANT</span>':''}</span>
             <span style="color:var(--muted)">·</span>
             <span>${sh.placed.length} piece${sh.placed.length!==1?'s':''}</span>
-            <span style="color:var(--muted)">·</span>
-            <span style="color:${wasteColor};font-weight:700">${sh.wastePercent}% waste</span>
           </div>
           <button onclick="openZoom(${JSON.stringify(sh).replace(/</g,'\\u003c').replace(/>/g,'\\u003e')}, 'Sheet ${si+1} — ${sh.sheetW}×${sh.sheetH}mm')" style="background:var(--sky);border:1px solid var(--bdr2);border-radius:6px;padding:3px 9px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;white-space:nowrap;font-family:inherit;transition:.15s" onmouseover="this.style.background='var(--sky2)'" onmouseout="this.style.background='var(--sky)'">⤢ Zoom</button>
+        </div>
+        <div class="util-bar">
+          <div class="util-seg" style="flex:${sh.utilPercent};background:var(--teal)"></div>
+          <div class="util-seg" style="flex:${sh.usablePercent};background:repeating-linear-gradient(45deg,#059669,#059669 4px,#10b981 4px,#10b981 8px)"></div>
+          <div class="util-seg" style="flex:${sh.scrapPercent};background:#e2e8f0"></div>
+        </div>
+        <div class="util-key">
+          <span class="util-k"><i style="background:var(--teal)"></i>Parts used <b style="color:${utilColor}">${sh.utilPercent}%</b></span>
+          <span class="util-k"><i style="background:repeating-linear-gradient(45deg,#059669,#059669 3px,#10b981 3px,#10b981 6px)"></i>Usable offcut <b style="color:var(--green)">${sh.usablePercent}%</b>${sh.usableOffcut?` <span style="color:var(--muted);font-weight:400">(${Math.round(sh.usableOffcut.w)}×${Math.round(sh.usableOffcut.h)})</span>`:''}</span>
+          <span class="util-k"><i style="background:#e2e8f0"></i>Scrap <b style="color:var(--text2)">${sh.scrapPercent}%</b></span>
         </div>
         <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
           <div style="flex-shrink:0">
             <div class="sheet-canvas" style="width:${cw}px;height:${ch}px;position:relative">
+              ${offcutRect}
               ${pieceRects}
             </div>
             <div style="margin-top:5px;font-size:10px;color:var(--muted);text-align:center">${sh.sheetW}×${sh.sheetH}mm &nbsp;·&nbsp; scale 1:${Math.round(1/scale)}</div>
@@ -1670,6 +1794,7 @@ function renderOutput() {
           <div style="flex:1;min-width:140px;max-width:280px">
             <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px">Pieces on this sheet</div>
             ${sh.placed.map(p=>`<div class="legend-item"><div class="ldot" style="background:${COLORS[p.pieceIndex%COLORS.length]}"></div><span style="font-size:12px">${esc(p.label||'P'+(p.pieceIndex+1))}</span><span style="color:var(--muted);font-size:11px;margin-left:auto">${p.w}×${p.h}mm${p.rotated?' ↻':''}</span></div>`).join('')}
+            ${sh.usableOffcut?`<div class="legend-item" style="margin-top:6px;border-top:1px dashed var(--bdr);padding-top:6px"><div class="ldot" style="background:repeating-linear-gradient(45deg,#059669,#059669 3px,#10b981 3px,#10b981 6px)"></div><span style="font-size:12px;color:#065f46;font-weight:600">Reclaim offcut</span><span style="color:var(--muted);font-size:11px;margin-left:auto">${Math.round(sh.usableOffcut.w)}×${Math.round(sh.usableOffcut.h)}mm</span></div>`:''}
           </div>
         </div>
       </div>`;
@@ -1740,8 +1865,14 @@ function exportPDF() {
     sheets.forEach((sh,si) => {
       const scale = Math.min(480/sh.sheetW, 200/sh.sheetH, 0.32);
       const cw=Math.round(sh.sheetW*scale), ch=Math.round(sh.sheetH*scale);
-      body += `<div class="sh-block"><div class="sh-title">Sheet ${si+1} — ${sh.sheetW}×${sh.sheetH}mm · ${sh.placed.length} pieces · ${sh.wastePercent}% waste</div>`;
+      body += `<div class="sh-block"><div class="sh-title">Sheet ${si+1} — ${sh.sheetW}×${sh.sheetH}mm · ${sh.placed.length} pieces · ${sh.utilPercent||0}% utilised${sh.usableOffcut?` · usable offcut ${Math.round(sh.usableOffcut.w)}×${Math.round(sh.usableOffcut.h)}mm`:''}</div>`;
       body += `<div class="sh-canvas" style="width:${cw}px;height:${ch}px;position:relative">`;
+      if (sh.usableOffcut) {
+        const o = sh.usableOffcut;
+        const ox=Math.round(o.x*scale), oy=Math.round(o.y*scale);
+        const ow=Math.max(2,Math.round(o.w*scale)-1), oh=Math.max(2,Math.round(o.h*scale)-1);
+        body += `<div style="position:absolute;left:${ox}px;top:${oy}px;width:${ow}px;height:${oh}px;background:repeating-linear-gradient(45deg,#d1fae5,#d1fae5 4px,#a7f3d0 4px,#a7f3d0 8px);border:1.5px dashed #059669;box-sizing:border-box;display:flex;align-items:center;justify-content:center;text-align:center">${ow>40&&oh>22?`<div style="font-size:${Math.min(9,ow/10)}px;font-weight:700;color:#065f46;line-height:1.2">OFFCUT<br><span style="font-weight:600;font-size:.85em">${Math.round(o.w)}×${Math.round(o.h)}</span></div>`:''}</div>`;
+      }
       sh.placed.forEach(p => {
         const col = COLORS[p.pieceIndex%COLORS.length];
         const px=Math.round(p.x*scale),py=Math.round(p.y*scale),pw=Math.max(2,Math.round(p.w*scale)-1),ph=Math.max(2,Math.round(p.h*scale)-1);
@@ -2271,7 +2402,9 @@ function openLegal(type){
 }
 
 function loadSettings(){
-  try{const r=localStorage.getItem(SETT_KEY);if(r)settings=Object.assign({kerf:20,companyName:''},JSON.parse(r));}catch(e){}
+  try{const r=localStorage.getItem(SETT_KEY);if(r)settings=Object.assign({kerf:20,companyName:'',minOffcutLong:1000,minOffcutShort:300},JSON.parse(r));}catch(e){}
+  if(settings.minOffcutLong==null)settings.minOffcutLong=1000;
+  if(settings.minOffcutShort==null)settings.minOffcutShort=300;
   KERF=Math.max(0,parseInt(settings.kerf)||20);
   const kd=document.getElementById('kerf-display');if(kd)kd.textContent=KERF+'mm';
 }
@@ -2280,6 +2413,9 @@ function openSettings(){
   const kf=document.getElementById('kerf-setting'),cn=document.getElementById('company-name');
   const ki=document.getElementById('licence-key-input'),ks=document.getElementById('key-status');
   if(kf)kf.value=settings.kerf||20;if(cn)cn.value=settings.companyName||'';
+  const ol=document.getElementById('offcut-long'),os=document.getElementById('offcut-short');
+  if(ol)ol.value=settings.minOffcutLong||1000;
+  if(os)os.value=settings.minOffcutShort||300;
   if(ki&&ks){
     const s=localStorage.getItem(KEY_STORE);
     if(s){
@@ -2305,8 +2441,12 @@ function closeSettings(){
 function saveSettings() {
   const kf = document.getElementById('kerf-setting');
   const cn = document.getElementById('company-name');
+  const ol = document.getElementById('offcut-long');
+  const os = document.getElementById('offcut-short');
   if (kf) { settings.kerf = Math.max(0, Math.min(100, parseInt(kf.value) || 0)); KERF = settings.kerf; }
   if (cn) settings.companyName = cn.value ? cn.value.trim() : '';
+  if (ol) settings.minOffcutLong = Math.max(0, Math.min(6000, parseInt(ol.value) || 0));
+  if (os) settings.minOffcutShort = Math.max(0, Math.min(6000, parseInt(os.value) || 0));
   localStorage.setItem(SETT_KEY, JSON.stringify(settings));
   const kd = document.getElementById('kerf-display');
   if (kd) kd.textContent = KERF + 'mm';
@@ -2489,6 +2629,12 @@ function openZoom(sheetData, title) {
   const ch = Math.round(sheetData.sheetH * scale);
 
   let html = `<div style="position:relative;width:${cw}px;height:${ch}px;background:repeating-linear-gradient(-45deg,rgba(15,76,92,.04),rgba(15,76,92,.04) 1px,transparent 1px,transparent 8px);border:2px solid var(--bdr2);border-radius:3px;overflow:hidden;flex-shrink:0">`;
+  if (sheetData.usableOffcut) {
+    const o = sheetData.usableOffcut;
+    const ox=Math.round(o.x*scale), oy=Math.round(o.y*scale);
+    const ow=Math.max(2,Math.round(o.w*scale)-1), oh=Math.max(2,Math.round(o.h*scale)-1);
+    html += `<div title="Usable offcut: ${Math.round(o.w)}×${Math.round(o.h)}mm" style="position:absolute;left:${ox}px;top:${oy}px;width:${ow}px;height:${oh}px;background:repeating-linear-gradient(45deg,rgba(5,150,105,.18),rgba(5,150,105,.18) 6px,rgba(5,150,105,.32) 6px,rgba(5,150,105,.32) 12px);border:2px dashed var(--green);box-sizing:border-box;display:flex;align-items:center;justify-content:center;text-align:center">${ow>60&&oh>30?`<div style="font-size:${Math.min(15,ow/8)}px;font-weight:700;color:#065f46;line-height:1.3">USABLE OFFCUT<br><span style="font-weight:600;font-size:.85em">${Math.round(o.w)}×${Math.round(o.h)}mm</span></div>`:''}</div>`;
+  }
   sheetData.placed.forEach(p => {
     const col = COLORS[p.pieceIndex % COLORS.length];
     const px = Math.round(p.x * scale), py = Math.round(p.y * scale);
