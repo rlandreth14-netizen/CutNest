@@ -216,6 +216,13 @@ tr:hover td{background:rgba(232,244,248,.5)}
 .le-name{font-size:14px;font-weight:700;color:var(--teal)}
 .le-meta{font-size:12px;color:var(--muted)}
 .sizes-edit{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.cut-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.cut-opt-box{background:#fff;border:1px solid var(--bdr);border-radius:8px;padding:10px}
+.cut-opt-box select{margin-top:4px}
+.grain-toggle{display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer;font-size:13px;color:var(--text2);user-select:none}
+.grain-toggle input{width:18px;height:18px;flex-shrink:0;cursor:pointer;accent-color:var(--teal)}
+.mode-chip{display:inline-flex;align-items:center;gap:4px;background:var(--sky2);color:var(--teal3);font-size:11px;font-weight:600;padding:3px 9px;border-radius:5px;font-family:"Barlow",sans-serif}
+.mode-chip.grain-on{background:#fef3c7;color:#92400e}
 .se-box{background:#fff;border:1px solid var(--bdr);border-radius:8px;padding:10px}
 .se-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:7px}
 .se-inputs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
@@ -313,6 +320,7 @@ kbd{background:var(--white);border:1px solid var(--bdr2);border-radius:4px;paddi
 [data-theme=dark] input,[data-theme=dark] select{background:var(--sky);border-color:var(--bdr);color:var(--text)}
 [data-theme=dark] input:focus,[data-theme=dark] select:focus{background:var(--sky2)}
 [data-theme=dark] .se-box,[data-theme=dark] .edit-basic{background:var(--sky);border-color:var(--bdr)}
+[data-theme=dark] .cut-opt-box{background:var(--sky);border-color:var(--bdr)}
 [data-theme=dark] .add-form{background:var(--sky2);border-color:var(--bdr2)}
 [data-theme=dark] .calc-bar,[data-theme=dark] .stale-banner-inner{background:var(--white);border-color:var(--bdr)}
 [data-theme=dark] body{background:var(--bg)}
@@ -364,6 +372,7 @@ kbd{background:var(--white);border:1px solid var(--bdr2);border-radius:4px;paddi
   .af-row2{grid-template-columns:1fr 1fr;gap:6px}
   .edit-basic-grid{grid-template-columns:1fr 1fr}
   .sizes-edit{grid-template-columns:1fr}
+  .cut-opts{grid-template-columns:1fr}
   .calc-bar{position:-webkit-sticky;position:sticky;bottom:0;z-index:20;border-radius:0;border-left:none;border-right:none;border-bottom:none;margin-left:-10px;margin-right:-10px;padding:10px 12px;box-shadow:0 -4px 16px rgba(15,76,92,.15)}
   .mat-block-cap{padding:10px 12px}
   .mat-cap-title{font-size:13px}
@@ -1871,6 +1880,10 @@ function renderLibEntries() {
             ? `<div class="sz-badge"><span class="sl">Size 2${e.size2.bc?' · '+e.size2.bc:''}</span><span class="sv">${e.size2.w} × ${e.size2.h} mm</span></div>`
             : `<div class="sz-badge" style="opacity:.4"><span class="sl">Size 2</span><span class="sv" style="color:var(--muted)">Not set</span></div>`}
         </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+          <span class="mode-chip">${e.cuttingMethod==='guillotine'?'⊞ Guillotine':'⊡ Free placement'}</span>
+          ${e.allowRotation===false?'<span class="mode-chip grain-on">🔒 Grain locked</span>':''}
+        </div>
       </div>
       <div id="ee-${e.id}" style="display:none">
         <div class="edit-basic mt8">
@@ -1891,6 +1904,26 @@ function renderLibEntries() {
             <div><label class="lbl">H (mm)</label><input type="number" value="${e.size2&&e.size2.h||''}" placeholder="optional" oninput="updSz(${e.id},2,'h',+this.value)"/></div>
             <div><label class="lbl">Price £</label><input type="number" value="${e.size2&&e.size2.price||''}" placeholder="opt" oninput="updSz(${e.id},2,'price',+this.value)"/></div>
           </div></div>
+        </div>
+        <div class="cut-opts">
+          <div class="cut-opt-box">
+            <label class="lbl">Cutting Method
+              <span class="kerf-tip-icon" data-tip="Free = pieces nested anywhere (CNC punch, laser, router, plasma). Guillotine = straight edge-to-edge cuts only (panel saw, guillotine shear).">?</span>
+            </label>
+            <select onchange="upd(${e.id},'cuttingMethod',this.value)">
+              <option value="free" ${(e.cuttingMethod||'free')==='free'?'selected':''}>Free placement (punch / laser / router)</option>
+              <option value="guillotine" ${e.cuttingMethod==='guillotine'?'selected':''}>Guillotine (saw / shear — straight cuts)</option>
+            </select>
+          </div>
+          <div class="cut-opt-box">
+            <label class="lbl">Grain Direction
+              <span class="kerf-tip-icon" data-tip="Lock ON = pieces keep their orientation (brushed steel, wood grain, directional finishes). Lock OFF = pieces may rotate 90° to pack tighter.">?</span>
+            </label>
+            <label class="grain-toggle">
+              <input type="checkbox" ${e.allowRotation===false?'checked':''} onchange="upd(${e.id},'allowRotation',!this.checked)"/>
+              <span>Lock grain — don't rotate pieces</span>
+            </label>
+          </div>
         </div>
         <div style="text-align:right;margin-top:9px"><button class="btn-sm-gr" onclick="toggleEdit(${e.id})">✓ Done</button></div>
       </div>
@@ -1943,6 +1976,8 @@ function addLibEntry(){
     material:document.getElementById('n-mat').value.trim(),
     thickness:document.getElementById('n-thk').value.trim(),
     grade:'',
+    cuttingMethod:'free',
+    allowRotation:true,
     size1:{w:w1, h:h1, price:pr1},
     size2:{w:+document.getElementById('n-w2').value||'', h:+document.getElementById('n-h2').value||'', price:pr2}
   });
