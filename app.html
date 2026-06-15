@@ -1486,6 +1486,9 @@ function runMat(libMat, pieces, remnant, jobQty) {
   }
 
   const largestSheetArea = Math.max(...sizes.map(sz => sz.w * sz.h));
+  // If every size has a real price, switch scoring to cost-based (minimise £ spent).
+  const havePrices = sizes.every(sz => sz.price && sz.price > 0);
+  const maxSheetPrice = havePrices ? Math.max(...sizes.map(sz => sz.price)) : 1;
   const sheets = [];
   let limit = 150;
 
@@ -1503,19 +1506,25 @@ function runMat(libMat, pieces, remnant, jobQty) {
   // Estimate sheets still needed after this layout
       const estRemaining = estimateRemaining(r.unplaced, sizes, _ar, _cm);
 
-  // Prefer smaller sheets
-  const sheetSizeWeight =
-    (sz.w * sz.h) / largestSheetArea;
-
-  // Penalise high waste %
-  const wasteWeight =
-    r.wastePercent / 100;
-
-  // Final combined score
-  const score =
-    (estRemaining * 1.0) +
-    (sheetSizeWeight * 0.65) +
-    (wasteWeight * 0.35);
+  let score;
+  if (havePrices) {
+    // ── COST-AWARE SCORING ──
+    // What does the rest of the job cost if we pick this sheet?
+    // = this sheet's price + an estimate of the cheapest way to finish.
+    // We approximate remaining cost using the cheapest £-per-area sheet,
+    // because the optimiser will keep choosing efficiently after this.
+    const cheapestPerArea = Math.min(...sizes.map(s => s.price / (s.w * s.h)));
+    const remainingArea = r.unplaced.reduce((a, p) => a + p.w * p.h, 0);
+    const estRemainingCost = remainingArea * cheapestPerArea * 1.15; // 1.15 = real-world packing overhead
+    const thisSheetCost = sz.price;
+    // Total projected spend for the job, normalised by the priciest sheet
+    score = (thisSheetCost + estRemainingCost) / maxSheetPrice;
+  } else {
+    // ── AREA-BASED SCORING (no prices set) ──
+    const sheetSizeWeight = (sz.w * sz.h) / largestSheetArea;
+    const wasteWeight = r.wastePercent / 100;
+    score = (estRemaining * 1.0) + (sheetSizeWeight * 0.65) + (wasteWeight * 0.35);
+  }
 
   if (
     !bestChoice ||
@@ -1932,21 +1941,72 @@ function exportPDF() {
 
 function shareJob() {
   try {
+    // Only share the JOB itself (selected materials + their sizes + pieces),
+    // NOT the user's whole library — that keeps the URL short enough to send.
+    const slimMats = mats.map(function(m){
+      const libMat = library.find(function(l){return l.id == m.selectedMatId;});
+      return {
+        name: libMat ? libMat.name : '',
+        cuttingMethod: libMat ? (libMat.cuttingMethod||'free') : 'free',
+        allowRotation: libMat ? (libMat.allowRotation !== false) : true,
+        size1: libMat ? libMat.size1 : null,
+        size2: libMat ? libMat.size2 : null,
+        pieces: m.pieces.filter(function(p){return p.w>0 && p.h>0;})
+      };
+    }).filter(function(m){return m.pieces.length;});
+
+    if (!slimMats.length) { showToast('Add some pieces before sharing'); return; }
+
     const state = {
+      v: 2,
       jobRef: (document.getElementById('job-ref')||{}).value||'',
-      mats: JSON.parse(JSON.stringify(mats)),
-      lib: JSON.parse(JSON.stringify(library))
+      jobQty: (document.getElementById('job-qty')||{}).value||'1',
+      mats: slimMats
     };
     const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
     const url = window.location.origin + window.location.pathname + '?job=' + encoded;
+
+    // Web Share API (mobile) — best experience
     if (navigator.share) {
-      navigator.share({ title: 'CutNest Job', url });
-    } else {
-      navigator.clipboard.writeText(url).then(() => showToast('🔗 Job link copied to clipboard'));
+      navigator.share({ title: 'CutNest Job', text: 'Cut list job from CutNest', url: url })
+        .catch(function(){ fallbackCopy(url); });
+      return;
     }
+    fallbackCopy(url);
   } catch(e) {
     showToast('Could not generate share link');
   }
+}
+
+function fallbackCopy(url) {
+  // Try modern clipboard, fall back to a manual copy prompt if it fails
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url)
+      .then(function(){ showToast('🔗 Job link copied to clipboard'); })
+      .catch(function(){ showShareUrlModal(url); });
+  } else {
+    showShareUrlModal(url);
+  }
+}
+
+function showShareUrlModal(url) {
+  // Last-resort: show the link in a selectable box so the user can copy it manually
+  const existing = document.getElementById('share-url-modal');
+  if (existing) existing.remove();
+  const m = document.createElement('div');
+  m.id = 'share-url-modal';
+  m.className = 'overlay';
+  m.style.display = 'flex';
+  m.onclick = function(e){ if(e.target===m) m.remove(); };
+  m.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:480px;width:92%;padding:20px">'
+    + '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:17px;font-weight:800;color:var(--teal);margin-bottom:6px">Share this job</div>'
+    + '<div style="font-size:13px;color:var(--muted);margin-bottom:12px">Copy this link and send it. Whoever opens it gets this exact job loaded.</div>'
+    + '<textarea readonly style="width:100%;height:80px;font-size:12px;padding:8px;border:1px solid var(--bdr2);border-radius:8px;resize:none;font-family:monospace" onclick="this.select()">' + url + '</textarea>'
+    + '<div style="text-align:right;margin-top:12px"><button onclick="document.getElementById(\'share-url-modal\').remove()" style="background:var(--teal);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-weight:700;cursor:pointer;font-family:\'Barlow Condensed\',sans-serif">Done</button></div>'
+    + '</div>';
+  document.body.appendChild(m);
+  const ta = m.querySelector('textarea');
+  if (ta) { ta.focus(); ta.select(); }
 }
 
 
@@ -2670,17 +2730,42 @@ document.addEventListener('DOMContentLoaded',function(){
   if (sharedJob) {
     try {
       const state = JSON.parse(decodeURIComponent(escape(atob(sharedJob))));
-      if (state.mats) mats = state.mats;
-      if (state.lib && state.lib.length) library = state.lib;
-      if (state.jobRef) {
-        const jr = document.getElementById('job-ref');
-        if (jr) jr.value = state.jobRef;
+      if (state.v === 2 && state.mats) {
+        // v2: slim format — each shared material carries its own sizes.
+        // Add any shared materials into the library so they render, then
+        // build mats that reference them.
+        const newMats = [];
+        state.mats.forEach(function(sm, i){
+          const libId = 'shared-' + Date.now() + '-' + i;
+          library.push({
+            id: libId,
+            name: sm.name || ('Shared material ' + (i+1)),
+            material: '', thickness: '', grade: '',
+            cuttingMethod: sm.cuttingMethod || 'free',
+            allowRotation: sm.allowRotation !== false,
+            size1: sm.size1 || {w:'',h:'',price:0},
+            size2: sm.size2 || {w:'',h:'',price:0}
+          });
+          newMats.push({
+            id: 'mat-' + Date.now() + '-' + i,
+            selectedMatId: libId,
+            pieces: (sm.pieces && sm.pieces.length) ? sm.pieces : [{w:'',h:'',qty:1,label:''}]
+          });
+        });
+        if (newMats.length) mats = newMats;
+        if (state.jobRef) { const jr = document.getElementById('job-ref'); if (jr) jr.value = state.jobRef; }
+        if (state.jobQty) { const jq = document.getElementById('job-qty'); if (jq) jq.value = state.jobQty; }
+        persistLib(library);
+      } else {
+        // v1 legacy format (full library bundled)
+        if (state.mats) mats = state.mats;
+        if (state.lib && state.lib.length) library = state.lib;
+        if (state.jobRef) { const jr = document.getElementById('job-ref'); if (jr) jr.value = state.jobRef; }
       }
       renderAll();
       showToast('📋 Shared job loaded');
-      // Clean URL without reloading
       window.history.replaceState({}, '', window.location.pathname);
-    } catch(e) { /* ignore malformed */ }
+    } catch(e) { restoreState(); }
   } else {
     restoreState();
   }
