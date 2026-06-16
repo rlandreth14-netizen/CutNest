@@ -1576,10 +1576,18 @@ function runMat(libMat, pieces, remnant, jobQty) {
       queue.push({...p, label:p.label||'', pieceIndex:pi, instanceIndex:q});
   });
 
+  // Build the list of valid stock sheet sizes. A size only counts if it has
+  // real positive width AND height — otherwise packing onto it is impossible.
+  const validSize = function(s){ return s && +s.w > 0 && +s.h > 0; };
   const sizes = [
-    libMat.size1,
-    libMat.size2 && libMat.size2.w && libMat.size2.h ? libMat.size2 : null
+    validSize(libMat.size1) ? { w:+libMat.size1.w, h:+libMat.size1.h, price:+libMat.size1.price||0 } : null,
+    validSize(libMat.size2) ? { w:+libMat.size2.w, h:+libMat.size2.h, price:+libMat.size2.price||0 } : null
   ].filter(Boolean);
+
+  // No usable stock size for this material → return a clear error, not silent failure.
+  if (!sizes.length) {
+    return { sheets:[], unplaced:queue, sizeMap:{}, noValidSize:true, matName:libMat.name };
+  }
 
   // Use remnant sheet first if provided
   let remnantSheets = [];
@@ -1726,13 +1734,26 @@ function _doCalculate() {
     const valid = m.pieces.filter(p=>p.w>0&&p.h>0&&p.qty>0);
     if (!valid.length) { errors.push(`Material ${mats.indexOf(m)+1} (${libMat.name}): Please add at least one piece.`); continue; }
 
-    // check pieces fit
-    const sizes = [libMat.size1, libMat.size2&&libMat.size2.w&&libMat.size2.h?libMat.size2:null].filter(Boolean);
+    // check pieces fit — only against sizes that have real positive dimensions
+    const vSize = function(s){ return s && +s.w > 0 && +s.h > 0; };
+    const sizes = [
+      vSize(libMat.size1) ? libMat.size1 : null,
+      vSize(libMat.size2) ? libMat.size2 : null
+    ].filter(Boolean);
+
+    if (!sizes.length) {
+      errors.push(`${libMat.name}: no valid sheet size set. Open Library → Edit ${libMat.name} and enter Size 1 width and height.`);
+      continue;
+    }
     for (const p of valid) {
       const fits = sizes.some(sz=>(p.w<=sz.w&&p.h<=sz.h)||(p.h<=sz.w&&p.w<=sz.h));
       if (!fits) { errors.push(`"${p.label||p.w+'×'+p.h}mm" is too large for all sheet sizes in ${libMat.name}.`); }
     }
     const res = runMat(libMat, valid, m.remnant, jobQty);
+    if (res.noValidSize) {
+      errors.push(`${libMat.name}: no valid sheet size. Open Library → Edit ${libMat.name} and set Size 1.`);
+      continue;
+    }
     results.push({ libMat, ...res });
   }
 
