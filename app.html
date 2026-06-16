@@ -2268,7 +2268,7 @@ const KEY_STORE='cutnest-licence-v1',SETT_KEY='cutnest-settings-v1',HIST_KEY='cu
 // copy checkout link). Every Buy button on this page updates
 // automatically from this one constant.
 // ════════════════════════════════════════════════════════════════
-const LS_URL='https://cutnest.lemonsqueezy.com/checkout/buy/a9fdfebb-ea08-4962-8aae-45e608f0cc6e';
+const LS_URL='https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276';
 
 // On load: point every checkout link on the page at LS_URL
 document.addEventListener('DOMContentLoaded', function() {
@@ -2312,9 +2312,11 @@ function checkLicence(){
     const s=localStorage.getItem(KEY_STORE);
     if(s){
       const d=JSON.parse(s);
-      // Require: key present, verified flag set by a successful LS API call,
-      // and key must match the format Lemon Squeezy issues (hex groups)
-      if(d&&d.key&&d.verified===true&&/^[A-Z0-9]{8}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{12}$/i.test(d.key)){
+      // The 'verified' flag is only ever set after a successful Lemon Squeezy
+      // API response, so it is the source of truth. We just sanity-check the
+      // key looks like an LS key (alphanumeric with dashes) rather than
+      // enforcing an exact UUID shape, which can vary.
+      if(d&&d.key&&d.verified===true&&/^[A-Za-z0-9-]{20,}$/.test(d.key)){
         isPro=true;return;
       }
     }
@@ -2325,19 +2327,30 @@ function checkLicence(){
 async function validateAndSaveKey(){
   const ki=document.getElementById('licence-key-input'),se=document.getElementById('key-status');
   if(!ki||!se)return;
-  const key=ki.value.trim().toUpperCase();
+  const key=ki.value.trim();
   if(!key){se.className='key-status invalid';se.textContent='Enter your licence key';return;}
-  se.className='key-status none';se.textContent='Validating…';
+  se.className='key-status none';se.textContent='Activating…';
   try{
-    // LS License API requires application/x-www-form-urlencoded — not JSON
-    const r=await fetch('https://api.lemonsqueezy.com/v1/licenses/validate',{
+    // Use the ACTIVATE endpoint, not validate. A freshly purchased key has
+    // status "inactive" until it is activated for the first time — validate
+    // alone would reject it. Activate flips it to active and creates an instance.
+    const instanceName = 'CutNest-' + (Math.random().toString(36).slice(2,8));
+    const r=await fetch('https://api.lemonsqueezy.com/v1/licenses/activate',{
       method:'POST',
       headers:{'Accept':'application/json','Content-Type':'application/x-www-form-urlencoded'},
-      body:'license_key='+encodeURIComponent(key)
+      body:'license_key='+encodeURIComponent(key)+'&instance_name='+encodeURIComponent(instanceName)
     });
     const d=await r.json();
-    if(d.valid===true && d.license_key && d.license_key.status==='active'){
-      localStorage.setItem(KEY_STORE,JSON.stringify({key:key,verified:true,date:new Date().toISOString()}));
+
+    // Success: key activated OR already active (activation_limit reached but key is valid)
+    const keyStatus = d.license_key && d.license_key.status;
+    const activatedOk = d.activated === true;
+    const alreadyActive = d.error && /activation limit/i.test(d.error) && keyStatus==='active';
+
+    if(activatedOk || alreadyActive){
+      const store = { key:key, verified:true, date:new Date().toISOString() };
+      if(d.instance && d.instance.id) store.instanceId = d.instance.id;
+      localStorage.setItem(KEY_STORE,JSON.stringify(store));
       isPro=true;
       se.className='key-status valid';
       se.textContent='Pro active — loading…';
@@ -2345,10 +2358,10 @@ async function validateAndSaveKey(){
       loadLib().then(function(){
         setTimeout(function(){ closeSettings(); showToast('✓ CutNest Pro unlocked!'); },1200);
       });
-    } else if(d.license_key && d.license_key.status==='expired'){
+    } else if(keyStatus==='expired'){
       se.className='key-status invalid';
       se.textContent='Licence expired — renew your subscription at cutnest.co.uk';
-    } else if(d.license_key && d.license_key.status==='disabled'){
+    } else if(keyStatus==='disabled'){
       se.className='key-status invalid';
       se.textContent='Licence disabled — contact hello@cutnest.co.uk';
     } else {
