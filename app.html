@@ -2644,40 +2644,38 @@ async function loadLib(){
   try{
     const saved=localStorage.getItem(STOR_KEY),savedLib=saved?JSON.parse(saved):null;
     if(isPro){
-      // Merge master library with the user's custom entries, but DEDUPE so we
-      // never show two materials with the same name (e.g. an old custom
-      // "Mild Steel 3mm" alongside the master one). Master always wins —
-      // it has clean, valid sheet sizes. Custom entries only survive if their
-      // name doesn't collide with a master entry.
-      const masterNames = new Set(MASTER_LIBRARY.map(function(m){return (m.name||'').trim().toLowerCase();}));
-      const masterIds   = new Set(MASTER_LIBRARY.map(function(m){return m.id;}));
-      const custom = (savedLib||[]).filter(function(e){
-        if(!e || !e.name) return false;
-        if(masterIds.has(e.id)) return false;                       // same id as a master entry
-        if(masterNames.has(e.name.trim().toLowerCase())) return false; // same NAME as a master entry
-        return true;
-      });
-      // Also dedupe custom against itself by name (keep first occurrence)
-      const seen=new Set(); const customClean=[];
+      // Start from the master library, then add the user's custom entries.
+      // Custom entries are kept by ID (so a job referencing them never breaks).
+      const masterById = {};
+      MASTER_LIBRARY.forEach(function(m){ masterById[m.id] = m; });
+      const masterByName = {};
+      MASTER_LIBRARY.forEach(function(m){ masterByName[(m.name||'').trim().toLowerCase()] = m; });
+
+      const custom = (savedLib||[]).filter(function(e){ return e && !masterById[e.id]; });
+
+      // REPAIR: if a custom entry has no valid sheet size but its name matches a
+      // master grade, heal it by copying the master's sizes. This fixes corrupted
+      // entries WITHOUT removing them, so jobs that reference them keep working.
       custom.forEach(function(e){
-        const k=e.name.trim().toLowerCase();
-        if(!seen.has(k)){ seen.add(k); customClean.push(e); }
+        const bad1 = !(e.size1 && +e.size1.w>0 && +e.size1.h>0);
+        if(bad1 && e.name){
+          const master = masterByName[e.name.trim().toLowerCase()];
+          if(master){
+            e.size1 = {w:master.size1.w, h:master.size1.h, price:(e.size1&&+e.size1.price)||master.size1.price};
+            if(!(e.size2 && +e.size2.w>0 && +e.size2.h>0) && master.size2){
+              e.size2 = {w:master.size2.w, h:master.size2.h, price:master.size2.price};
+            }
+            if(!e.cuttingMethod) e.cuttingMethod = master.cuttingMethod||'free';
+          }
+        }
       });
-      library=MASTER_LIBRARY.concat(customClean);
+
+      library = MASTER_LIBRARY.concat(custom);
       setSS('ok','Pro library active');
     }else{
-      // Free tier: dedupe the saved library by name too, in case of past dupes
-      const base = savedLib||defaultLib();
-      const seen=new Set(); library=[];
-      base.forEach(function(e){
-        if(!e||!e.name) return;
-        const k=e.name.trim().toLowerCase();
-        if(!seen.has(k)){ seen.add(k); library.push(e); }
-      });
-      if(!library.length) library=defaultLib();
+      library = savedLib || defaultLib();
       setSS('ok','Ready');
     }
-    // Persist the cleaned library so duplicates don't keep coming back
     await saveData(library);
   }catch(err){library=defaultLib();setSS('err','Error');}
   renderAll();
