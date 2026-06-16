@@ -1458,23 +1458,41 @@ function estimateRemaining(queue, sizes, allowRot, cm) {
 }
 
 // ── CONSOLIDATION PASS ───────────────────────────────────────
-// The greedy packer can leave near-empty "orphan" sheets at the end of a job
-// (e.g. one small part on a full sheet). This pass tries to eliminate the
-// emptiest sheets by re-fitting their pieces into the spare space on other
-// sheets. If every piece from a sheet finds a home elsewhere, that whole
-// sheet — and its cost — is removed from the job.
+// The greedy packer can leave near-empty "orphan" sheets at the end of a job.
+// This pass tries to empty the least-full sheet by re-fitting its pieces onto
+// other sheets' spare space. SAFETY FIRST: a consolidation is only committed
+// if a full integrity check confirms the exact same multiset of pieces exists
+// afterwards. If anything would be lost, the change is rejected entirely.
 function consolidateSheets(sheets, allowRot, cm) {
   if (sheets.length < 2) return sheets;
 
-  let working = sheets.map(function(s){ return s; });
+  // Signature of all pieces by dimensions (a multiset we must preserve exactly)
+  function pieceSignature(sheetArr) {
+    const counts = {};
+    sheetArr.forEach(function(s){
+      s.placed.forEach(function(p){
+        // key on dimensions sorted (rotation-agnostic) so a rotated piece matches
+        const a = Math.min(p.w, p.h), b = Math.max(p.w, p.h);
+        const k = a + 'x' + b;
+        counts[k] = (counts[k] || 0) + 1;
+      });
+    });
+    return counts;
+  }
+  function sameSignature(s1, s2) {
+    const k1 = Object.keys(s1), k2 = Object.keys(s2);
+    if (k1.length !== k2.length) return false;
+    return k1.every(function(k){ return s1[k] === s2[k]; });
+  }
+
+  const originalSig = pieceSignature(sheets);
+  let working = sheets.slice();
   let madeProgress = true;
   let safety = working.length + 5;
 
   while (madeProgress && safety-- > 0) {
     madeProgress = false;
 
-    // Sort by how full each sheet is (least full first) — those are the
-    // candidates we try to empty.
     const order = working
       .map(function(s, i){
         const used = s.placed.reduce(function(a,p){return a + p.w*p.h;},0);
@@ -1487,60 +1505,65 @@ function consolidateSheets(sheets, allowRot, cm) {
       const donor = working[donorIdx];
       if (!donor || donor.isRemnant) continue;
 
-      // The pieces we need to rehome (in this donor sheet)
-      const piecesToMove = donor.placed.map(function(p){
-        return { w: p.w, h: p.h, label: p.label, pieceIndex: p.pieceIndex, instanceIndex: p.instanceIndex, _rot: p.rotated };
+      // Donor pieces to rehome
+      let remaining = donor.placed.map(function(p){
+        return { w:p.w, h:p.h, label:p.label, pieceIndex:p.pieceIndex, instanceIndex:p.instanceIndex };
       });
 
-      // Try to place ALL of them into the OTHER sheets' free space.
-      // We rebuild each candidate sheet's layout from its existing pieces
-      // plus the donor's pieces, and accept only if everything still fits.
-      let remaining = piecesToMove.slice();
-      const trialPlacements = []; // {targetIdx, newResult}
+      // Build a candidate new layout: copies of all non-donor sheets, into which
+      // we try to absorb the donor's pieces.
+      const candidate = working.map(function(s, idx){
+        if (idx === donorIdx) return null;
+        return s;
+      });
 
-      for (let t = 0; t < working.length && remaining.length; t++) {
-        if (t === donorIdx) continue;
-        const target = working[t];
-        if (target.isRemnant) continue;
+      for (let t = 0; t < candidate.length && remaining.length; t++) {
+        const target = candidate[t];
+        if (!target || target.isRemnant) continue;
 
-        // Existing pieces on the target, as a fresh queue
         const existing = target.placed.map(function(p){
-          return { w: p.w, h: p.h, label: p.label, pieceIndex: p.pieceIndex, instanceIndex: p.instanceIndex };
+          return { w:p.w, h:p.h, label:p.label, pieceIndex:p.pieceIndex, instanceIndex:p.instanceIndex };
         });
         const combined = existing.concat(remaining);
         const repacked = packSheetBest(target.sheetW, target.sheetH, combined, allowRot, cm);
 
-        // Only useful if the target now holds everything it had PLUS at least
-        // one donor piece, with nothing of its own dropped.
-        if (repacked.placed.length >= existing.length &&
-            repacked.placed.length > 0 &&
-            repacked.unplaced.length < combined.length) {
-          // Figure out which donor pieces got placed
-          const placedKeys = new Set(repacked.placed.map(function(p){return p.pieceIndex+'-'+p.instanceIndex;}));
-          const stillExisting = existing.every(function(p){ return placedKeys.has(p.pieceIndex+'-'+p.instanceIndex); });
-          if (stillExisting) {
-            trialPlacements.push({ targetIdx: t, result: repacked });
-            // Remove now-placed donor pieces from remaining
-            remaining = remaining.filter(function(p){ return !placedKeys.has(p.pieceIndex+'-'+p.instanceIndex); });
-          }
-        }
+        // Which of the COMBINED pieces actually got placed?
+        const placedSet = new Set(repacked.placed.map(function(p){return p.pieceIndex+'|'+p.instanceIndex;}));
+        // All existing target pieces must still be placed (we can't drop them)
+        const keptAllExisting = existing.every(function(p){ return placedSet.has(p.pieceIndex+'|'+p.instanceIndex); });
+        if (!keptAllExisting) continue;
+
+        // Did we place any NEW donor pieces here?
+        const newlyPlaced = remaining.filter(function(p){ return placedSet.has(p.pieceIndex+'|'+p.instanceIndex); });
+        if (newlyPlaced.length === 0) continue;
+
+        // Accept this target's new layout
+        repacked.sheetW = target.sheetW;
+        repacked.sheetH = target.sheetH;
+        repacked.unplaced = [];
+        candidate[t] = repacked;
+        // Remove the donor pieces we just placed
+        const placedDonorKeys = new Set(newlyPlaced.map(function(p){return p.pieceIndex+'|'+p.instanceIndex;}));
+        remaining = remaining.filter(function(p){ return !placedDonorKeys.has(p.pieceIndex+'|'+p.instanceIndex); });
       }
 
-      // If we rehomed EVERY piece from the donor, commit the moves & drop donor.
-      if (remaining.length === 0 && trialPlacements.length > 0) {
-        trialPlacements.forEach(function(tp){
-          working[tp.targetIdx] = tp.result;
-          // preserve sheet meta
-          working[tp.targetIdx].sheetW = working[tp.targetIdx].sheetW;
-        });
-        working[donorIdx] = null;
-        working = working.filter(function(s){ return s !== null; });
-        madeProgress = true;
-        break; // restart the while loop with the new, smaller set
+      // Only commit if EVERY donor piece was rehomed...
+      if (remaining.length === 0) {
+        const newWorking = candidate.filter(function(s){ return s !== null; });
+        // ...AND the integrity check passes (no piece lost or duplicated)
+        if (sameSignature(pieceSignature(newWorking), originalSig)) {
+          working = newWorking;
+          madeProgress = true;
+          break;
+        }
       }
     }
   }
 
+  // Final guard: if anything went wrong, fall back to the original layout.
+  if (!sameSignature(pieceSignature(working), originalSig)) {
+    return sheets;
+  }
   return working;
 }
 
