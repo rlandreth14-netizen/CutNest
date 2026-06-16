@@ -1745,19 +1745,47 @@ function _doCalculate() {
       errors.push(`${libMat.name}: no valid sheet size set. Open Library → Edit ${libMat.name} and enter Size 1 width and height.`);
       continue;
     }
+    let anyTooBig = false;
     for (const p of valid) {
       const fits = sizes.some(sz=>(p.w<=sz.w&&p.h<=sz.h)||(p.h<=sz.w&&p.w<=sz.h));
-      if (!fits) { errors.push(`"${p.label||p.w+'×'+p.h}mm" is too large for all sheet sizes in ${libMat.name}.`); }
+      if (!fits) {
+        anyTooBig = true;
+        const sizeStr = sizes.map(function(s){return s.w+'×'+s.h+'mm';}).join(' or ');
+        errors.push(`${libMat.name}: "${p.label||p.w+'×'+p.h}" (${p.w}×${p.h}mm) is too big for the ${sizeStr} sheet.`);
+      }
     }
+    if (anyTooBig) continue;
     const res = runMat(libMat, valid, m.remnant, jobQty);
     if (res.noValidSize) {
       errors.push(`${libMat.name}: no valid sheet size. Open Library → Edit ${libMat.name} and set Size 1.`);
       continue;
     }
+    // DIAGNOSTIC: if a material placed nothing, explain exactly why instead of
+    // silently showing "0 sheets". Lists the sheet sizes and the offending pieces.
+    if (res.sheets.length === 0) {
+      const sizeStr = [libMat.size1, libMat.size2]
+        .filter(function(s){ return s && +s.w>0 && +s.h>0; })
+        .map(function(s){ return s.w+'×'+s.h+'mm'; }).join(' or ');
+      const tooBig = valid.filter(function(p){
+        return ![libMat.size1, libMat.size2].some(function(sz){
+          return sz && +sz.w>0 && +sz.h>0 && ((p.w<=sz.w&&p.h<=sz.h)||(p.h<=sz.w&&p.w<=sz.h));
+        });
+      });
+      if (tooBig.length) {
+        errors.push(`${libMat.name}: ${tooBig.length} piece(s) too big for the ${sizeStr} sheet — e.g. "${tooBig[0].label||(tooBig[0].w+'×'+tooBig[0].h)}" (${tooBig[0].w}×${tooBig[0].h}mm). Largest sheet is ${sizeStr}.`);
+      } else {
+        errors.push(`${libMat.name}: could not place any pieces on ${sizeStr}. Check piece sizes in the job.`);
+      }
+      continue;
+    }
     results.push({ libMat, ...res });
   }
 
-  if (errors.length) { showErr(errors.join(' | ')); return; }
+  if (errors.length && !results.length) { showErr(errors.join(' | ')); return; }
+  if (errors.length) {
+    // Some materials worked, some didn't — show the working results AND the warnings.
+    showErr('Some materials need attention: ' + errors.join(' | '));
+  }
   calcResult = { results };
   saveToHistory();
   renderOutput();
