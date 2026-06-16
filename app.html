@@ -1457,6 +1457,93 @@ function estimateRemaining(queue, sizes, allowRot, cm) {
   return sheetsNeeded;
 }
 
+// ── CONSOLIDATION PASS ───────────────────────────────────────
+// The greedy packer can leave near-empty "orphan" sheets at the end of a job
+// (e.g. one small part on a full sheet). This pass tries to eliminate the
+// emptiest sheets by re-fitting their pieces into the spare space on other
+// sheets. If every piece from a sheet finds a home elsewhere, that whole
+// sheet — and its cost — is removed from the job.
+function consolidateSheets(sheets, allowRot, cm) {
+  if (sheets.length < 2) return sheets;
+
+  let working = sheets.map(function(s){ return s; });
+  let madeProgress = true;
+  let safety = working.length + 5;
+
+  while (madeProgress && safety-- > 0) {
+    madeProgress = false;
+
+    // Sort by how full each sheet is (least full first) — those are the
+    // candidates we try to empty.
+    const order = working
+      .map(function(s, i){
+        const used = s.placed.reduce(function(a,p){return a + p.w*p.h;},0);
+        return { i: i, fill: used / (s.sheetW * s.sheetH) };
+      })
+      .sort(function(a,b){ return a.fill - b.fill; });
+
+    for (let oi = 0; oi < order.length; oi++) {
+      const donorIdx = order[oi].i;
+      const donor = working[donorIdx];
+      if (!donor || donor.isRemnant) continue;
+
+      // The pieces we need to rehome (in this donor sheet)
+      const piecesToMove = donor.placed.map(function(p){
+        return { w: p.w, h: p.h, label: p.label, pieceIndex: p.pieceIndex, instanceIndex: p.instanceIndex, _rot: p.rotated };
+      });
+
+      // Try to place ALL of them into the OTHER sheets' free space.
+      // We rebuild each candidate sheet's layout from its existing pieces
+      // plus the donor's pieces, and accept only if everything still fits.
+      let remaining = piecesToMove.slice();
+      const trialPlacements = []; // {targetIdx, newResult}
+
+      for (let t = 0; t < working.length && remaining.length; t++) {
+        if (t === donorIdx) continue;
+        const target = working[t];
+        if (target.isRemnant) continue;
+
+        // Existing pieces on the target, as a fresh queue
+        const existing = target.placed.map(function(p){
+          return { w: p.w, h: p.h, label: p.label, pieceIndex: p.pieceIndex, instanceIndex: p.instanceIndex };
+        });
+        const combined = existing.concat(remaining);
+        const repacked = packSheetBest(target.sheetW, target.sheetH, combined, allowRot, cm);
+
+        // Only useful if the target now holds everything it had PLUS at least
+        // one donor piece, with nothing of its own dropped.
+        if (repacked.placed.length >= existing.length &&
+            repacked.placed.length > 0 &&
+            repacked.unplaced.length < combined.length) {
+          // Figure out which donor pieces got placed
+          const placedKeys = new Set(repacked.placed.map(function(p){return p.pieceIndex+'-'+p.instanceIndex;}));
+          const stillExisting = existing.every(function(p){ return placedKeys.has(p.pieceIndex+'-'+p.instanceIndex); });
+          if (stillExisting) {
+            trialPlacements.push({ targetIdx: t, result: repacked });
+            // Remove now-placed donor pieces from remaining
+            remaining = remaining.filter(function(p){ return !placedKeys.has(p.pieceIndex+'-'+p.instanceIndex); });
+          }
+        }
+      }
+
+      // If we rehomed EVERY piece from the donor, commit the moves & drop donor.
+      if (remaining.length === 0 && trialPlacements.length > 0) {
+        trialPlacements.forEach(function(tp){
+          working[tp.targetIdx] = tp.result;
+          // preserve sheet meta
+          working[tp.targetIdx].sheetW = working[tp.targetIdx].sheetW;
+        });
+        working[donorIdx] = null;
+        working = working.filter(function(s){ return s !== null; });
+        madeProgress = true;
+        break; // restart the while loop with the new, smaller set
+      }
+    }
+  }
+
+  return working;
+}
+
 function runMat(libMat, pieces, remnant, jobQty) {
   // Expand pieces by quantity × job multiplier
   const mult = Math.max(1, parseInt(jobQty) || 1);
@@ -1547,6 +1634,13 @@ function runMat(libMat, pieces, remnant, jobQty) {
     );
     queue = queue.filter(p => !done.has(`${p.pieceIndex}-${p.instanceIndex}`));
   }
+
+  // ── CONSOLIDATION ──
+  // Eliminate near-empty orphan sheets by redistributing their pieces.
+  let consolidated = consolidateSheets(sheets, libMat.allowRotation !== false, libMat.cuttingMethod || 'free');
+  // Replace sheets with consolidated set, preserving sheet dimension metadata
+  sheets.length = 0;
+  consolidated.forEach(function(s){ sheets.push(s); });
 
   const sizeMap = {};
   sheets.forEach(s => {
@@ -2340,14 +2434,7 @@ async function validateAndSaveKey(){
       headers:{'Accept':'application/json','Content-Type':'application/x-www-form-urlencoded'},
       body:'license_key='+encodeURIComponent(key)+'&instance_name='+encodeURIComponent(instanceName)
     });
-    const rawText = await r.text();
-    let d = {};
-    try { d = JSON.parse(rawText); } catch(parseErr) { d = {}; }
-
-    // DIAGNOSTIC — remove after activation is confirmed working.
-    // Shows the exact HTTP status and response so we can see what LS returns.
-    window._cutnestLastResponse = { httpStatus: r.status, body: rawText };
-    console.log('CutNest licence response:', r.status, rawText);
+    const d=await r.json();
 
     // Success: key activated OR already active (activation_limit reached but key is valid)
     const keyStatus = d.license_key && d.license_key.status;
@@ -2373,28 +2460,12 @@ async function validateAndSaveKey(){
       se.textContent='Licence disabled — contact hello@cutnest.co.uk';
     } else {
       se.className='key-status invalid';
-      // Surface the real reason so we can diagnose
-      se.textContent=(d.error || ('Unexpected response ('+r.status+')')) + ' — see details below';
-      showKeyDiag(r.status, rawText);
+      se.textContent=d.error||'Invalid key — check your email or contact hello@cutnest.co.uk';
     }
   }catch(err){
     se.className='key-status invalid';
-    se.textContent='Could not reach licence server — likely a CORS block. See details below.';
-    showKeyDiag('network', String(err && err.message || err));
+    se.textContent='Could not reach licence server — check your connection and try again';
   }
-}
-
-// Temporary diagnostic display — shows raw API response under the key field
-function showKeyDiag(status, body){
-  let box = document.getElementById('key-diag');
-  if(!box){
-    box = document.createElement('div');
-    box.id = 'key-diag';
-    box.style.cssText = 'margin-top:8px;padding:8px;background:#fff5f5;border:1px solid #fca5a5;border-radius:6px;font-family:monospace;font-size:11px;color:#7f1d1d;word-break:break-all;max-height:140px;overflow:auto';
-    const se = document.getElementById('key-status');
-    if(se && se.parentNode) se.parentNode.insertBefore(box, se.nextSibling);
-  }
-  box.textContent = 'HTTP ' + status + '  |  ' + body;
 }
 
 function buyPro(){window.open(LS_URL,'_blank');}
