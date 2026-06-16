@@ -2644,11 +2644,41 @@ async function loadLib(){
   try{
     const saved=localStorage.getItem(STOR_KEY),savedLib=saved?JSON.parse(saved):null;
     if(isPro){
-      const masterIds=new Set(MASTER_LIBRARY.map(function(m){return m.id;}));
-      const custom=savedLib?savedLib.filter(function(e){return !masterIds.has(e.id);}):[];
-      library=MASTER_LIBRARY.concat(custom);setSS('ok','Pro library active');
-    }else{library=savedLib||defaultLib();setSS('ok','Ready');}
-    if(!savedLib)await saveData(library);
+      // Merge master library with the user's custom entries, but DEDUPE so we
+      // never show two materials with the same name (e.g. an old custom
+      // "Mild Steel 3mm" alongside the master one). Master always wins —
+      // it has clean, valid sheet sizes. Custom entries only survive if their
+      // name doesn't collide with a master entry.
+      const masterNames = new Set(MASTER_LIBRARY.map(function(m){return (m.name||'').trim().toLowerCase();}));
+      const masterIds   = new Set(MASTER_LIBRARY.map(function(m){return m.id;}));
+      const custom = (savedLib||[]).filter(function(e){
+        if(!e || !e.name) return false;
+        if(masterIds.has(e.id)) return false;                       // same id as a master entry
+        if(masterNames.has(e.name.trim().toLowerCase())) return false; // same NAME as a master entry
+        return true;
+      });
+      // Also dedupe custom against itself by name (keep first occurrence)
+      const seen=new Set(); const customClean=[];
+      custom.forEach(function(e){
+        const k=e.name.trim().toLowerCase();
+        if(!seen.has(k)){ seen.add(k); customClean.push(e); }
+      });
+      library=MASTER_LIBRARY.concat(customClean);
+      setSS('ok','Pro library active');
+    }else{
+      // Free tier: dedupe the saved library by name too, in case of past dupes
+      const base = savedLib||defaultLib();
+      const seen=new Set(); library=[];
+      base.forEach(function(e){
+        if(!e||!e.name) return;
+        const k=e.name.trim().toLowerCase();
+        if(!seen.has(k)){ seen.add(k); library.push(e); }
+      });
+      if(!library.length) library=defaultLib();
+      setSS('ok','Ready');
+    }
+    // Persist the cleaned library so duplicates don't keep coming back
+    await saveData(library);
   }catch(err){library=defaultLib();setSS('err','Error');}
   renderAll();
 }
