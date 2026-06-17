@@ -1383,11 +1383,75 @@ function maxRectsPack(sheetW, sheetH, queue, allowRot) {
 
   const area = placed.reduce((s, p) => s + p.w * p.h, 0);
   const sheetArea = sheetW * sheetH;
+
+  // ── SECOND-CHANCE PLACEMENT ──
+  // The Best-Area-Fit pass can leave usable gaps unfilled (e.g. thin strips
+  // that a stack of bigger pieces left room for). Before giving up on a piece,
+  // try to slot each remaining piece into ANY genuinely empty rectangle on the
+  // sheet, found by scanning the actual placed-piece gaps. This recovers space
+  // the free-rect tracking lost.
+  if (rem.length) {
+    let stillRem = [];
+    for (const pc of rem) {
+      const spot = findEmptySpot(sheetW, sheetH, placed, pc, allowRotation);
+      if (spot) {
+        placed.push({ x:spot.x, y:spot.y, w:spot.w, h:spot.h, label:pc.label,
+                      pieceIndex:pc.pieceIndex, instanceIndex:pc.instanceIndex, rotated:spot.rot });
+      } else {
+        stillRem.push(pc);
+      }
+    }
+    rem = stillRem;
+  }
+
+  const finalArea = placed.reduce((s, p) => s + p.w * p.h, 0);
   return {
     placed, unplaced: rem,
-    wastePercent: Math.round((1 - area / sheetArea) * 100),
+    wastePercent: Math.round((1 - finalArea / sheetArea) * 100),
     sheetW, sheetH, sheetArea
   };
+}
+
+// Find an empty spot for a single piece by scanning gaps between placed pieces.
+// Returns {x,y,w,h,rot} or null. Honours kerf so cuts stay clean.
+function findEmptySpot(sheetW, sheetH, placed, pc, allowRotation) {
+  const orientations = [{pw:pc.w, ph:pc.h, rot:false}];
+  if (allowRotation && pc.w !== pc.h) orientations.push({pw:pc.h, ph:pc.w, rot:true});
+
+  // Candidate corner positions: sheet origin + right/bottom edges of every placed piece
+  const xsSet = new Set([0]);
+  const ysSet = new Set([0]);
+  placed.forEach(function(p){
+    xsSet.add(p.x + p.w + KERF);
+    ysSet.add(p.y + p.h + KERF);
+    xsSet.add(p.x);
+    ysSet.add(p.y);
+  });
+  const xs = Array.from(xsSet).filter(function(v){return v>=0 && v<sheetW;}).sort(function(a,b){return a-b;});
+  const ys = Array.from(ysSet).filter(function(v){return v>=0 && v<sheetH;}).sort(function(a,b){return a-b;});
+
+  function overlaps(x,y,w,h){
+    for (let i=0;i<placed.length;i++){
+      const p = placed[i];
+      // include kerf gap around existing pieces
+      const px=p.x, py=p.y, pw=p.w+KERF, ph=p.h+KERF;
+      if (!(x+w <= px || px+pw <= x || y+h <= py || py+ph <= y)) return true;
+    }
+    return false;
+  }
+
+  for (const {pw, ph, rot} of orientations) {
+    for (const y of ys) {
+      if (y + ph > sheetH) continue;
+      for (const x of xs) {
+        if (x + pw > sheetW) continue;
+        if (!overlaps(x, y, pw, ph)) {
+          return { x:x, y:y, w:pw, h:ph, rot:rot };
+        }
+      }
+    }
+  }
+  return null;
 }
 
 // Run packing with multiple piece orderings, pick best result for this sheet
@@ -1682,6 +1746,55 @@ function consolidateSheets(sheets, allowRot, cm) {
   return working;
 }
 
+// Fallback packer: greedy only, no consolidation/rebalancing. Used if the
+// full runMat throws, so one material's optimisation bug can't break the job.
+function runMatSafe(libMat, pieces, jobQty) {
+  const mult = Math.max(1, parseInt(jobQty) || 1);
+  let queue = [];
+  pieces.forEach(function(p, pi){
+    for (let q = 0; q < (+p.qty||1) * mult; q++)
+      queue.push({...p, label:p.label||'', pieceIndex:pi, instanceIndex:q});
+  });
+  const vSize = function(s){ return s && +s.w>0 && +s.h>0; };
+  const sizes = [
+    vSize(libMat.size1) ? {w:+libMat.size1.w,h:+libMat.size1.h,price:+libMat.size1.price||0} : null,
+    vSize(libMat.size2) ? {w:+libMat.size2.w,h:+libMat.size2.h,price:+libMat.size2.price||0} : null
+  ].filter(Boolean);
+  if (!sizes.length) return { sheets:[], unplaced:queue, sizeMap:{}, noValidSize:true };
+
+  const ar = libMat.allowRotation !== false;
+  const cm = libMat.cuttingMethod || 'free';
+  const sheets = [];
+  let limit = 200;
+  while (queue.length && limit-- > 0) {
+    let best = null, bestScore = Infinity;
+    for (const sz of sizes) {
+      const r = packSheetBest(sz.w, sz.h, queue, ar, cm);
+      if (!r.placed.length) continue;
+      const placedArea = r.placed.reduce(function(a,p){return a+p.w*p.h;},0);
+      const score = (sz.price||1) / Math.max(placedArea, 1);
+      if (best === null || score < bestScore) { best = r; bestScore = score; }
+    }
+    if (!best || !best.placed.length) break;
+    sheets.push(best);
+    const done = new Set(best.placed.map(function(p){return p.pieceIndex+'-'+p.instanceIndex;}));
+    queue = queue.filter(function(p){ return !done.has(p.pieceIndex+'-'+p.instanceIndex); });
+  }
+  const sizeMap = {};
+  sheets.forEach(function(s){
+    const k = s.sheetW+'\u00d7'+s.sheetH; sizeMap[k] = (sizeMap[k]||0)+1;
+    const offcut = largestEmptyRect(s.sheetW, s.sheetH, s.placed);
+    const usable = isUsableOffcut(offcut);
+    s.offcut = offcut; s.usableOffcut = usable ? offcut : null;
+    const sa = s.sheetW*s.sheetH;
+    const ua = s.placed.reduce(function(a,p){return a+p.w*p.h;},0);
+    s.utilPercent = Math.round(ua/sa*100);
+    s.usablePercent = usable ? Math.round(offcut.area/sa*100) : 0;
+    s.scrapPercent = Math.max(0, 100 - s.utilPercent - s.usablePercent);
+  });
+  return { sheets, unplaced:queue, sizeMap };
+}
+
 function runMat(libMat, pieces, remnant, jobQty) {
   // Expand pieces by quantity × job multiplier
   const mult = Math.max(1, parseInt(jobQty) || 1);
@@ -1901,8 +2014,20 @@ function _doCalculate() {
       }
     }
     if (anyTooBig) continue;
-    const res = runMat(libMat, valid, m.remnant, jobQty);
-    if (res.noValidSize) {
+    let res;
+    try {
+      res = runMat(libMat, valid, m.remnant, jobQty);
+    } catch (ex) {
+      // A crash in packing/consolidation/rebalancing for ONE material must not
+      // kill the others. Fall back to a basic greedy pack with no optimisation.
+      try {
+        res = runMatSafe(libMat, valid, jobQty);
+      } catch (ex2) {
+        errors.push(`${libMat.name}: could not calculate (${ex && ex.message ? ex.message : 'error'}).`);
+        continue;
+      }
+    }
+    if (!res || res.noValidSize) {
       errors.push(`${libMat.name}: no valid sheet size. Open Library → Edit ${libMat.name} and set Size 1.`);
       continue;
     }
