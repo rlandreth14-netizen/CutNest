@@ -1457,6 +1457,121 @@ function estimateRemaining(queue, sizes, allowRot, cm) {
   return sheetsNeeded;
 }
 
+// ── CROSS-SIZE REBALANCING ───────────────────────────────────
+// The greedy packer commits one sheet at a time, so it can end a job with
+// several under-filled sheets of the SMALL size when those pieces would have
+// been cheaper (or fewer sheets) combined onto the LARGE size — or vice versa.
+// This pass pools the pieces from the least-utilised sheets, re-packs that pool
+// fresh across every sheet size, and keeps whichever layout costs less.
+// SAFETY: only swaps in the new layout if the exact same pieces are preserved
+// AND it is genuinely cheaper (or same cost with fewer sheets).
+function rebalanceSheets(sheets, sizes, allowRot, cm) {
+  if (sheets.length < 2 || sizes.length < 2) return sheets;
+
+  function sheetCost(sh){
+    const sz = sizes.find(function(s){ return s.w===sh.sheetW && s.h===sh.sheetH; });
+    return sz ? (sz.price||0) : 0;
+  }
+  function totalCost(arr){ return arr.reduce(function(a,s){ return a + sheetCost(s); }, 0); }
+  function sig(arr){
+    const c={};
+    arr.forEach(function(s){ s.placed.forEach(function(p){
+      const a=Math.min(p.w,p.h), b=Math.max(p.w,p.h); const k=a+'x'+b; c[k]=(c[k]||0)+1;
+    });});
+    return c;
+  }
+  function sameSig(a,b){ const ka=Object.keys(a),kb=Object.keys(b); if(ka.length!==kb.length)return false; return ka.every(function(k){return a[k]===b[k];}); }
+
+  const haveCost = sizes.every(function(s){ return s.price && s.price>0; });
+  const originalSig = sig(sheets);
+
+  // Sort by utilisation, least-full first
+  function util(sh){ return sh.placed.reduce(function(a,p){return a+p.w*p.h;},0)/(sh.sheetW*sh.sheetH); }
+
+  let working = sheets.slice();
+  let improved = true;
+  let safety = 8;
+
+  while (improved && safety-- > 0) {
+    improved = false;
+    const sorted = working.map(function(s,i){ return {i:i, u:util(s)}; }).sort(function(a,b){ return a.u-b.u; });
+
+    // Try pooling the N least-full sheets (N from 2 up to 5) and re-packing them.
+    for (let n = 2; n <= Math.min(5, working.length); n++) {
+      const poolIdx = sorted.slice(0, n).map(function(o){ return o.i; });
+      const poolSheets = poolIdx.map(function(i){ return working[i]; });
+      if (poolSheets.some(function(s){ return s.isRemnant; })) continue;
+
+      // Pool all their pieces
+      const pool = [];
+      poolSheets.forEach(function(s){ s.placed.forEach(function(p){
+        pool.push({ w:p.w, h:p.h, label:p.label, pieceIndex:p.pieceIndex, instanceIndex:p.instanceIndex });
+      });});
+
+      // Re-pack the pool greedily across all sizes, cost-aware
+      const newLayout = packPoolBestValue(pool, sizes, allowRot, cm, haveCost);
+      if (!newLayout) continue;
+
+      // Did everything get placed?
+      const placedCount = newLayout.reduce(function(a,s){ return a + s.placed.length; }, 0);
+      if (placedCount !== pool.length) continue;
+
+      // Compare: old pool vs new layout
+      const oldCost = haveCost ? poolSheets.reduce(function(a,s){ return a+sheetCost(s); },0) : poolSheets.length;
+      const newCost = haveCost ? newLayout.reduce(function(a,s){
+        const sz = sizes.find(function(z){return z.w===s.sheetW&&z.h===s.sheetH;}); return a+(sz?sz.price:0);
+      },0) : newLayout.length;
+
+      const fewerSheets = newLayout.length < poolSheets.length;
+      const cheaper = newCost < oldCost - 0.01;
+      const sameCostFewerSheets = Math.abs(newCost-oldCost) < 0.01 && fewerSheets;
+
+      if (cheaper || sameCostFewerSheets) {
+        // Build candidate: all non-pool sheets + new layout
+        const rest = working.filter(function(s,i){ return poolIdx.indexOf(i) === -1; });
+        const candidate = rest.concat(newLayout);
+        // Integrity check
+        if (sameSig(sig(candidate), originalSig)) {
+          working = candidate;
+          improved = true;
+          break;
+        }
+      }
+    }
+  }
+
+  // Final guard
+  if (!sameSig(sig(working), originalSig)) return sheets;
+  return working;
+}
+
+// Pack a pool of pieces across sizes, choosing the lowest-cost set of sheets.
+function packPoolBestValue(pool, sizes, allowRot, cm, haveCost) {
+  let queue = pool.slice();
+  const out = [];
+  let guard = 60;
+  while (queue.length && guard-- > 0) {
+    let best = null, bestScore = Infinity;
+    for (const sz of sizes) {
+      const r = packSheetBest(sz.w, sz.h, queue, allowRot, cm);
+      if (!r.placed.length) continue;
+      const placedArea = r.placed.reduce(function(a,p){return a+p.w*p.h;},0);
+      const sheetArea = sz.w*sz.h;
+      const util = placedArea/sheetArea;
+      // Score: cost per useful area packed (lower = better value)
+      const cost = haveCost ? sz.price : 1;
+      const score = cost / Math.max(placedArea, 1) - util*0.0001;
+      if (best===null || score < bestScore) { best = r; bestScore = score; }
+    }
+    if (!best || !best.placed.length) break;
+    out.push(best);
+    const done = new Set(best.placed.map(function(p){return p.pieceIndex+'-'+p.instanceIndex;}));
+    queue = queue.filter(function(p){ return !done.has(p.pieceIndex+'-'+p.instanceIndex); });
+  }
+  if (queue.length) return null; // couldn't place everything
+  return out;
+}
+
 // ── CONSOLIDATION PASS ───────────────────────────────────────
 // The greedy packer can leave near-empty "orphan" sheets at the end of a job.
 // This pass tries to empty the least-full sheet by re-fitting its pieces onto
@@ -1693,7 +1808,14 @@ function runMat(libMat, pieces, remnant, jobQty) {
   // ── CONSOLIDATION ──
   // Eliminate near-empty orphan sheets by redistributing their pieces.
   let consolidated = consolidateSheets(sheets, libMat.allowRotation !== false, libMat.cuttingMethod || 'free');
-  // Replace sheets with consolidated set, preserving sheet dimension metadata
+
+  // ── CROSS-SIZE REBALANCING ──
+  // Retry the least-full sheets pooled together across all sheet sizes — if a
+  // bigger (or different) sheet size holds them for less cost or fewer sheets,
+  // swap it in. This is the "could these small sheets be one big sheet?" pass.
+  consolidated = rebalanceSheets(consolidated, sizes, libMat.allowRotation !== false, libMat.cuttingMethod || 'free');
+
+  // Replace sheets with the optimised set
   sheets.length = 0;
   consolidated.forEach(function(s){ sheets.push(s); });
 
