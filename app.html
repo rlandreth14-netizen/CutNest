@@ -1626,22 +1626,46 @@ function runMat(libMat, pieces, remnant, jobQty) {
 
   let score;
   if (havePrices) {
-    // ── COST-AWARE SCORING ──
-    // What does the rest of the job cost if we pick this sheet?
-    // = this sheet's price + an estimate of the cheapest way to finish.
-    // We approximate remaining cost using the cheapest £-per-area sheet,
-    // because the optimiser will keep choosing efficiently after this.
+    // ── COST-EFFICIENCY SCORING ──
+    // The real goal is lowest total £ for the whole job, which means getting
+    // the best value out of every sheet we open — not just picking the
+    // cheapest sheet each step (which biases toward small, underused sheets).
+    //
+    // We score by the cost of the material we'll actually CONSUME to finish:
+    //   placedArea on this sheet + estimated area still to cut,
+    // priced at this sheet's real £-per-area, plus a penalty for the empty
+    // space we're "buying" on this sheet. A big sheet that packs lots of
+    // pieces tightly beats two small sheets that each sit half-empty.
+    const placedArea = r.placed.reduce((a, p) => a + p.w * p.h, 0);
+    const sheetArea = sz.w * sz.h;
+    const thisSheetPricePerArea = sz.price / sheetArea;
+    const utilisation = placedArea / sheetArea; // 0..1, higher is better
+
     const cheapestPerArea = Math.min(...sizes.map(s => s.price / (s.w * s.h)));
     const remainingArea = r.unplaced.reduce((a, p) => a + p.w * p.h, 0);
-    const estRemainingCost = remainingArea * cheapestPerArea * 1.15; // 1.15 = real-world packing overhead
+    const estRemainingCost = remainingArea * cheapestPerArea * 1.12;
+
+    // Cost actually committed by choosing this sheet = full sheet price
+    // (you pay for the whole sheet, used or not). Lower total projected spend wins.
     const thisSheetCost = sz.price;
-    // Total projected spend for the job, normalised by the priciest sheet
-    score = (thisSheetCost + estRemainingCost) / maxSheetPrice;
+    const projectedTotal = thisSheetCost + estRemainingCost;
+
+    // Penalise poor utilisation so a half-empty sheet is only chosen when it
+    // genuinely has to be. The penalty is the £ value of the empty space.
+    const wastedAreaCost = (sheetArea - placedArea) * thisSheetPricePerArea;
+
+    score = (projectedTotal + wastedAreaCost * 0.5) / maxSheetPrice;
+    // Tie-break nudge: prefer higher utilisation outright
+    score -= utilisation * 0.001;
   } else {
     // ── AREA-BASED SCORING (no prices set) ──
-    const sheetSizeWeight = (sz.w * sz.h) / largestSheetArea;
+    // Reward packing more pieces per sheet and lower waste; do NOT bias toward
+    // smaller sheets (that was causing two half-used small sheets to be chosen
+    // over one well-filled big sheet).
+    const placedArea = r.placed.reduce((a, p) => a + p.w * p.h, 0);
+    const utilisation = placedArea / (sz.w * sz.h);
     const wasteWeight = r.wastePercent / 100;
-    score = (estRemaining * 1.0) + (sheetSizeWeight * 0.65) + (wasteWeight * 0.35);
+    score = (estRemaining * 1.0) + (wasteWeight * 0.6) - (utilisation * 0.5);
   }
 
   if (
