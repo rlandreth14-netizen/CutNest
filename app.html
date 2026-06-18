@@ -1609,8 +1609,46 @@ function rebalanceSheets(sheets, sizes, allowRot, cm) {
   return working;
 }
 
-// Pack a pool of pieces across sizes, choosing the lowest-cost set of sheets.
+// Pack a pool of pieces across sizes, choosing the layout with the lowest
+// TOTAL cost (not greedy per-sheet). Tries leading with each sheet size and
+// recursively packs the remainder, keeping the cheapest complete layout.
 function packPoolBestValue(pool, sizes, allowRot, cm, haveCost) {
+  const depthLimit = 40; // guard against pathological recursion
+  let bestResult = null;
+  let bestCost = Infinity;
+
+  function costOf(layout) {
+    if (!haveCost) return layout.length; // no prices → minimise sheet count
+    return layout.reduce(function(a, s){
+      const sz = sizes.find(function(z){ return z.w===s.sheetW && z.h===s.sheetH; });
+      return a + (sz ? sz.price : 0);
+    }, 0);
+  }
+
+  function solve(queue, acc, depth) {
+    if (queue.length === 0) {
+      const c = costOf(acc);
+      if (c < bestCost) { bestCost = c; bestResult = acc.slice(); }
+      return;
+    }
+    if (depth > depthLimit) return;
+    if (costOf(acc) >= bestCost) return; // prune
+
+    for (const sz of sizes) {
+      const r = packSheetBest(sz.w, sz.h, queue, allowRot, cm);
+      if (!r.placed.length) continue;
+      const done = new Set(r.placed.map(function(p){ return p.pieceIndex+'-'+p.instanceIndex; }));
+      const rest = queue.filter(function(p){ return !done.has(p.pieceIndex+'-'+p.instanceIndex); });
+      solve(rest, acc.concat([r]), depth+1);
+    }
+  }
+
+  solve(pool.slice(), [], 0);
+  return bestResult;
+}
+
+// OLD greedy version, no longer used.
+function packPoolGreedy(pool, sizes, allowRot, cm, haveCost) {
   let queue = pool.slice();
   const out = [];
   let guard = 60;
