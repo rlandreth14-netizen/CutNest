@@ -1753,7 +1753,7 @@ function runMatSafe(libMat, pieces, jobQty) {
   let queue = [];
   pieces.forEach(function(p, pi){
     for (let q = 0; q < (+p.qty||1) * mult; q++)
-      queue.push({...p, label:p.label||'', pieceIndex:pi, instanceIndex:q});
+      queue.push({...p, w:+p.w, h:+p.h, label:p.label||'', pieceIndex:pi, instanceIndex:q});
   });
   const vSize = function(s){ return s && +s.w>0 && +s.h>0; };
   const sizes = [
@@ -1801,7 +1801,7 @@ function runMat(libMat, pieces, remnant, jobQty) {
   let queue = [];
   pieces.forEach((p, pi) => {
     for (let q = 0; q < (+p.qty||1) * mult; q++)
-      queue.push({...p, label:p.label||'', pieceIndex:pi, instanceIndex:q});
+      queue.push({...p, w:+p.w, h:+p.h, label:p.label||'', pieceIndex:pi, instanceIndex:q});
   });
 
   // Build the list of valid stock sheet sizes. A size only counts if it has
@@ -1928,9 +1928,13 @@ function runMat(libMat, pieces, remnant, jobQty) {
   // swap it in. This is the "could these small sheets be one big sheet?" pass.
   consolidated = rebalanceSheets(consolidated, sizes, libMat.allowRotation !== false, libMat.cuttingMethod || 'free');
 
-  // Replace sheets with the optimised set
+  // Replace sheets with the optimised set.
+  // IMPORTANT: consolidated may be the SAME array reference as `sheets` (the
+  // consolidation/rebalance passes can return the original on fallback). Copy
+  // to a new array FIRST, otherwise clearing `sheets` also clears `consolidated`.
+  const finalSheets = consolidated.slice();
   sheets.length = 0;
-  consolidated.forEach(function(s){ sheets.push(s); });
+  finalSheets.forEach(function(s){ sheets.push(s); });
 
   const sizeMap = {};
   sheets.forEach(s => {
@@ -2006,11 +2010,15 @@ function _doCalculate() {
     }
     let anyTooBig = false;
     for (const p of valid) {
-      const fits = sizes.some(sz=>(p.w<=sz.w&&p.h<=sz.h)||(p.h<=sz.w&&p.w<=sz.h));
+      const pw = +p.w, ph = +p.h;
+      const fits = sizes.some(function(sz){
+        const sw = +sz.w, sh = +sz.h;
+        return (pw<=sw && ph<=sh) || (ph<=sw && pw<=sh);
+      });
       if (!fits) {
         anyTooBig = true;
-        const sizeStr = sizes.map(function(s){return s.w+'×'+s.h+'mm';}).join(' or ');
-        errors.push(`${libMat.name}: "${p.label||p.w+'×'+p.h}" (${p.w}×${p.h}mm) is too big for the ${sizeStr} sheet.`);
+        const sizeStr = sizes.map(function(s){return (+s.w)+'×'+(+s.h)+'mm';}).join(' or ');
+        errors.push(`${libMat.name}: "${p.label||pw+'×'+ph}" (${pw}×${ph}mm) is too big for the ${sizeStr} sheet.`);
       }
     }
     if (anyTooBig) continue;
@@ -2034,18 +2042,19 @@ function _doCalculate() {
     // DIAGNOSTIC: if a material placed nothing, explain exactly why instead of
     // silently showing "0 sheets". Lists the sheet sizes and the offending pieces.
     if (res.sheets.length === 0) {
-      const sizeStr = [libMat.size1, libMat.size2]
-        .filter(function(s){ return s && +s.w>0 && +s.h>0; })
-        .map(function(s){ return s.w+'×'+s.h+'mm'; }).join(' or ');
+      // Detailed diagnostic: show the EXACT sizes and pieces runMat received
+      const s1 = libMat.size1 ? (libMat.size1.w+'×'+libMat.size1.h) : 'none';
+      const s2 = libMat.size2 ? (libMat.size2.w+'×'+libMat.size2.h) : 'none';
+      const pcs = valid.map(function(p){return (p.label||'?')+' '+p.w+'×'+p.h+'(x'+p.qty+')';}).join(', ');
       const tooBig = valid.filter(function(p){
         return ![libMat.size1, libMat.size2].some(function(sz){
-          return sz && +sz.w>0 && +sz.h>0 && ((p.w<=sz.w&&p.h<=sz.h)||(p.h<=sz.w&&p.w<=sz.h));
+          return sz && +sz.w>0 && +sz.h>0 && ((+p.w<=+sz.w&&+p.h<=+sz.h)||(+p.h<=+sz.w&&+p.w<=+sz.h));
         });
       });
       if (tooBig.length) {
-        errors.push(`${libMat.name}: ${tooBig.length} piece(s) too big for the ${sizeStr} sheet — e.g. "${tooBig[0].label||(tooBig[0].w+'×'+tooBig[0].h)}" (${tooBig[0].w}×${tooBig[0].h}mm). Largest sheet is ${sizeStr}.`);
+        errors.push(`${libMat.name}: piece "${tooBig[0].label||(tooBig[0].w+'×'+tooBig[0].h)}" (${tooBig[0].w}×${tooBig[0].h}mm) too big for sheets ${s1} / ${s2}.`);
       } else {
-        errors.push(`${libMat.name}: could not place any pieces on ${sizeStr}. Check piece sizes in the job.`);
+        errors.push(`${libMat.name}: packing returned nothing. Sheets: ${s1} / ${s2}. Pieces: ${pcs}. [This is a bug — please report]`);
       }
       continue;
     }
