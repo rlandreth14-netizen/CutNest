@@ -11,7 +11,7 @@
    bump the VERSION string below.
    ════════════════════════════════════════════════════════════════ */
 
-const VERSION = 'cutnest-v10';
+const VERSION = 'cutnest-v11';
 
 const PRECACHE = [
   '/',
@@ -67,8 +67,16 @@ self.addEventListener('fetch', function (event) {
     event.respondWith(
       fetch(req)
         .then(function (res) {
-          const copy = res.clone();
-          caches.open(VERSION).then(function (cache) { cache.put(req, copy); });
+          // ONLY cache genuinely good pages. Previously every response was
+          // cached, so a transient 404/500 (e.g. mid-deploy or a GitHub Pages
+          // outage) would be stored and then served as the offline fallback —
+          // leaving the user stuck on a broken page even after the site
+          // recovered, until VERSION was bumped. Now an error response is
+          // passed through to the browser but never written to the cache.
+          if (res && res.ok && res.type === 'basic') {
+            const copy = res.clone();
+            caches.open(VERSION).then(function (cache) { cache.put(req, copy); });
+          }
           return res;
         })
         .catch(function () {
