@@ -1337,7 +1337,14 @@ function maxRectsPack(sheetW, sheetH, queue, allowRot) {
 
       for (const {pw, ph, rot} of orientations) {
         for (const r of free) {
-          if (pw <= r.w && ph <= r.h) {
+          // KERF-SAFE FIT: a piece needs room for itself PLUS a blade-kerf moat
+          // on any side that faces into the sheet interior. If the free rect
+          // already reaches the sheet edge on a side, no kerf is needed there
+          // (you cut along the sheet boundary, not between two parts).
+          const rRight = r.x + r.w, rBottom = r.y + r.h;
+          const needW = pw + (rRight  >= sheetW - 0.0001 ? 0 : KERF);
+          const needH = ph + (rBottom >= sheetH - 0.0001 ? 0 : KERF);
+          if (needW <= r.w && needH <= r.h) {
             // Best Area Fit: prefer rect that wastes least space
             const leftoverHoriz = r.w - pw;
             const leftoverVert = r.h - ph;
@@ -1365,9 +1372,14 @@ function maxRectsPack(sheetW, sheetH, queue, allowRot) {
     rem.splice(bestI, 1);
     improved = true;
 
-    // Split all free rects that overlap the placed piece (plus kerf)
-    const kw = pw + (x + pw + KERF <= sheetW ? KERF : 0);
-    const kh = ph + (y + ph + KERF <= sheetH ? KERF : 0);
+    // Split all free rects that overlap the placed piece (plus kerf).
+    // Reserve a FULL kerf moat on the right and bottom of every piece, always.
+    // The moat may extend past the sheet edge — splitFreeRect simply yields no
+    // rect there — but it guarantees no later piece is seated within a blade's
+    // width of this one. (Previously the kerf was dropped near the sheet edge,
+    // which let a piece in an adjacent free rect sit a sub-kerf distance away.)
+    const kw = pw + KERF;
+    const kh = ph + KERF;
     const kx = x, ky = y;
     const placedBox = { x: kx, y: ky, w: kw, h: kh };
     const newFree = [];
@@ -1433,8 +1445,10 @@ function findEmptySpot(sheetW, sheetH, placed, pc, allowRotation) {
   function overlaps(x,y,w,h){
     for (let i=0;i<placed.length;i++){
       const p = placed[i];
-      // include kerf gap around existing pieces
-      const px=p.x, py=p.y, pw=p.w+KERF, ph=p.h+KERF;
+      // Reserve a full blade-kerf moat on ALL FOUR sides of every existing piece.
+      // (Previously the moat was only added to the right/bottom, so a piece slotted
+      // against an existing piece's TOP or LEFT edge could sit with a sub-kerf gap.)
+      const px=p.x-KERF, py=p.y-KERF, pw=p.w+2*KERF, ph=p.h+2*KERF;
       if (!(x+w <= px || px+pw <= x || y+h <= py || py+ph <= y)) return true;
     }
     return false;
