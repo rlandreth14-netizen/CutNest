@@ -1798,6 +1798,29 @@ function consolidateSheets(sheets, allowRot, cm) {
   return working;
 }
 
+// Recompute every placed piece's `rotated` flag from first principles, by
+// comparing its final placed orientation against the ORIGINAL dimensions the
+// user entered (pieces[pieceIndex]). The packer's consolidation/rebalance
+// passes re-pool pieces using their already-placed (possibly rotated) sizes,
+// so a flag derived mid-pipeline can disagree with reality — e.g. an 813x703
+// piece placed as 703x813 but labelled "not rotated". Running this once at the
+// very end makes the flag authoritative regardless of how many repack passes
+// ran. This only touches the boolean flag; piece positions and sizes are left
+// exactly as packed, so it cannot affect placement, conservation, or kerf.
+function normalizeRotatedFlags(sheets, pieces) {
+  if (!sheets || !pieces) return;
+  sheets.forEach(function(s){
+    if (!s || !s.placed) return;
+    s.placed.forEach(function(p){
+      var orig = pieces[p.pieceIndex];
+      if (!orig) return;                            // unknown piece: leave as-is
+      var ow = +orig.w, oh = +orig.h;
+      if (ow === oh) { p.rotated = false; return; } // square: never rotated
+      p.rotated = (p.w === oh && p.h === ow);       // rotated iff dims are swapped
+    });
+  });
+}
+
 // Fallback packer: greedy only, no consolidation/rebalancing. Used if the
 // full runMat throws, so one material's optimisation bug can't break the job.
 function runMatSafe(libMat, pieces, jobQty) {
@@ -1844,6 +1867,7 @@ function runMatSafe(libMat, pieces, jobQty) {
     s.usablePercent = usable ? Math.round(offcut.area/sa*100) : 0;
     s.scrapPercent = Math.max(0, 100 - s.utilPercent - s.usablePercent);
   });
+  normalizeRotatedFlags(sheets, pieces);
   return { sheets, unplaced:queue, sizeMap };
 }
 
@@ -2010,7 +2034,9 @@ function runMat(libMat, pieces, remnant, jobQty) {
     sh.scrapPercent = Math.max(0, 100 - sh.utilPercent - sh.usablePercent);
   });
 
-  return {sheets: remnantSheets.concat(sheets), unplaced:queue, sizeMap};
+  var _allSheets = remnantSheets.concat(sheets);
+  normalizeRotatedFlags(_allSheets, pieces);
+  return {sheets: _allSheets, unplaced:queue, sizeMap};
 }
 
 // ── CALCULATE ─────────────────────────────────
@@ -2508,6 +2534,22 @@ function showShareUrlModal(url) {
 }
 
 
+function csvCell(v){
+  // CSV-safe a single cell. Two problems this prevents:
+  //  1) Field corruption: a value containing a comma/quote/newline (e.g. a
+  //     material name like "Steel, 3mm") would otherwise shift every later
+  //     column. RFC-4180: wrap in double quotes, double any internal quotes.
+  //  2) Formula injection: a text value starting with = + - @ (or tab/CR) can
+  //     execute as a formula when the file is opened in Excel/Sheets. Prefix
+  //     such text with an apostrophe so it's treated as literal text.
+  // Real numbers pass through untouched so coordinates/sizes stay clean.
+  if (typeof v === 'number') return String(v);
+  var c = (v===null||v===undefined) ? '' : String(v);
+  if (/^[=+\-@\t\r]/.test(c)) c = "'" + c;
+  if (/[",\n\r]/.test(c)) c = '"' + c.replace(/"/g,'""') + '"';
+  return c;
+}
+
 function exportCSV() {
   if (!calcResult) return;
   let csvTotal = 0;
@@ -2534,7 +2576,7 @@ function exportCSV() {
   const jr = (document.getElementById('job-ref')||{}).value||'cutlist';
   const safe = jr.replace(/[^a-z0-9]/gi,'-').toLowerCase();
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'}));
+  a.href=URL.createObjectURL(new Blob([rows.map(r=>r.map(csvCell).join(',')).join('\n')],{type:'text/csv'}));
   a.download=`cutnest-${safe}-${new Date().toISOString().slice(0,10)}.csv`; a.click();
 }
 
