@@ -378,6 +378,12 @@ kbd{background:var(--white);border:1px solid var(--bdr2);border-radius:4px;paddi
   .app-hdr{padding:0 10px}
   .calc-note{display:none}
   .app-hright .kerf-pill,.app-hright .sync-pill{display:none}
+  /* Header fits a phone: drop the Library text to its icon, keep all buttons.
+     Six icon-only buttons + brand fit ~370px; the 'Library' word overflowed. */
+  .btn-hdr-label{display:none}
+  .app-brand{min-width:0;flex-shrink:1;overflow:hidden}
+  .app-hright{flex-shrink:0}
+  .btn-hdr{padding:5px 8px}
   .af-row1{grid-template-columns:1fr}
   .af-row2{grid-template-columns:1fr 1fr;gap:6px}
   .edit-basic-grid{grid-template-columns:1fr 1fr}
@@ -475,7 +481,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
     <button class="btn-hdr no-print" id="redo-btn" onclick="redo()" title="Redo (Ctrl+Y)" aria-label="Redo" disabled style="opacity:.4">↪</button>
     <button class="btn-hdr no-print" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode" aria-label="Toggle dark mode">☀︎</button>
     <button class="btn-hdr no-print" id="history-btn" onclick="openHistory()">&#128336;</button>
-    <button class="btn-hdr no-print" onclick="openLib()">&#128230; Library</button>
+    <button class="btn-hdr no-print" onclick="openLib()">&#128230;<span class="btn-hdr-label"> Library</span></button>
     <button class="btn-hdr no-print" onclick="openSettings()">&#9881;</button>
   </div>
 </header>
