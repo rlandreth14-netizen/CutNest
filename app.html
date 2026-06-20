@@ -855,7 +855,7 @@ function renderAll() {
 function buildBlock(m, idx) {
   const libMat = library.find(l => l.id == m.selectedMatId);
   const opts = library.map(l =>
-    `<option value="${l.id}" ${m.selectedMatId==l.id?'selected':''}>${l.name}${l.thickness?' · '+l.thickness:''}</option>`
+    `<option value="${l.id}" ${m.selectedMatId==l.id?'selected':''}>${esc(l.name)}${l.thickness?' · '+esc(l.thickness):''}</option>`
   ).join('');
 
   // size info
@@ -947,7 +947,7 @@ function buildBlock(m, idx) {
           <div class="mat-num">${idx+1}</div>
           <div>
             <div class="mat-cap-title">
-              Material ${idx+1}${libMat ? ' — ' + libMat.name : ''}
+              Material ${idx+1}${libMat ? ' — ' + esc(libMat.name) : ''}
             </div>
             <div class="mat-cap-subtitle">Select material then enter the pieces to cut from it</div>
           </div>
@@ -2047,7 +2047,7 @@ function _doCalculate() {
     const libMat = library.find(l => l.id == m.selectedMatId);
     if (!libMat) { errors.push(`Material ${mats.indexOf(m)+1}: Please select a material.`); continue; }
     const valid = m.pieces.filter(p=>p.w>0&&p.h>0&&p.qty>0);
-    if (!valid.length) { errors.push(`Material ${mats.indexOf(m)+1} (${libMat.name}): Please add at least one piece.`); continue; }
+    if (!valid.length) { errors.push(`Material ${mats.indexOf(m)+1} (${esc(libMat.name)}): Please add at least one piece.`); continue; }
 
     // check pieces fit — only against sizes that have real positive dimensions
     const vSize = function(s){ return s && +s.w > 0 && +s.h > 0; };
@@ -2057,7 +2057,7 @@ function _doCalculate() {
     ].filter(Boolean);
 
     if (!sizes.length) {
-      errors.push(`${libMat.name}: no valid sheet size set. Open Library → Edit ${libMat.name} and enter Size 1 width and height.`);
+      errors.push(`${esc(libMat.name)}: no valid sheet size set. Open Library → Edit ${esc(libMat.name)} and enter Size 1 width and height.`);
       continue;
     }
     let anyTooBig = false;
@@ -2070,7 +2070,7 @@ function _doCalculate() {
       if (!fits) {
         anyTooBig = true;
         const sizeStr = sizes.map(function(s){return (+s.w)+'×'+(+s.h)+'mm';}).join(' or ');
-        errors.push(`${libMat.name}: "${p.label||pw+'×'+ph}" (${pw}×${ph}mm) is too big for the ${sizeStr} sheet.`);
+        errors.push(`${esc(libMat.name)}: "${esc(p.label||pw+'×'+ph)}" (${pw}×${ph}mm) is too big for the ${sizeStr} sheet.`);
       }
     }
     if (anyTooBig) continue;
@@ -2083,12 +2083,12 @@ function _doCalculate() {
       try {
         res = runMatSafe(libMat, valid, jobQty);
       } catch (ex2) {
-        errors.push(`${libMat.name}: could not calculate (${ex && ex.message ? ex.message : 'error'}).`);
+        errors.push(`${esc(libMat.name)}: could not calculate (${ex && ex.message ? esc(ex.message) : 'error'}).`);
         continue;
       }
     }
     if (!res || res.noValidSize) {
-      errors.push(`${libMat.name}: no valid sheet size. Open Library → Edit ${libMat.name} and set Size 1.`);
+      errors.push(`${esc(libMat.name)}: no valid sheet size. Open Library → Edit ${esc(libMat.name)} and set Size 1.`);
       continue;
     }
     // DIAGNOSTIC: if a material placed nothing, explain exactly why instead of
@@ -2104,9 +2104,9 @@ function _doCalculate() {
         });
       });
       if (tooBig.length) {
-        errors.push(`${libMat.name}: piece "${tooBig[0].label||(tooBig[0].w+'×'+tooBig[0].h)}" (${tooBig[0].w}×${tooBig[0].h}mm) too big for sheets ${s1} / ${s2}.`);
+        errors.push(`${esc(libMat.name)}: piece "${esc(tooBig[0].label||(tooBig[0].w+'×'+tooBig[0].h))}" (${tooBig[0].w}×${tooBig[0].h}mm) too big for sheets ${s1} / ${s2}.`);
       } else {
-        errors.push(`${libMat.name}: packing returned nothing. Sheets: ${s1} / ${s2}. Pieces: ${pcs}. [This is a bug — please report]`);
+        errors.push(`${esc(libMat.name)}: packing returned nothing. Sheets: ${s1} / ${s2}. Pieces: ${pcs}. [This is a bug — please report]`);
       }
       continue;
     }
@@ -2158,7 +2158,7 @@ function renderOutput() {
 
     return `<div class="pres-card">
       <div class="pres-left">
-        <div class="pres-name">${libMat.name}<span class="pres-thk">${libMat.thickness||''}</span></div>
+        <div class="pres-name">${esc(libMat.name)}<span class="pres-thk">${esc(libMat.thickness||'')}</span></div>
         <div class="pres-sizes">${chips || '<span style="color:var(--red);font-size:13px">No pieces placed</span>'}</div>
         ${unplaced.length ? `<div class="pres-warn">⚠ ${unplaced.length} piece(s) could not be placed</div>` : ''}
       </div>
@@ -2325,7 +2325,7 @@ function renderOutput() {
     sheets.forEach((sh,si)=>{
       sh.placed.forEach(p=>{
         rows+=`<tr>
-          <td style="font-weight:600;color:var(--navy);font-size:12px">${libMat.name}</td>
+          <td style="font-weight:600;color:var(--navy);font-size:12px">${esc(libMat.name)}</td>
           <td style="color:var(--muted)">${si+1}</td>
           <td style="color:var(--muted);font-size:12px">${sh.sheetW}×${sh.sheetH}</td>
           <td><div style="display:flex;align-items:center;gap:5px"><div style="width:9px;height:9px;border-radius:2px;background:${COLORS[p.pieceIndex%COLORS.length]};flex-shrink:0"></div>${esc(p.label||'P'+(p.pieceIndex+1))}</div></td>
@@ -2367,7 +2367,7 @@ function exportPDF() {
       const sz = [libMat.size1,libMat.size2].find(s=>s&&s.w===sw&&s.h===sh);
       const lineTotal = sz && sz.price > 0 ? sz.price * cnt : 0;
       grandTotal += lineTotal;
-      body += `<tr><td>${libMat.name} ${libMat.thickness||''}</td><td>${cnt}</td><td>${dim}mm</td><td>${lineTotal>0?'£'+lineTotal.toFixed(2):'—'}</td></tr>`;
+      body += `<tr><td>${esc(libMat.name)} ${esc(libMat.thickness||'')}</td><td>${cnt}</td><td>${dim}mm</td><td>${lineTotal>0?'£'+lineTotal.toFixed(2):'—'}</td></tr>`;
     });
   });
   if (grandTotal > 0) body += `<tr class="total-row"><td colspan="3">Total Material Cost</td><td>£${grandTotal.toFixed(2)}</td></tr>`;
@@ -2375,7 +2375,7 @@ function exportPDF() {
 
   // Sheet visuals per material
   calcResult.results.forEach(({libMat, sheets, unplaced}) => {
-    body += `<div class="mat-sec"><div class="mat-hdr">${libMat.name} — ${sheets.length} sheet${sheets.length!==1?'s':''}</div>`;
+    body += `<div class="mat-sec"><div class="mat-hdr">${esc(libMat.name)} — ${sheets.length} sheet${sheets.length!==1?'s':''}</div>`;
     sheets.forEach((sh,si) => {
       const scale = Math.min(480/sh.sheetW, 200/sh.sheetH, 0.32);
       const cw=Math.round(sh.sheetW*scale), ch=Math.round(sh.sheetH*scale);
@@ -2392,12 +2392,12 @@ function exportPDF() {
         const px=Math.round(p.x*scale),py=Math.round(p.y*scale),pw=Math.max(2,Math.round(p.w*scale)-1),ph=Math.max(2,Math.round(p.h*scale)-1);
         const show = pw>24&&ph>14;
         body += `<div style="position:absolute;left:${px}px;top:${py}px;width:${pw}px;height:${ph}px;background:${col}cc;border:1.5px solid ${col};border-radius:2px;overflow:hidden;box-sizing:border-box">`;
-        if (show) body += `<div style="font-size:${Math.min(10,pw/7)}px;font-weight:700;color:#fff;padding:2px 3px;line-height:1.2;text-shadow:0 1px 2px rgba(0,0,0,.4)">${p.label||'P'+(p.pieceIndex+1)}${p.rotated?'↻':''}<br><span style="font-weight:400;font-size:.8em;opacity:.85">${p.w}×${p.h}</span></div>`;
+        if (show) body += `<div style="font-size:${Math.min(10,pw/7)}px;font-weight:700;color:#fff;padding:2px 3px;line-height:1.2;text-shadow:0 1px 2px rgba(0,0,0,.4)">${esc(p.label||'P'+(p.pieceIndex+1))}${p.rotated?'↻':''}<br><span style="font-weight:400;font-size:.8em;opacity:.85">${p.w}×${p.h}</span></div>`;
         body += `</div>`;
       });
       body += `</div></div>`;
     });
-    if (unplaced.length) body += `<div class="warn-row">⚠ Unplaced: ${unplaced.map(p=>p.label||p.w+'×'+p.h+'mm').join(', ')}</div>`;
+    if (unplaced.length) body += `<div class="warn-row">⚠ Unplaced: ${unplaced.map(p=>esc(p.label||p.w+'×'+p.h+'mm')).join(', ')}</div>`;
     body += `</div>`;
   });
 
@@ -2406,7 +2406,7 @@ function exportPDF() {
   calcResult.results.forEach(({libMat,sheets}) => {
     sheets.forEach((sh,si) => {
       sh.placed.forEach(p => {
-        body += `<tr><td>${libMat.name}</td><td>${si+1}</td><td>${p.label||'P'+(p.pieceIndex+1)}</td><td>${p.w}</td><td>${p.h}</td><td>${p.x}</td><td>${p.y}</td><td>${p.rotated?'Yes':''}</td></tr>`;
+        body += `<tr><td>${esc(libMat.name)}</td><td>${si+1}</td><td>${esc(p.label||'P'+(p.pieceIndex+1))}</td><td>${p.w}</td><td>${p.h}</td><td>${p.x}</td><td>${p.y}</td><td>${p.rotated?'Yes':''}</td></tr>`;
       });
     });
   });
@@ -2563,7 +2563,7 @@ function renderLibEntries() {
   wrap.innerHTML=pending.map(e=>`
     <div class="lib-entry">
       <div class="le-hdr">
-        <div><div class="le-name">${e.name}</div><div class="le-meta">${e.material||''}${e.thickness?' · '+e.thickness:''}</div></div>
+        <div><div class="le-name">${esc(e.name)}</div><div class="le-meta">${esc(e.material||'')}${e.thickness?' · '+esc(e.thickness):''}</div></div>
         <div style="display:flex;gap:7px;align-items:center">
           <button class="btn-sm-bl" onclick="toggleEdit(${e.id})">Edit</button>
           <button class="btn-del" onclick="delPending(${e.id})">✕</button>
@@ -2571,9 +2571,9 @@ function renderLibEntries() {
       </div>
       <div id="ev-${e.id}">
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
-          <div class="sz-badge"><span class="sl">Size 1${e.size1.bc?' · '+e.size1.bc:''}</span><span class="sv">${e.size1.w} × ${e.size1.h} mm</span></div>
+          <div class="sz-badge"><span class="sl">Size 1${e.size1.bc?' · '+esc(e.size1.bc):''}</span><span class="sv">${e.size1.w} × ${e.size1.h} mm</span></div>
           ${e.size2&&e.size2.w&&e.size2.h
-            ? `<div class="sz-badge"><span class="sl">Size 2${e.size2.bc?' · '+e.size2.bc:''}</span><span class="sv">${e.size2.w} × ${e.size2.h} mm</span></div>`
+            ? `<div class="sz-badge"><span class="sl">Size 2${e.size2.bc?' · '+esc(e.size2.bc):''}</span><span class="sv">${e.size2.w} × ${e.size2.h} mm</span></div>`
             : `<div class="sz-badge" style="opacity:.4"><span class="sl">Size 2</span><span class="sv" style="color:var(--muted)">Not set</span></div>`}
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
@@ -2584,9 +2584,9 @@ function renderLibEntries() {
       <div id="ee-${e.id}" style="display:none">
         <div class="edit-basic mt8">
           <div class="edit-basic-grid">
-            <div><label class="lbl">Name</label><input type="text" value="${e.name}" oninput="upd(${e.id},'name',this.value)"/></div>
-            <div><label class="lbl">Material</label><input type="text" value="${e.material||''}" oninput="upd(${e.id},'material',this.value)"/></div>
-            <div><label class="lbl">Thickness</label><input type="text" value="${e.thickness||''}" oninput="upd(${e.id},'thickness',this.value)"/></div>
+            <div><label class="lbl">Name</label><input type="text" value="${esc(e.name)}" oninput="upd(${e.id},'name',this.value)"/></div>
+            <div><label class="lbl">Material</label><input type="text" value="${esc(e.material||'')}" oninput="upd(${e.id},'material',this.value)"/></div>
+            <div><label class="lbl">Thickness</label><input type="text" value="${esc(e.thickness||'')}" oninput="upd(${e.id},'thickness',this.value)"/></div>
           </div>
         </div>
         <div class="sizes-edit">
@@ -3071,9 +3071,9 @@ function renderHistoryEntries(){
     const h=JSON.parse(localStorage.getItem(HIST_KEY)||'[]');
     if(!h.length){wrap.innerHTML='<p style="color:var(--muted);font-size:13px">No jobs saved yet.</p>';return;}
     wrap.innerHTML=h.map(function(e){
-      return '<div class="hist-entry"><div><div class="hist-ref">'+e.jobRef+'</div>'
+      return '<div class="hist-entry"><div><div class="hist-ref">'+esc(e.jobRef)+'</div>'
         +'<div class="hist-meta">'+e.date+' - '+e.totalSheets+' sheet'+(e.totalSheets!==1?'s':'')+'</div>'
-        +'<div class="hist-summary">'+e.summary+'</div></div>'
+        +'<div class="hist-summary">'+esc(e.summary)+'</div></div>'
         +'<div class="hist-actions">'
         +'<button class="btn btn-teal" style="padding:6px 12px;font-size:12px" onclick="loadHistoryJob('+e.id+')">Load</button>'
         +'<button class="btn-del" onclick="deleteHistoryJob('+e.id+')">x</button>'
