@@ -489,7 +489,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
 <!-- PRO BANNER -->
 <div class="pro-banner no-print" id="pro-banner" style="display:none">
   <div class="pro-banner-txt">You&rsquo;re on the <b>Free plan</b> &mdash; 1 material per job. Upgrade for unlimited materials, full material library and job history.</div>
-  <a class="btn-upgrade" href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank">Upgrade to Pro &mdash; &pound;15/mo &rarr;</a>
+  <a class="btn-upgrade" href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank">Upgrade to Pro &mdash; &pound;12/mo &rarr;</a>
 </div>
 
 <!-- MAIN -->
@@ -545,7 +545,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
       <div class="ghost-lock">&#128274;</div>
       <div class="ghost-title">Add a second material</div>
       <div class="ghost-desc">Pro lets you nest multiple materials in one job &mdash; steel, timber, acrylic, all calculated together.</div>
-      <a href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank" class="ghost-cta" onclick="event.stopPropagation()">Upgrade to Pro &mdash; &pound;15/mo &rarr;</a>
+      <a href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank" class="ghost-cta" onclick="event.stopPropagation()">Upgrade to Pro &mdash; &pound;12/mo &rarr;</a>
     </div>
   </div>
 
@@ -582,6 +582,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
         <div class="results-title">&#128203; Sheet Usage <span id="units-badge" style="font-size:13px;font-weight:400;opacity:.7;margin-left:6px"></span></div>
         <div class="res-acts">
           <button class="btn-exp" onclick="exportCSV()">⬇ CSV</button>
+          <button class="btn-exp" onclick="exportDXF()" title="Machine-ready DXF for CNC/laser/router">⬇ DXF</button>
           <button class="btn-exp pdf-btn" onclick="exportPDF()" title="Download print-quality PDF">⬇ PDF</button>
           <button class="btn-exp" onclick="shareJob()" title="Share this job">🔗 Share</button>
           <button class="btn-exp" onclick="doPrint()">🖨 Print</button>
@@ -659,7 +660,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
         <div id="key-status" class="key-status none">No key entered</div>
         <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
           <button class="btn btn-teal" onclick="validateAndSaveKey()" style="padding:8px 16px">Activate Key</button>
-          <a href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank" class="btn btn-out" style="padding:8px 16px">Buy Pro &mdash; &pound;15/mo</a>
+          <a href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank" class="btn btn-out" style="padding:8px 16px">Buy Pro &mdash; &pound;12/mo</a>
         </div>
       </div>
       <div class="settings-section">
@@ -744,11 +745,11 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
       <h3 style="font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:800;color:var(--teal);margin-bottom:6px" id="upgrade-title">Pro Feature</h3>
       <p style="font-size:13px;color:var(--text2);margin-bottom:18px;line-height:1.6" id="upgrade-desc">Upgrade to unlock this feature.</p>
       <div style="background:var(--sky);border:1px solid var(--bdr);border-radius:9px;padding:12px;margin-bottom:14px">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:900;color:var(--teal)">&pound;15<span style="font-size:14px;color:var(--muted)">/month</span></div>
-        <div style="font-size:12px;color:var(--muted)">or &pound;129/year &middot; cancel anytime</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:900;color:var(--teal)">&pound;12<span style="font-size:14px;color:var(--muted)">/month</span></div>
+        <div style="font-size:12px;color:var(--muted)">or &pound;99/year &middot; cancel anytime</div>
       </div>
-      <a href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank" style="display:block;background:linear-gradient(135deg,var(--amber),var(--amber2));color:var(--teal2);font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;padding:12px;border-radius:9px;text-decoration:none;margin-bottom:6px">Get Pro &mdash; &pound;15/month &rarr;</a>
-      <a href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank" style="font-size:12px;color:var(--teal3)">Or &pound;129/year (save &pound;51)</a>
+      <a href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank" style="display:block;background:linear-gradient(135deg,var(--amber),var(--amber2));color:var(--teal2);font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;padding:12px;border-radius:9px;text-decoration:none;margin-bottom:6px">Get Pro &mdash; &pound;12/month &rarr;</a>
+      <a href="https://cutnest.lemonsqueezy.com/checkout/buy/675660b6-c696-4303-bf45-ec5778acf276" target="_blank" style="font-size:12px;color:var(--teal3)">Or &pound;99/year (save &pound;45)</a>
     </div>
   </div>
 </div>
@@ -2037,15 +2038,24 @@ function runMat(libMat, pieces, remnant, jobQty) {
     queue = queue.filter(p => !done.has(`${p.pieceIndex}-${p.instanceIndex}`));
   }
 
-  // ── CONSOLIDATION ──
-  // Eliminate near-empty orphan sheets by redistributing their pieces.
-  let consolidated = consolidateSheets(sheets, libMat.allowRotation !== false, libMat.cuttingMethod || 'free');
+  // Total parts placed — used to gate the expensive optimisation passes below.
+  const _placedCount = sheets.reduce(function(a,s){ return a + s.placed.length; }, 0);
 
-  // ── CROSS-SIZE REBALANCING ──
-  // Retry the least-full sheets pooled together across all sheet sizes — if a
-  // bigger (or different) sheet size holds them for less cost or fewer sheets,
-  // swap it in. This is the "could these small sheets be one big sheet?" pass.
-  consolidated = rebalanceSheets(consolidated, sizes, libMat.allowRotation !== false, libMat.cuttingMethod || 'free');
+  // ── CONSOLIDATION + CROSS-SIZE REBALANCING ──
+  // These two passes squeeze out near-empty orphan sheets and try pooling the
+  // least-full sheets across stock sizes. They noticeably improve packing on
+  // normal jobs, but both re-run a branch search whose cost grows with the
+  // number of sheets, so on very large jobs (hundreds of parts) they become
+  // slow. Above a threshold we skip them: the greedy result is already correct
+  // and well-packed — at worst it uses a few more sheets than the fully
+  // optimised version — and the job stays fast and responsive. Correctness
+  // (no lost/duplicated/overlapping parts) is identical either way.
+  const OPTIMISE_PART_LIMIT = 200;
+  let consolidated = sheets;
+  if (_placedCount <= OPTIMISE_PART_LIMIT) {
+    consolidated = consolidateSheets(sheets, libMat.allowRotation !== false, libMat.cuttingMethod || 'free');
+    consolidated = rebalanceSheets(consolidated, sizes, libMat.allowRotation !== false, libMat.cuttingMethod || 'free');
+  }
 
   // Replace sheets with the optimised set.
   // IMPORTANT: consolidated may be the SAME array reference as `sheets` (the
@@ -2623,6 +2633,72 @@ function exportCSV() {
   a.download=`cutnest-${safe}-${new Date().toISOString().slice(0,10)}.csv`; a.click();
 }
 
+// ── DXF EXPORT (Pro) — machine-ready cut layout ───────────────────────────
+// Emits a valid AutoCAD R2000 DXF: each sheet tiled left-to-right with its
+// boundary on a SHEET layer, parts as closed polylines on a PARTS layer, and
+// labels on a TEXT layer. Units are millimetres. The packer uses a top-left
+// (Y-down) origin; DXF is bottom-left (Y-up), so each part's Y is flipped per
+// sheet — a part at the top-left on screen lands at the top-left in CAD, not
+// mirrored. Feeds straight into CNC/laser/router CAM.
+function buildDXF(results) {
+  let H = 0x100;
+  const hx = function(){ H += 1; return H.toString(16).toUpperCase(); };
+  const n = function(v){ return (Math.round(v*1000)/1000).toString(); };
+  const out = [];
+  const push = function(){ for (let i=0;i<arguments.length;i++) out.push(arguments[i]); };
+  const poly = function(pts, layer){
+    push('0','LWPOLYLINE','5',hx(),'100','AcDbEntity','8',layer,'100','AcDbPolyline','90',String(pts.length),'70','1');
+    pts.forEach(function(p){ push('10',n(p[0]),'20',n(p[1])); });
+  };
+  const rect = function(x,y,w,h,layer){ poly([[x,y],[x+w,y],[x+w,y+h],[x,y+h]], layer); };
+  const txt = function(x,y,h,str,layer){
+    push('0','TEXT','5',hx(),'100','AcDbEntity','8',layer,'100','AcDbText',
+         '10',n(x),'20',n(y),'30','0','40',n(h),'1',String(str).replace(/[\r\n]/g,' '),'100','AcDbText');
+  };
+  const layerDef = function(name,color){
+    push('0','LAYER','5',hx(),'100','AcDbSymbolTableRecord','100','AcDbLayerTableRecord','2',name,'70','0','62',String(color),'6','CONTINUOUS');
+  };
+
+  push('0','SECTION','2','HEADER','9','$ACADVER','1','AC1015','9','$INSUNITS','70','4','0','ENDSEC');
+  push('0','SECTION','2','TABLES','0','TABLE','2','LAYER','5',hx(),'100','AcDbSymbolTable','70','4');
+  layerDef('0',7); layerDef('SHEET',5); layerDef('PARTS',3); layerDef('TEXT',7);
+  push('0','ENDTAB','0','ENDSEC');
+  push('0','SECTION','2','ENTITIES');
+
+  let offsetX = 0;
+  const GAP = 200;
+  results.forEach(function(res){
+    const matName = (res.libMat && res.libMat.name) || 'Material';
+    (res.sheets||[]).forEach(function(sh, si){
+      const SW = sh.sheetW, SH = sh.sheetH;
+      rect(offsetX, 0, SW, SH, 'SHEET');
+      txt(offsetX, -40, 30, matName + ' - Sheet ' + (si+1) + ' (' + SW + 'x' + SH + 'mm)', 'TEXT');
+      sh.placed.forEach(function(p){
+        const dy = SH - p.y - p.h;
+        rect(offsetX + p.x, dy, p.w, p.h, 'PARTS');
+        const lbl = (p.label || (p.w+'x'+p.h)) + (p.rotated ? ' (R)' : '');
+        const th = Math.max(8, Math.min(p.w, p.h) / 8);
+        txt(offsetX + p.x + 5, dy + 5, th, lbl, 'TEXT');
+      });
+      offsetX += SW + GAP;
+    });
+  });
+
+  push('0','ENDSEC','0','EOF');
+  return out.join('\n') + '\n';
+}
+
+function exportDXF() {
+  if (!isPro) { showUpgradeModal('&#128208;','DXF Export','Pro exports a machine-ready DXF of your cut layout &mdash; drop it straight into your CNC, laser or router CAM. Real dimensions, every part on its own layer.'); return; }
+  if (!calcResult || !calcResult.results) return;
+  const dxf = buildDXF(calcResult.results);
+  const jr = (document.getElementById('job-ref')||{}).value||'cutlist';
+  const safe = jr.replace(/[^a-z0-9]/gi,'-').toLowerCase();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([dxf], {type:'application/dxf'}));
+  a.download = `cutnest-${safe}-${new Date().toISOString().slice(0,10)}.dxf`; a.click();
+}
+
 // ── LIBRARY MODAL ─────────────────────────────
 function openLib() {
   pending=library.map(e=>({...e,size1:{...e.size1},size2:{...e.size2||{w:'',h:'',bc:''}}}));
@@ -2992,7 +3068,7 @@ const LEGAL_CONTENT={
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">The Service</p>
     <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest provides browser-based cut list optimisation software. The free tier provides limited features. The Pro tier provides full access via a paid subscription processed by Lemon Squeezy.</p>
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">Subscriptions &amp; Payment</p>
-    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">Pro subscriptions are £15/month or £129/year, billed via Lemon Squeezy. Monthly subscriptions can be cancelled at any time — access continues until the end of the billing period. Annual subscriptions are non-refundable except where required by law. Lemon Squeezy acts as the Merchant of Record for all transactions.</p>
+    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">Pro subscriptions are £12/month or £99/year, billed via Lemon Squeezy. Monthly subscriptions can be cancelled at any time — access continues until the end of the billing period. Annual subscriptions are non-refundable except where required by law. Lemon Squeezy acts as the Merchant of Record for all transactions.</p>
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">Licence</p>
     <p style="margin-bottom:10px;font-size:13px;line-height:1.6">Your licence key is for personal or single-business use only. Keys may not be shared, resold, or used across multiple unrelated businesses. We reserve the right to deactivate keys used in breach of this policy.</p>
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">Limitation of Liability</p>
