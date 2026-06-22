@@ -1513,6 +1513,16 @@ function findEmptySpot(sheetW, sheetH, placed, pc, allowRotation) {
 }
 
 // Run packing with multiple piece orderings, pick best result for this sheet
+// Effort level for packing, set once per job by runMat based on part count.
+// Each maxRectsPack pass costs the same, so trying all 8 sorter strategies on a
+// huge job multiplies an already-quadratic cost. The first strategy
+// (largest-area-first) is by far the strongest single heuristic; strategies
+// past the first few add little on big jobs. We try all 8 on small jobs and
+// taper to 1 on very large ones. Correctness (no lost/overlapped/sub-kerf
+// parts) is identical at every level — this only trades a little packing
+// tightness for speed when the job is big.
+let PACK_EFFORT = 8;
+
 function packSheetBest(sheetW, sheetH, queue, allowRot, cuttingMethod) {
   const cm = cuttingMethod || 'free';
   const ar = allowRot !== false;
@@ -1528,9 +1538,10 @@ function packSheetBest(sheetW, sheetH, queue, allowRot, cuttingMethod) {
   q => [...q].sort((a,b) => Math.abs(b.w-b.h) - Math.abs(a.w-a.h)),  // most elongated first
   q => [...q].sort((a,b) => Math.abs(a.w-a.h) - Math.abs(b.w-b.h)),  // most square first
 ];
+  const cap = Math.max(1, Math.min(sorters.length, PACK_EFFORT|0));
   let best = null;
-  for (const sortFn of sorters) {
-    const result = maxRectsPack(sheetW, sheetH, sortFn(queue), ar);
+  for (let si = 0; si < cap; si++) {
+    const result = maxRectsPack(sheetW, sheetH, sorters[si](queue), ar);
     if (!best ||
         result.placed.length > best.placed.length ||
         (result.placed.length === best.placed.length &&
@@ -1596,9 +1607,13 @@ function rebalanceSheets(sheets, sizes, allowRot, cm) {
   }
   function totalCost(arr){ return arr.reduce(function(a,s){ return a + sheetCost(s); }, 0); }
   function sig(arr){
+    // Key on piece IDENTITY (pieceIndex-instanceIndex), not dimensions. Every
+    // instance is unique, so an identity multiset catches loss, duplication AND
+    // any swap between two equal-dimension pieces — which a dimension-only
+    // signature could not detect. Guards the invariant we actually care about.
     const c={};
     arr.forEach(function(s){ s.placed.forEach(function(p){
-      const a=Math.min(p.w,p.h), b=Math.max(p.w,p.h); const k=a+'x'+b; c[k]=(c[k]||0)+1;
+      const k = p.pieceIndex+'-'+p.instanceIndex; c[k]=(c[k]||0)+1;
     });});
     return c;
   }
@@ -1705,33 +1720,6 @@ function packPoolBestValue(pool, sizes, allowRot, cm, haveCost) {
   return bestResult;
 }
 
-// OLD greedy version, no longer used.
-function packPoolGreedy(pool, sizes, allowRot, cm, haveCost) {
-  let queue = pool.slice();
-  const out = [];
-  let guard = 60;
-  while (queue.length && guard-- > 0) {
-    let best = null, bestScore = Infinity;
-    for (const sz of sizes) {
-      const r = packSheetBest(sz.w, sz.h, queue, allowRot, cm);
-      if (!r.placed.length) continue;
-      const placedArea = r.placed.reduce(function(a,p){return a+p.w*p.h;},0);
-      const sheetArea = sz.w*sz.h;
-      const util = placedArea/sheetArea;
-      // Score: cost per useful area packed (lower = better value)
-      const cost = haveCost ? sz.price : 1;
-      const score = cost / Math.max(placedArea, 1) - util*0.0001;
-      if (best===null || score < bestScore) { best = r; bestScore = score; }
-    }
-    if (!best || !best.placed.length) break;
-    out.push(best);
-    const done = new Set(best.placed.map(function(p){return p.pieceIndex+'-'+p.instanceIndex;}));
-    queue = queue.filter(function(p){ return !done.has(p.pieceIndex+'-'+p.instanceIndex); });
-  }
-  if (queue.length) return null; // couldn't place everything
-  return out;
-}
-
 // ── CONSOLIDATION PASS ───────────────────────────────────────
 // The greedy packer can leave near-empty "orphan" sheets at the end of a job.
 // This pass tries to empty the least-full sheet by re-fitting its pieces onto
@@ -1741,14 +1729,15 @@ function packPoolGreedy(pool, sizes, allowRot, cm, haveCost) {
 function consolidateSheets(sheets, allowRot, cm) {
   if (sheets.length < 2) return sheets;
 
-  // Signature of all pieces by dimensions (a multiset we must preserve exactly)
+  // Signature of all pieces by IDENTITY (a multiset we must preserve exactly).
   function pieceSignature(sheetArr) {
     const counts = {};
     sheetArr.forEach(function(s){
       s.placed.forEach(function(p){
-        // key on dimensions sorted (rotation-agnostic) so a rotated piece matches
-        const a = Math.min(p.w, p.h), b = Math.max(p.w, p.h);
-        const k = a + 'x' + b;
+        // Key on piece identity (pieceIndex-instanceIndex). Every instance is
+        // unique, so this catches loss, duplication AND a swap between two
+        // equal-dimension pieces — stronger than a dimension-only signature.
+        const k = p.pieceIndex + '-' + p.instanceIndex;
         counts[k] = (counts[k] || 0) + 1;
       });
     });
@@ -1924,6 +1913,21 @@ function runMat(libMat, pieces, remnant, jobQty) {
       queue.push({...p, w:+p.w, h:+p.h, label:p.label||'', pieceIndex:pi, instanceIndex:q});
   });
 
+  // ── EFFORT TUNING (performance) ──
+  // Cost grows super-linearly with parts: each sheet placement tries multiple
+  // sorter strategies × both stock sizes, and the per-pack cost itself rises as
+  // pieces-per-sheet grows. We taper the work for big jobs so the app stays
+  // responsive. None of this affects correctness — every level produces a
+  // layout with no lost, duplicated, overlapping or sub-kerf parts.
+  const totalParts = queue.length;
+  if      (totalParts <= 60)  PACK_EFFORT = 8;   // small job: try everything
+  else if (totalParts <= 120) PACK_EFFORT = 5;
+  else if (totalParts <= 220) PACK_EFFORT = 3;
+  else                        PACK_EFFORT = 1;   // huge job: strongest single heuristic
+  // The remaining-sheets lookahead (estimateRemaining) itself runs a full pack
+  // per size; skip it on large jobs where its guidance is marginal.
+  const useLookahead = totalParts <= 220;
+
   // Build the list of valid stock sheet sizes. A size only counts if it has
   // real positive width AND height — otherwise packing onto it is impossible.
   const validSize = function(s){ return s && +s.w > 0 && +s.h > 0; };
@@ -1969,8 +1973,16 @@ function runMat(libMat, pieces, remnant, jobQty) {
 
   if (!r.placed.length) continue;
 
-  // Estimate sheets still needed after this layout
-      const estRemaining = estimateRemaining(r.unplaced, sizes, _ar, _cm);
+  // Estimate sheets still needed after this layout. This lookahead runs a full
+  // pack per size, so on large jobs we skip it and use a cheap area-based proxy
+  // (it only feeds the no-price scoring branch below).
+      let estRemaining;
+      if (useLookahead) {
+        estRemaining = estimateRemaining(r.unplaced, sizes, _ar, _cm);
+      } else {
+        const remArea = r.unplaced.reduce((a,p)=>a+p.w*p.h,0);
+        estRemaining = remArea / largestSheetArea; // approximate sheets-worth still to cut
+      }
 
   let score;
   if (havePrices) {
@@ -2101,14 +2113,22 @@ function calculate() {
   const btn = document.getElementById('calc-btn');
   if (btn) btn.disabled = true;
 
-  setTimeout(function() {
+  // Let the browser actually paint the overlay before we run the (synchronous,
+  // CPU-heavy) pack. A double requestAnimationFrame guarantees one full paint
+  // has happened; we fall back to setTimeout where rAF isn't available.
+  const runWork = function() {
     try {
       _doCalculate();
     } finally {
       if (overlay) overlay.classList.add('hidden');
       if (btn) btn.disabled = false;
     }
-  }, 30);
+  };
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ setTimeout(runWork, 0); }); });
+  } else {
+    setTimeout(runWork, 30);
+  }
 }
 
 function _doCalculate() {
@@ -2140,16 +2160,22 @@ function _doCalculate() {
       continue;
     }
     let anyTooBig = false;
+    const allowRot = libMat.allowRotation !== false;
     for (const p of valid) {
       const pw = +p.w, ph = +p.h;
       const fits = sizes.some(function(sz){
         const sw = +sz.w, sh = +sz.h;
-        return (pw<=sw && ph<=sh) || (ph<=sw && pw<=sh);
+        // Only count the rotated orientation if this material actually permits
+        // rotation (e.g. brushed stainless / grain-direction timber do not).
+        // Otherwise a piece that "only fits rotated" would pass this gate and
+        // then silently land in Unplaced instead of giving a clear error.
+        return (pw<=sw && ph<=sh) || (allowRot && ph<=sw && pw<=sh);
       });
       if (!fits) {
         anyTooBig = true;
         const sizeStr = sizes.map(function(s){return (+s.w)+'×'+(+s.h)+'mm';}).join(' or ');
-        errors.push(`${esc(libMat.name)}: "${esc(p.label||pw+'×'+ph)}" (${pw}×${ph}mm) is too big for the ${sizeStr} sheet.`);
+        const rotNote = allowRot ? '' : ' (rotation off for this material)';
+        errors.push(`${esc(libMat.name)}: "${esc(p.label||pw+'×'+ph)}" (${pw}×${ph}mm) is too big for the ${sizeStr} sheet${rotNote}.`);
       }
     }
     if (anyTooBig) continue;
@@ -2176,10 +2202,10 @@ function _doCalculate() {
       // Detailed diagnostic: show the EXACT sizes and pieces runMat received
       const s1 = libMat.size1 ? (libMat.size1.w+'×'+libMat.size1.h) : 'none';
       const s2 = libMat.size2 ? (libMat.size2.w+'×'+libMat.size2.h) : 'none';
-      const pcs = valid.map(function(p){return (p.label||'?')+' '+p.w+'×'+p.h+'(x'+p.qty+')';}).join(', ');
+      const pcs = valid.map(function(p){return esc((p.label||'?')+' '+p.w+'×'+p.h+'(x'+p.qty+')');}).join(', ');
       const tooBig = valid.filter(function(p){
         return ![libMat.size1, libMat.size2].some(function(sz){
-          return sz && +sz.w>0 && +sz.h>0 && ((+p.w<=+sz.w&&+p.h<=+sz.h)||(+p.h<=+sz.w&&+p.w<=+sz.h));
+          return sz && +sz.w>0 && +sz.h>0 && ((+p.w<=+sz.w&&+p.h<=+sz.h)||(allowRot&&+p.h<=+sz.w&&+p.w<=+sz.h));
         });
       });
       if (tooBig.length) {
@@ -2435,7 +2461,7 @@ function exportPDF() {
   const dt = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
   const co = (settings && settings.companyName) ? settings.companyName + '  ·  ' : '';
 
-  let body = `<div class="hdr"><div class="hdr-logo">CutNest</div><div class="hdr-meta">${co}Job: ${jr}  ·  ${dt}  ·  Kerf: ${KERF}mm</div></div>`;
+  let body = `<div class="hdr"><div class="hdr-logo">CutNest</div><div class="hdr-meta">${esc(co)}Job: ${esc(jr)}  ·  ${dt}  ·  Kerf: ${KERF}mm</div></div>`;
 
   // Summary table
   body += `<table class="sum-tbl"><thead><tr><th>Material</th><th>Sheets</th><th>Size</th><th>Cost</th></tr></thead><tbody>`;
@@ -2491,7 +2517,7 @@ function exportPDF() {
   });
   body += `</tbody></table></div>`;
 
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>CutNest — ${jr}</title><style>
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>CutNest — ${esc(jr)}</title><style>
     *{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:11px;color:#0d2d36;padding:20px}
     .hdr{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #0f4c5c;padding-bottom:10px;margin-bottom:18px}
     .hdr-logo{font-size:22px;font-weight:900;color:#0f4c5c;font-family:Arial Black,sans-serif}
@@ -2708,11 +2734,17 @@ function openLib() {
 function closeLib() { document.getElementById('lib-modal').style.display='none'; }
 async function saveLibClose() {
   flushEditForms();
-  library = pending.map(e => ({
-    ...e,
-    size1: {...e.size1},
-    size2: {...(e.size2||{w:'',h:''})}
-  }));
+  // Explicit save: promote any transient (shared-link) materials to permanent
+  // by dropping the flag, so saveData will now persist them.
+  library = pending.map(e => {
+    const c = {
+      ...e,
+      size1: {...e.size1},
+      size2: {...(e.size2||{w:'',h:''})}
+    };
+    delete c._transient;
+    return c;
+  });
   await persistLib(library);
   renderAll();
   closeLib();
@@ -3158,12 +3190,52 @@ function saveSettingsAndClose() {
   showToast('✓ Settings saved');
 }
 
-async function saveData(lib){localStorage.setItem(STOR_KEY,JSON.stringify(lib));}
+async function saveData(lib){
+  // Never persist transient shared-link materials. They live in memory so a
+  // shared job renders, but only become permanent when the user explicitly
+  // promotes them (saveLibClose clears the _transient flag first).
+  const persistable = (lib || []).filter(function(e){ return !(e && e._transient); });
+  localStorage.setItem(STOR_KEY,JSON.stringify(persistable));
+}
+
+// Coerce a stored library entry into the shape the app expects, dropping nothing
+// but healing malformed/old/partial data. Guards loadLib against any future
+// schema change or corrupted localStorage: a bad field becomes a safe default
+// rather than throwing or rendering garbage. Returns null only for entries too
+// broken to use (no object at all), which the caller filters out.
+function normalizeLibEntry(e){
+  if (!e || typeof e !== 'object') return null;
+  const numOr = function(v, d){ const n = parseFloat(v); return isFinite(n) && n >= 0 ? n : d; };
+  const size = function(s){
+    if (!s || typeof s !== 'object') return {w:'',h:'',price:0};
+    return { w: (+s.w>0? +s.w : ''), h: (+s.h>0? +s.h : ''), price: numOr(s.price, 0) };
+  };
+  return {
+    id: (e.id !== undefined && e.id !== null) ? e.id : ('lib-' + Date.now() + '-' + Math.random().toString(36).slice(2,7)),
+    name: (typeof e.name === 'string' ? e.name : '').slice(0, 80),
+    material: (typeof e.material === 'string' ? e.material : '').slice(0, 60),
+    thickness: (typeof e.thickness === 'string' ? e.thickness : '').slice(0, 30),
+    grade: (typeof e.grade === 'string' ? e.grade : '').slice(0, 30),
+    cuttingMethod: (e.cuttingMethod === 'guillotine') ? 'guillotine' : 'free',
+    allowRotation: e.allowRotation !== false,
+    size1: size(e.size1),
+    size2: size(e.size2),
+    _transient: e._transient === true || undefined
+  };
+}
 
 async function loadLib(){
   setSS('saving','Loading…');
   try{
-    const saved=localStorage.getItem(STOR_KEY),savedLib=saved?JSON.parse(saved):null;
+    const saved=localStorage.getItem(STOR_KEY);
+    let savedLib=saved?JSON.parse(saved):null;
+    // Schema guard: normalise every stored entry so an old/corrupt shape can't
+    // break the app. Non-array or unusable data falls back to defaults below.
+    if (Array.isArray(savedLib)) {
+      savedLib = savedLib.map(normalizeLibEntry).filter(Boolean);
+    } else {
+      savedLib = null;
+    }
     if(isPro){
       // Start from the master library, then add the user's custom entries.
       // Custom entries are kept by ID (so a job referencing them never breaks).
@@ -3424,46 +3496,84 @@ document.addEventListener('DOMContentLoaded',function(){
   checkLicence();
   loadSettings();
   loadLib().then(function(){
-    // Load shared job from URL if present
+    // Load shared job from URL if present.
+    // SECURITY: a ?job= link is fully attacker-controlled. We sanitise every
+    // field before it touches the DOM or the library, and we NEVER overwrite or
+    // persist the user's saved library from a link — shared materials are added
+    // to the in-memory library as TRANSIENT entries (id prefixed 'shared-') so
+    // the job renders, but they only become permanent if the user explicitly
+    // saves. This means a malicious or stale link cannot silently destroy a
+    // user's real materials/prices or plant a persistent payload.
   const urlParams = new URLSearchParams(window.location.search);
   const sharedJob = urlParams.get('job');
   if (sharedJob) {
     try {
       const state = JSON.parse(decodeURIComponent(escape(atob(sharedJob))));
-      if (state.v === 2 && state.mats) {
-        // v2: slim format — each shared material carries its own sizes.
-        // Add any shared materials into the library so they render, then
-        // build mats that reference them.
-        const newMats = [];
-        state.mats.forEach(function(sm, i){
-          const libId = 'shared-' + Date.now() + '-' + i;
-          library.push({
-            id: libId,
-            name: sm.name || ('Shared material ' + (i+1)),
-            material: '', thickness: '', grade: '',
-            cuttingMethod: sm.cuttingMethod || 'free',
-            allowRotation: sm.allowRotation !== false,
-            size1: sm.size1 || {w:'',h:'',price:0},
-            size2: sm.size2 || {w:'',h:'',price:0}
-          });
-          newMats.push({
-            id: 'mat-' + Date.now() + '-' + i,
-            selectedMatId: libId,
-            pieces: (sm.pieces && sm.pieces.length) ? sm.pieces : [{w:'',h:'',qty:1,label:''}]
-          });
+
+      // ── sanitisers ──
+      const clampStr = function(v, max){ return (typeof v === 'string' ? v : '').slice(0, max || 60); };
+      const clampNum = function(v, min, max){
+        var n = parseFloat(v);
+        if (!isFinite(n)) return '';
+        if (n < min) n = min; if (n > max) n = max;
+        return n;
+      };
+      const cleanSize = function(s){
+        if (!s || typeof s !== 'object') return {w:'',h:'',price:0};
+        return {
+          w: clampNum(s.w, 0, 100000) || '',
+          h: clampNum(s.h, 0, 100000) || '',
+          price: clampNum(s.price, 0, 1000000) || 0
+        };
+      };
+      const cleanPieces = function(arr){
+        if (!Array.isArray(arr)) return [{w:'',h:'',qty:1,label:''}];
+        var out = arr.slice(0, 500).map(function(p){
+          return {
+            w: clampNum(p && p.w, 0, 100000) || '',
+            h: clampNum(p && p.h, 0, 100000) || '',
+            qty: clampNum(p && p.qty, 1, 9999) || 1,
+            label: clampStr(p && p.label, 40)
+          };
         });
-        if (newMats.length) mats = newMats;
-        if (state.jobRef) { const jr = document.getElementById('job-ref'); if (jr) jr.value = state.jobRef; }
-        if (state.jobQty) { const jq = document.getElementById('job-qty'); if (jq) jq.value = state.jobQty; }
-        persistLib(library);
+        return out.length ? out : [{w:'',h:'',qty:1,label:''}];
+      };
+
+      // Both v1 and v2 links carry a `mats` array; we treat them identically and
+      // defensively. The legacy v1 `state.lib` (full library bundle) is IGNORED
+      // by design — we never replace the user's library from a link.
+      const srcMats = Array.isArray(state.mats) ? state.mats.slice(0, 50) : [];
+      const newMats = [];
+      srcMats.forEach(function(sm, i){
+        if (!sm || typeof sm !== 'object') return;
+        const libId = 'shared-' + Date.now() + '-' + i;
+        library.push({
+          id: libId,
+          _transient: true,                         // not persisted unless user saves
+          name: clampStr(sm.name, 60) || ('Shared material ' + (i+1)),
+          material: '', thickness: '', grade: '',
+          cuttingMethod: (sm.cuttingMethod === 'guillotine') ? 'guillotine' : 'free',
+          allowRotation: sm.allowRotation !== false,
+          size1: cleanSize(sm.size1),
+          size2: cleanSize(sm.size2)
+        });
+        newMats.push({
+          id: 'mat-' + Date.now() + '-' + i,
+          selectedMatId: libId,
+          pieces: cleanPieces(sm.pieces)
+        });
+      });
+
+      if (newMats.length) {
+        mats = newMats;
+        const jr = document.getElementById('job-ref'); if (jr) jr.value = clampStr(state.jobRef, 60);
+        const jq = document.getElementById('job-qty'); if (jq) jq.value = String(clampNum(state.jobQty, 1, 999) || 1);
+        renderAll();
+        showToast('📋 Shared job loaded — review, then save to your library to keep these materials');
       } else {
-        // v1 legacy format (full library bundled)
-        if (state.mats) mats = state.mats;
-        if (state.lib && state.lib.length) library = state.lib;
-        if (state.jobRef) { const jr = document.getElementById('job-ref'); if (jr) jr.value = state.jobRef; }
+        restoreState();
       }
-      renderAll();
-      showToast('📋 Shared job loaded');
+      // Always strip the payload from the address bar so a reload can't re-import it.
       window.history.replaceState({}, '', window.location.pathname);
     } catch(e) { restoreState(); }
   } else {
