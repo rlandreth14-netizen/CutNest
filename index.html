@@ -38,10 +38,17 @@
     },
     {
       "@type": "Offer",
-      "name": "Pro",
-      "price": "15.00",
+      "name": "Pro Monthly",
+      "price": "12.00",
       "priceCurrency": "GBP",
       "billingIncrement": "P1M"
+    },
+    {
+      "@type": "Offer",
+      "name": "Pro Annual",
+      "price": "99.00",
+      "priceCurrency": "GBP",
+      "billingIncrement": "P1Y"
     }
   ],
   "description": "Cut list optimisation software for sheet metal fabricators, joiners, timber merchants and anyone cutting sheet material. Minimise waste, order less, quote faster.",
@@ -65,7 +72,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-EGY30977X1"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-EGY30977X1');</script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-EGY30977X1',{anonymize_ip:true,allow_google_signals:false,allow_ad_personalization_signals:false});</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -847,8 +854,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
 
 <!-- COOKIE -->
 <div class="cookie" id="cookie">
-  We use your browser&rsquo;s local storage to save your settings. No tracking cookies, ever.
-  <button onclick="openLegal('privacy')" style="background:none;border:none;color:inherit;cursor:pointer;font-size:inherit;font-family:inherit;padding:0;text-decoration:underline">Privacy Policy</button>
+  We use your browser&rsquo;s local storage to save your settings, and Google Analytics for anonymised usage stats. No ads, no cross-site tracking. See our <a href="#" onclick="openLegal('privacy');return false;">Privacy Policy</a>.
   <button class="btn-cookie" onclick="acceptCookie()">Got it</button>
 </div>
 
@@ -918,11 +924,11 @@ const PRIVACY = `
 <h4 style="color:#0f4c5c;margin:16px 0 6px">4. Data Stored in Your Browser</h4>
 <p style="margin-bottom:10px">CutNest stores the following data in your browser&rsquo;s localStorage on your device only. This data never leaves your device and is never transmitted to us or any third party: your stock library (material names, sizes, prices); job history (last 50 calculations); app settings (kerf, company name); your licence key. You can delete all of this at any time by clearing your browser data.</p>
 
-<h4 style="color:#0f4c5c;margin:16px 0 6px">5. No Tracking or Analytics</h4>
-<p style="margin-bottom:10px">CutNest does not use Google Analytics, Meta Pixel, advertising cookies, tracking pixels or any third-party analytics. We do not track how you use the application or build profiles of your behaviour.</p>
+<h4 style="color:#0f4c5c;margin:16px 0 6px">5. Analytics</h4>
+<p style="margin-bottom:10px">CutNest uses Google Analytics (GA4) to understand aggregate, anonymised usage &mdash; for example which pages are visited and roughly how many people try the app &mdash; so we can improve the product. Google Analytics sets cookies and may process a truncated version of your IP address; we have IP anonymisation enabled and do not use Google Analytics for advertising or remarketing. We do not use the Meta Pixel or advertising/retargeting pixels. Your cut-list data, piece dimensions, material library and prices are never sent to Google Analytics or to us &mdash; they stay in your browser (see section 4). You can block analytics with any browser privacy setting or extension, and we honour &ldquo;Do Not Track&rdquo; where your browser sends it. Legal basis: consent (analytics cookies) and our legitimate interest in improving the service.</p>
 
 <h4 style="color:#0f4c5c;margin:16px 0 6px">6. Third-Party Data Processors</h4>
-<p style="margin-bottom:10px"><b>Lemon Squeezy (Tropical Forest LLC)</b> &mdash; processes payments and manages subscriptions. They act as Merchant of Record and have their own privacy policy at lemonsqueezy.com. <b>GitHub Pages</b> &mdash; hosts this website. GitHub may log IP addresses for security purposes per their privacy policy. <b>Google Fonts</b> &mdash; serves typography. Google may log font requests per their privacy policy.</p>
+<p style="margin-bottom:10px"><b>Lemon Squeezy (Tropical Forest LLC)</b> &mdash; processes payments and manages subscriptions. They act as Merchant of Record and have their own privacy policy at lemonsqueezy.com. <b>Google Analytics (Google LLC)</b> &mdash; provides anonymised, aggregate usage analytics as described in section 5. <b>GitHub Pages</b> &mdash; hosts this website. GitHub may log IP addresses for security purposes per their privacy policy. <b>Google Fonts</b> &mdash; serves typography. Google may log font requests per their privacy policy.</p>
 
 <h4 style="color:#0f4c5c;margin:16px 0 6px">7. Data Retention</h4>
 <p style="margin-bottom:10px">We retain your email address for as long as your subscription is active plus 12 months, in order to handle any post-cancellation queries. After this period your email is deleted from our records. Data stored in your browser is under your control and persists until you clear it.</p>
@@ -931,7 +937,7 @@ const PRIVACY = `
 <p style="margin-bottom:10px">You have the right to: access the personal data we hold about you; correct inaccurate data; request deletion of your data; object to processing; data portability. To exercise any of these rights contact hello@cutnest.co.uk. We will respond within 30 days. You also have the right to lodge a complaint with the Information Commissioner&rsquo;s Office (ico.org.uk).</p>
 
 <h4 style="color:#0f4c5c;margin:16px 0 6px">9. Cookies</h4>
-<p style="margin-bottom:10px">CutNest does not use tracking cookies. We use a single localStorage key (&ldquo;cn-cookie&rdquo;) to remember that you have acknowledged this notice. This is not a cookie and is not accessible to third parties.</p>
+<p style="margin-bottom:10px">CutNest uses a single localStorage key (&ldquo;cn-cookie&rdquo;) to remember that you have acknowledged this notice, plus the cookies set by Google Analytics (see section 5) to measure aggregate usage. We do not use advertising or cross-site tracking cookies. You can clear or block these at any time through your browser settings.</p>
 
 <h4 style="color:#0f4c5c;margin:16px 0 6px">10. Changes to This Policy</h4>
 <p style="margin-bottom:10px">We may update this policy from time to time. Material changes will be notified via email to active subscribers. The current version is always available at cutnest.co.uk.</p>

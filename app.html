@@ -27,7 +27,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-EGY30977X1"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-EGY30977X1');</script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-EGY30977X1',{anonymize_ip:true,allow_google_signals:false,allow_ad_personalization_signals:false});</script>
 <script>try{if(localStorage.getItem('cutnest-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -472,7 +472,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
     </div>
   </a>
   <div class="app-hright">
-    <div class="kerf-pill no-print">Kerf <b id="kerf-display">20mm</b>
+    <div class="kerf-pill no-print">Kerf <b id="kerf-display">4mm</b>
       <span class="kerf-tip-icon" data-tip="Blade/laser kerf — the width of material removed by each cut. Accounts for saw blade or laser beam width.">?</span>
     </div>
     <div class="sync-pill no-print"><div class="sdot" id="sdot"></div><span id="stxt">Loading&hellip;</span></div>
@@ -595,6 +595,10 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
           <div style="color:rgba(255,255,255,.7);font-size:12px;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px;text-transform:uppercase">Total Material Cost</div>
           <div id="total-cost-val" style="color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:25px;font-weight:800"></div>
         </div>
+        <div id="price-hint-bar" style="display:none;background:var(--sky);border:1px solid var(--bdr);border-radius:9px;padding:11px 15px;margin-top:9px;align-items:center;gap:10px">
+          <span style="font-size:13px;color:var(--text2)">&#128181; Add sheet prices in your Library to see this job&rsquo;s material cost.</span>
+          <button class="btn btn-out" style="margin-left:auto;padding:5px 12px;white-space:nowrap" onclick="openLib()">Open Library</button>
+        </div>
         <div style="display:flex;justify-content:flex-end;margin-top:7px">
           <button class="copy-btn" id="copy-btn" onclick="copyQuote()">Copy for quote</button>
         </div>
@@ -670,10 +674,10 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
       </div>
       <div class="settings-section">
         <div class="settings-title">&#10002; Blade Kerf</div>
-        <div class="settings-desc">Gap between parts in mm. Default 20mm for CNC turret punch press. Adjust for laser or plasma.</div>
+        <div class="settings-desc">Blade/cut gap between parts, in mm. Set this to your real kerf so sheet counts are accurate. Laser/saw/router ~3&ndash;4mm, plasma ~5mm, CNC turret punch ~15&ndash;20mm.</div>
         <div style="display:flex;gap:11px;align-items:flex-end">
-          <div style="width:100px"><label class="lbl">Kerf (mm)</label><input type="number" id="kerf-setting" value="20" min="0" max="100" oninput="saveSettings()"/></div>
-          <div style="font-size:12px;color:var(--muted);padding-bottom:8px">20mm punch &middot; 3mm laser &middot; 3mm saw &middot; 5mm plasma</div>
+          <div style="width:100px"><label class="lbl">Kerf (mm)</label><input type="number" id="kerf-setting" value="4" min="0" max="100" oninput="saveSettings()"/></div>
+          <div style="font-size:12px;color:var(--muted);padding-bottom:8px">3&ndash;4mm laser/saw/router &middot; 5mm plasma &middot; 15&ndash;20mm punch</div>
         </div>
       </div>
       <div class="settings-section">
@@ -788,7 +792,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
 
 
 
-let KERF = 20;
+let KERF = 4;
 const STOR_KEY = 'cutnest-lib-v1';
 const COLORS = ['#1a6bbf','#0c9e6a','#e8960a','#c03050','#7c4ddb','#d9600a','#0891b2','#65a30d','#be185d','#0f766e','#1d4ed8','#b45309','#7e22ce','#15803d','#b91c1c'];
 
@@ -829,6 +833,20 @@ function loadStarterPack(type) {
   const pack = packs[type];
   if (!pack) return;
   library = pack;
+  // Set a sensible default blade gap for the chosen trade so first-run numbers
+  // are realistic without the user touching Settings. Sheet metal here means
+  // laser/plasma profile cutting (~4mm); timber saw/router ~4mm; acrylic ~3mm.
+  // Turret-punch users (rare default) can raise it in Settings — the copy there
+  // tells them to. Only override if the user hasn't already chosen a kerf.
+  if (!settings.kerfTouched) {
+    const kerfByTrade = { metal: 4, timber: 4, acrylic: 3 };
+    const k = kerfByTrade[type];
+    if (k != null) {
+      settings.kerf = k; KERF = k;
+      try { localStorage.setItem(SETT_KEY, JSON.stringify(settings)); } catch(e){}
+      const kd = document.getElementById('kerf-display'); if (kd) kd.textContent = KERF + 'mm';
+    }
+  }
   saveData(library).then(function() { renderAll(); setSS('ok','Starter materials loaded'); });
 }
 
@@ -1340,9 +1358,15 @@ function guillotinePack(sheetW, sheetH, queue, allowRotation) {
     improved = true;
     const used = free.splice(bj, 1)[0];
     const rw = used.w - pw - KERF, th = used.h - ph - KERF;
-    const aR = rw > 0 ? rw * used.h : 0, aT = th > 0 ? pw * th : 0;
-    const bT = th > 0 ? used.w * th : 0, bR = rw > 0 ? rw * ph : 0;
-    if (Math.max(bT, bR) >= Math.max(aR, aT)) {
+    // Guillotine split choice: after seating the piece top-left in `used`, we can
+    // make the first full-width/height cut either vertically or horizontally.
+    //  Split V (vertical first): right offcut = rw×used.h, top offcut = pw×th
+    //  Split H (horizontal first): top offcut = used.w×th, right offcut = rw×ph
+    // Pick whichever leaves the larger single usable offcut (better for big parts
+    // later). Conservation/no-overlap is identical either way (proven by tests).
+    const vRight = rw > 0 ? rw * used.h : 0, vTop = th > 0 ? pw * th : 0;
+    const hTop   = th > 0 ? used.w * th : 0, hRight = rw > 0 ? rw * ph : 0;
+    if (Math.max(hTop, hRight) >= Math.max(vRight, vTop)) {
       if (th > 0) free.push({x:used.x, y:y+ph+KERF, w:used.w, h:th});
       if (rw > 0) free.push({x:x+pw+KERF, y:used.y, w:rw, h:ph});
     } else {
@@ -2257,6 +2281,11 @@ function renderOutput() {
   document.getElementById('output').style.display='block';
   const {results} = calcResult;
   const quoteLines = [];
+  // Registry of sheets for the Zoom modal. We pass an INDEX into this array
+  // rather than JSON-stringifying the whole sheet into an onclick attribute,
+  // which broke as soon as a sheet had pieces (JSON double-quotes terminated
+  // the attribute) or a label contained a quote.
+  window._zoomSheets = [];
 
   // Pricing cards
   document.getElementById('pricing-cards').innerHTML = results.map(({libMat, sheets, unplaced, sizeMap}) => {
@@ -2309,11 +2338,24 @@ function renderOutput() {
   });
   const tcBar = document.getElementById('total-cost-bar');
   const tcVal = document.getElementById('total-cost-val');
+  const hintBar = document.getElementById('price-hint-bar');
   if (tcBar && tcVal && grandTotal > 0) {
-    tcVal.textContent = '£' + grandTotal.toFixed(2);
+    tcVal.textContent = '£' + grandTotal.toFixed(2) + (allPriced ? '' : '*');
     tcBar.style.display = 'flex';
-  } else if (tcBar) {
-    tcBar.style.display = 'none';
+    // Some sheets unpriced → show the hint as a "partial total" note too.
+    if (hintBar) {
+      if (!allPriced) {
+        hintBar.querySelector('span').innerHTML = '&#128181; This total is <b>partial</b> — some materials have no sheet price set. Add them in Library for a complete cost.';
+        hintBar.style.display = 'flex';
+      } else { hintBar.style.display = 'none'; }
+    }
+  } else {
+    // No prices at all: hide the cost bar but PROMPT rather than going silent.
+    if (tcBar) tcBar.style.display = 'none';
+    if (hintBar) {
+      hintBar.querySelector('span').innerHTML = '&#128181; Add sheet prices in your Library to see this job&rsquo;s material cost.';
+      hintBar.style.display = 'flex';
+    }
   }
 
   window._quoteText = ['CutNest Cut List', 'Job: ' + ((document.getElementById('job-ref')||{}).value||'Untitled'), 'Date: ' + new Date().toLocaleDateString('en-GB'), ''].concat(quoteLines).concat(grandTotal > 0 ? ['', 'Total Material Cost: £' + grandTotal.toFixed(2)] : []).join('\n');
@@ -2409,7 +2451,7 @@ function renderOutput() {
             <span style="color:var(--muted)">·</span>
             <span>${sh.placed.length} piece${sh.placed.length!==1?'s':''}</span>
           </div>
-          <button onclick="openZoom(${JSON.stringify(sh).replace(/</g,'\\u003c').replace(/>/g,'\\u003e')}, 'Sheet ${si+1} — ${sh.sheetW}×${sh.sheetH}mm')" style="background:var(--sky);border:1px solid var(--bdr2);border-radius:6px;padding:3px 9px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;white-space:nowrap;font-family:inherit;transition:.15s" onmouseover="this.style.background='var(--sky2)'" onmouseout="this.style.background='var(--sky)'">⤢ Zoom</button>
+          <button onclick="openZoomByIndex(${(window._zoomSheets.push(sh) - 1)}, ${si+1})" style="background:var(--sky);border:1px solid var(--bdr2);border-radius:6px;padding:3px 9px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;white-space:nowrap;font-family:inherit;transition:.15s" onmouseover="this.style.background='var(--sky2)'" onmouseout="this.style.background='var(--sky)'">⤢ Zoom</button>
         </div>
         <div class="util-bar">
           <div class="util-seg" style="flex:${sh.utilPercent};background:var(--teal)"></div>
@@ -2556,6 +2598,21 @@ function exportPDF() {
   </style></head><body>${body}<div style="margin-top:24px;padding-top:12px;border-top:1px solid #e2ecef;font-size:10px;color:#9dcad6;text-align:center">Generated by CutNest — cutnest.co.uk</div></body></html>`;
 
   const w = window.open('','_blank');
+  if (!w) {
+    // Popup blocked (common on mobile). Fall back to a same-tab blob the user
+    // can save/print, instead of silently doing nothing.
+    try {
+      const blob = new Blob([html], {type:'text/html'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.target = '_blank'; a.rel = 'noopener';
+      a.click();
+      showToast('Print view opened in a new tab — use your browser\u2019s Print/Save as PDF');
+    } catch(e) {
+      showToast('Your browser blocked the print window — allow pop-ups for cutnest.co.uk and try again');
+    }
+    return;
+  }
   w.document.write(html);
   w.document.close();
   setTimeout(() => w.print(), 600);
@@ -3013,25 +3070,108 @@ const MASTER_LIBRARY = [
   {id:702,allowRotation:true,cuttingMethod:'free',name:'Acrylic 5mm Clear',material:'Acrylic',thickness:'5mm',size1:{w:2440,h:1220,price:85},size2:{w:1220,h:610,price:45}},
 ];
 
-let isPro=false,settings={kerf:20,companyName:''};
+let isPro=false,settings={kerf:4,companyName:''};
 
-// A valid stored key must have been verified against Lemon Squeezy at least once
-// (indicated by the 'verified' flag). Length check alone is not sufficient.
+// ════════════════════════════════════════════════════════════════
+// ⚠️ LICENCE PRODUCT BINDING — set this once for security.
+// Without it, a valid licence key from ANY Lemon Squeezy store would
+// unlock CutNest Pro. Fill in your product's numeric Store ID (and
+// optionally Variant ID) from the Lemon Squeezy dashboard. Leave as
+// null to skip the check (NOT recommended for production).
+// Find it: LS dashboard → the validate/activate response meta.store_id
+// (or Settings → Stores). Example: LS_STORE_ID = 123456;
+// ════════════════════════════════════════════════════════════════
+const LS_STORE_ID = null;     // e.g. 123456
+const LS_VARIANT_ID = null;   // optional, e.g. 654321
+
+// Returns true if the API response's meta belongs to our product. If no binding
+// is configured, returns true (skips the check) but logs a one-time warning.
+function licenceMetaMatches(resp){
+  if (LS_STORE_ID == null && LS_VARIANT_ID == null) return true;
+  const meta = resp && resp.meta;
+  if (!meta) return false;
+  if (LS_STORE_ID != null && meta.store_id !== LS_STORE_ID) return false;
+  if (LS_VARIANT_ID != null && meta.variant_id !== LS_VARIANT_ID) return false;
+  return true;
+}
+
+// How long a cached "verified" licence is trusted WITHOUT a fresh server check.
+// This caps how long a cancelled/expired/refunded subscriber can keep Pro purely
+// offline. Online, we re-validate every load (see revalidateLicence). 3 days is a
+// fair offline grace so a fabricator on a flaky workshop connection isn't locked
+// out mid-job, while a churned account loses Pro within days.
+const LICENCE_GRACE_MS = 3 * 24 * 60 * 60 * 1000;
+
+// Synchronous, offline-safe gate used at startup. A stored key only counts if it
+// was verified against Lemon Squeezy AND that verification is within the grace
+// window. This is deliberately strict: the asynchronous revalidateLicence() below
+// then re-checks against the server and can both RESTORE (renew the grace) or
+// REVOKE (expired/disabled/refunded) Pro.
 function checkLicence(){
   try{
     const s=localStorage.getItem(KEY_STORE);
     if(s){
       const d=JSON.parse(s);
-      // The 'verified' flag is only ever set after a successful Lemon Squeezy
-      // API response, so it is the source of truth. We just sanity-check the
-      // key looks like an LS key (alphanumeric with dashes) rather than
-      // enforcing an exact UUID shape, which can vary.
       if(d&&d.key&&d.verified===true&&/^[A-Za-z0-9-]{20,}$/.test(d.key)){
-        isPro=true;return;
+        const last = d.lastCheck ? Date.parse(d.lastCheck) : (d.date ? Date.parse(d.date) : 0);
+        if(isFinite(last) && (Date.now() - last) <= LICENCE_GRACE_MS){
+          isPro=true;return;
+        }
+        // Verified once but the grace window has lapsed: stay locked until a
+        // successful server re-check restores it. Prevents an indefinitely
+        // offline "verified:true" from being a permanent unlock.
       }
     }
   }catch(e){}
   isPro=false;
+}
+
+// Re-validate the stored key against Lemon Squeezy. Called on load (when online).
+// On a definitive negative (expired / disabled / not-found) it REVOKES Pro and
+// clears the stored flag. On success it refreshes lastCheck so the grace window
+// rolls forward. Network errors are non-fatal — we keep whatever checkLicence()
+// already decided so a workshop outage never locks out a paying user.
+async function revalidateLicence(){
+  let d;
+  try{ const s=localStorage.getItem(KEY_STORE); d=s?JSON.parse(s):null; }catch(e){ d=null; }
+  if(!d||!d.key) return;
+  let resp;
+  try{
+    const body = 'license_key='+encodeURIComponent(d.key) + (d.instanceId?('&instance_id='+encodeURIComponent(d.instanceId)):'');
+    const r=await fetch('https://api.lemonsqueezy.com/v1/licenses/validate',{
+      method:'POST',
+      headers:{'Accept':'application/json','Content-Type':'application/x-www-form-urlencoded'},
+      body:body
+    });
+    resp=await r.json();
+  }catch(err){
+    return; // offline / network error: leave current state untouched
+  }
+  const status = resp && resp.license_key && resp.license_key.status;
+  const valid  = resp && resp.valid === true && licenceMetaMatches(resp);
+  // Definitive negatives we will REVOKE on. A generic resp.error (rate limit,
+  // 500, malformed) is NOT treated as a revocation — only an explicit expired/
+  // disabled status, or an explicit valid:false, or a wrong-product meta. This
+  // stops a transient API blip from logging out a paying customer.
+  const wrongProduct = (LS_STORE_ID != null || LS_VARIANT_ID != null) &&
+                       resp && resp.valid === true && !licenceMetaMatches(resp);
+  const definitelyDead = status==='expired' || status==='disabled' ||
+                         (resp && resp.valid === false) || wrongProduct;
+  if(valid && status==='active'){
+    // Still good — roll the grace window forward.
+    d.verified=true; d.lastCheck=new Date().toISOString();
+    try{ localStorage.setItem(KEY_STORE, JSON.stringify(d)); }catch(e){}
+    if(!isPro){ isPro=true; updateProUI(); loadLib(); }
+  } else if(definitelyDead){
+    // Definitive negative: revoke immediately.
+    try{ localStorage.setItem(KEY_STORE, JSON.stringify({key:d.key, verified:false, revokedReason:status||'invalid', date:d.date})); }catch(e){}
+    if(isPro){
+      isPro=false; updateProUI(); loadLib();
+      showToast(status==='expired'
+        ? 'Your CutNest Pro licence has expired — renew at cutnest.co.uk'
+        : 'CutNest Pro licence is no longer active');
+    }
+  }
 }
 
 async function validateAndSaveKey(){
@@ -3052,13 +3192,18 @@ async function validateAndSaveKey(){
     });
     const d=await r.json();
 
-    // Success: key activated OR already active (activation_limit reached but key is valid)
     const keyStatus = d.license_key && d.license_key.status;
     const activatedOk = d.activated === true;
-    const alreadyActive = d.error && /activation limit/i.test(d.error) && keyStatus==='active';
+    const limitReached = d.error && /activation limit/i.test(d.error);
 
-    if(activatedOk || alreadyActive){
-      const store = { key:key, verified:true, date:new Date().toISOString() };
+    if(activatedOk){
+      if(!licenceMetaMatches(d)){
+        se.className='key-status invalid';
+        se.textContent='This licence key is not for CutNest. Check you copied the right key.';
+        return;
+      }
+      // Fresh, clean activation. Record the instance so we can re-validate later.
+      const store = { key:key, verified:true, date:new Date().toISOString(), lastCheck:new Date().toISOString() };
       if(d.instance && d.instance.id) store.instanceId = d.instance.id;
       localStorage.setItem(KEY_STORE,JSON.stringify(store));
       isPro=true;
@@ -3068,6 +3213,39 @@ async function validateAndSaveKey(){
       loadLib().then(function(){
         setTimeout(function(){ closeSettings(); showToast('✓ CutNest Pro unlocked!'); },1200);
       });
+    } else if(limitReached){
+      // The key is real but has used all its device activations. Rather than
+      // auto-passing (which let one key unlock unlimited machines), confirm the
+      // key is genuinely ACTIVE via the validate endpoint before granting Pro.
+      // A licence whose subscription has lapsed will fail here.
+      se.textContent='Checking licence…';
+      let ok=false, vstatus=null;
+      try{
+        const vr=await fetch('https://api.lemonsqueezy.com/v1/licenses/validate',{
+          method:'POST',
+          headers:{'Accept':'application/json','Content-Type':'application/x-www-form-urlencoded'},
+          body:'license_key='+encodeURIComponent(key)
+        });
+        const vd=await vr.json();
+        vstatus = vd && vd.license_key && vd.license_key.status;
+        ok = vd && vd.valid === true && vstatus==='active' && licenceMetaMatches(vd);
+      }catch(e){ ok=false; }
+      if(ok){
+        const store = { key:key, verified:true, date:new Date().toISOString(), lastCheck:new Date().toISOString() };
+        localStorage.setItem(KEY_STORE,JSON.stringify(store));
+        isPro=true;
+        se.className='key-status valid';
+        se.textContent='Pro active — loading…';
+        updateProUI();
+        loadLib().then(function(){
+          setTimeout(function(){ closeSettings(); showToast('✓ CutNest Pro unlocked!'); },1200);
+        });
+      } else {
+        se.className='key-status invalid';
+        se.textContent = (vstatus==='expired')
+          ? 'Licence expired — renew your subscription at cutnest.co.uk'
+          : 'This key has reached its activation limit. Contact hello@cutnest.co.uk to free up a device.';
+      }
     } else if(keyStatus==='expired'){
       se.className='key-status invalid';
       se.textContent='Licence expired — renew your subscription at cutnest.co.uk';
@@ -3133,15 +3311,17 @@ const LEGAL_CONTENT={
     <p style="margin-bottom:12px"><strong>CutNest Privacy Policy — Effective June 2025</strong></p>
     <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest is operated by Ryan Landreth, Newcastle upon Tyne, UK. We take privacy seriously. This policy explains what data we handle and why.</p>
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">Data we do NOT collect</p>
-    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest runs entirely in your browser. Your job data, piece dimensions, and material library are stored only in your browser's local storage — never sent to our servers. We do not use tracking cookies, analytics, or advertising pixels.</p>
+    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest runs entirely in your browser. Your job data, piece dimensions, and material library are stored only in your browser's local storage — never sent to our servers. We do not use advertising pixels or cross-site tracking. We do use Google Analytics for anonymised, aggregate usage statistics (see Analytics below).</p>
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">Payment data</p>
     <p style="margin-bottom:10px;font-size:13px;line-height:1.6">All payments are processed by Lemon Squeezy, who act as Merchant of Record. We receive confirmation that a licence key is valid but never see your card details. Lemon Squeezy's privacy policy applies to payment processing.</p>
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">Licence key validation</p>
-    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">When you enter a licence key, it is sent to the Lemon Squeezy API to verify it is active. This is the only external request CutNest makes. Your key is then stored in your browser's local storage only.</p>
+    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">When you enter a licence key, it is sent to the Lemon Squeezy API to verify it is active, and re-checked periodically while you use Pro. Your key is stored in your browser's local storage only. Aside from this, Google Analytics and Google Fonts, CutNest makes no external requests with your data.</p>
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">Your rights</p>
     <p style="margin-bottom:10px;font-size:13px;line-height:1.6">Because we hold no personal data on our servers, there is nothing for us to delete or export. You can clear all CutNest data at any time by clearing your browser's local storage.</p>
-    <p style="margin-bottom:6px;font-weight:700;font-size:13px">ICO Registration</p>
-    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest is registered with the UK Information Commissioner's Office (ICO). Registration number: <strong>ZB123456</strong>. <!-- REPLACE WITH YOUR ACTUAL ICO NUMBER ONCE REGISTERED --></p>
+    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Analytics</p>
+    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">We use Google Analytics (GA4) to measure anonymised, aggregate usage so we can improve the app. It sets cookies and may process a truncated IP address; we do not use it for advertising. Your cut-list data, dimensions, library and prices are never sent to Google Analytics. You can block it with any browser privacy setting.</p>
+    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Data Protection</p>
+    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest is operated by a UK sole trader and complies with UK GDPR. To exercise any data rights, or for any privacy query, contact hello@cutnest.co.uk.</p>
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">Contact</p>
     <p style="font-size:13px">hello@cutnest.co.uk</p>
   `}
@@ -3153,17 +3333,17 @@ function openLegal(type){
 }
 
 function loadSettings(){
-  try{const r=localStorage.getItem(SETT_KEY);if(r)settings=Object.assign({kerf:20,companyName:'',minOffcutLong:1000,minOffcutShort:300},JSON.parse(r));}catch(e){}
+  try{const r=localStorage.getItem(SETT_KEY);if(r)settings=Object.assign({kerf:4,companyName:'',minOffcutLong:1000,minOffcutShort:300},JSON.parse(r));}catch(e){}
   if(settings.minOffcutLong==null)settings.minOffcutLong=1000;
   if(settings.minOffcutShort==null)settings.minOffcutShort=300;
-  KERF=Math.max(0,parseInt(settings.kerf)||20);
+  KERF=Math.max(0,parseInt(settings.kerf)||4);
   const kd=document.getElementById('kerf-display');if(kd)kd.textContent=KERF+'mm';
 }
 function openSettings(){
   loadSettings();
   const kf=document.getElementById('kerf-setting'),cn=document.getElementById('company-name');
   const ki=document.getElementById('licence-key-input'),ks=document.getElementById('key-status');
-  if(kf)kf.value=settings.kerf||20;if(cn)cn.value=settings.companyName||'';
+  if(kf)kf.value=(settings.kerf!=null?settings.kerf:4);if(cn)cn.value=settings.companyName||'';
   const ol=document.getElementById('offcut-long'),os=document.getElementById('offcut-short');
   if(ol)ol.value=settings.minOffcutLong||1000;
   if(os)os.value=settings.minOffcutShort||300;
@@ -3183,7 +3363,7 @@ function openSettings(){
 }
 function closeSettings(){
   const kf=document.getElementById('kerf-setting'),cn=document.getElementById('company-name');
-  if(kf){settings.kerf=parseInt(kf.value)||20;KERF=settings.kerf;}
+  if(kf){settings.kerf=Math.max(0,Math.min(100,parseInt(kf.value)||0));settings.kerfTouched=true;KERF=settings.kerf;}
   if(cn)settings.companyName=cn.value?cn.value.trim():'';
   localStorage.setItem(SETT_KEY,JSON.stringify(settings));
   const kd=document.getElementById('kerf-display');if(kd)kd.textContent=KERF+'mm';
@@ -3194,7 +3374,7 @@ function saveSettings() {
   const cn = document.getElementById('company-name');
   const ol = document.getElementById('offcut-long');
   const os = document.getElementById('offcut-short');
-  if (kf) { settings.kerf = Math.max(0, Math.min(100, parseInt(kf.value) || 0)); KERF = settings.kerf; }
+  if (kf) { settings.kerf = Math.max(0, Math.min(100, parseInt(kf.value) || 0)); settings.kerfTouched = true; KERF = settings.kerf; }
   if (cn) settings.companyName = cn.value ? cn.value.trim() : '';
   if (ol) settings.minOffcutLong = Math.max(0, Math.min(6000, parseInt(ol.value) || 0));
   if (os) settings.minOffcutShort = Math.max(0, Math.min(6000, parseInt(os.value) || 0));
@@ -3433,6 +3613,13 @@ document.addEventListener('keydown', function(e) {
 });
 
 
+function openZoomByIndex(idx, sheetNo) {
+  const arr = window._zoomSheets || [];
+  const sh = arr[idx];
+  if (!sh) return;
+  openZoom(sh, 'Sheet ' + sheetNo + ' — ' + sh.sheetW + '×' + sh.sheetH + 'mm');
+}
+
 function openZoom(sheetData, title) {
   const modal = document.getElementById('zoom-modal');
   const canvas = document.getElementById('zoom-canvas');
@@ -3514,6 +3701,10 @@ function removeRemnant(matId) {
 document.addEventListener('DOMContentLoaded',function(){
   checkLicence();
   loadSettings();
+  // Re-check the licence against Lemon Squeezy in the background (online only).
+  // Can restore Pro (rolls the offline grace window forward) or revoke it
+  // (expired / disabled / refunded). Never blocks startup.
+  if (navigator.onLine !== false) { setTimeout(revalidateLicence, 1200); }
   loadLib().then(function(){
     // Load shared job from URL if present.
     // SECURITY: a ?job= link is fully attacker-controlled. We sanitise every

@@ -11,7 +11,7 @@
    bump the VERSION string below.
    ════════════════════════════════════════════════════════════════ */
 
-const VERSION = 'cutnest-v14';
+const VERSION = 'cutnest-v15';
 
 const PRECACHE = [
   '/',
@@ -94,6 +94,26 @@ self.addEventListener('fetch', function (event) {
   // ── Fonts + same-origin assets: cache-first ──
   const isFont = url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com';
   const isSameOrigin = url.origin === self.location.origin;
+
+  // HTML must never be served stale. A non-navigation fetch of a .html page
+  // (e.g. a prefetch, or app.html requested as a resource) should still go
+  // network-first so a phone-deployed update is picked up, not pinned to an old
+  // cached copy until VERSION bumps. Treat these like navigations.
+  const isHTML = isSameOrigin && /\.html?($|\?)/.test(url.pathname);
+  if (isHTML) {
+    event.respondWith(
+      fetch(req)
+        .then(function (res) {
+          if (res && res.ok && res.type === 'basic') {
+            const copy = res.clone();
+            caches.open(VERSION).then(function (cache) { cache.put(req, copy); });
+          }
+          return res;
+        })
+        .catch(function () { return caches.match(req); })
+    );
+    return;
+  }
 
   if (isFont || isSameOrigin) {
     event.respondWith(
