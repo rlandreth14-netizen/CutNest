@@ -11,7 +11,7 @@
    bump the VERSION string below.
    ════════════════════════════════════════════════════════════════ */
 
-const VERSION = 'cutnest-v12';
+const VERSION = 'cutnest-v14';
 
 const PRECACHE = [
   '/',

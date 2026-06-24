@@ -1290,14 +1290,23 @@ function largestEmptyRect(sheetW, sheetH, placed) {
 }
 
 // Decide if an offcut is big enough to count as reclaimable stock.
-// Threshold is user-set (default 1000×300mm) — checked both orientations.
+// A leftover is worth keeping if it's not a thin sliver (its SHORT side clears
+// a minimum) AND it has enough total area to be useful. This is closer to how a
+// fabricator actually judges reclaim than a strict long-AND-short rule, which
+// wrongly binned useful pieces like 730×900 (fails a 1000 long-side test) or
+// 1260×280 (fails a 300 short-side test by 20mm). The long-side setting now
+// drives the area floor (minLong × minShort) so the existing Settings controls
+// still tune behaviour intuitively: raise either to keep fewer, bigger offcuts.
 function isUsableOffcut(rect) {
   if (!rect || rect.w<=0 || rect.h<=0) return false;
   const minL = (settings && settings.minOffcutLong)  || 1000;
   const minS = (settings && settings.minOffcutShort) || 300;
   const longSide  = Math.max(rect.w, rect.h);
   const shortSide = Math.min(rect.w, rect.h);
-  return longSide >= minL && shortSide >= minS;
+  const minArea = minL * minS;          // e.g. 1000 × 300 = 0.3 m²
+  // Keep it if the short side is usable AND (it clears the long-side bar OR it
+  // has enough area to be worth reclaiming as a panel).
+  return shortSide >= minS && (longSide >= minL || longSide * shortSide >= minArea);
 }
 
 
@@ -2261,6 +2270,15 @@ function renderOutput() {
       return `<div class="pres-size-chip"><b>${cnt}</b> × ${dim}mm${unitPrice ? `<span style="color:var(--green);margin-left:5px">£${lineTotal.toFixed(0)}</span>` : ''}</div>`;
     }).join('');
 
+    // Per-material utilisation: how much of the stock this material consumed,
+    // rounded to the nearest 10%. You still BUY (and handle) whole sheets — the
+    // count and cost above are the real figures — but this tells you at a glance
+    // how well the material was used. Area-weighted so big sheets count more.
+    const matUsedArea = sheets.reduce((a,sh)=>a + sh.placed.reduce((aa,p)=>aa+p.w*p.h,0), 0);
+    const matStockArea = sheets.reduce((a,sh)=>a + sh.sheetW*sh.sheetH, 0);
+    const matUtil10 = matStockArea > 0 ? Math.round((matUsedArea/matStockArea)*10)*10 : 0;
+    const utilCol = matUtil10 >= 70 ? 'var(--green)' : matUtil10 >= 45 ? 'var(--yel)' : 'var(--red)';
+
     return `<div class="pres-card">
       <div class="pres-left">
         <div class="pres-name">${esc(libMat.name)}<span class="pres-thk">${esc(libMat.thickness||'')}</span></div>
@@ -2271,6 +2289,7 @@ function renderOutput() {
         <div style="text-align:center">
           <div class="pres-count">${total}</div>
           <div class="pres-unit">sheet${total!==1?'s':''}</div>
+          ${total ? `<div class="pres-util" style="font-size:11px;font-weight:700;color:${utilCol};margin-top:3px">~${matUtil10}% used</div>` : ''}
         </div>
       </div>
     </div>`;
