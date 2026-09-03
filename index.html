@@ -42,13 +42,6 @@
       "price": "12.00",
       "priceCurrency": "GBP",
       "billingIncrement": "P1M"
-    },
-    {
-      "@type": "Offer",
-      "name": "Pro Annual",
-      "price": "99.00",
-      "priceCurrency": "GBP",
-      "billingIncrement": "P1Y"
     }
   ],
   "description": "Cut list optimisation software for sheet metal fabricators, joiners, timber merchants and anyone cutting sheet material. Minimise waste, order less, quote faster.",
@@ -70,9 +63,31 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-EGY30977X1"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-EGY30977X1',{anonymize_ip:true,allow_google_signals:false,allow_ad_personalization_signals:false});</script>
+<!-- Google Analytics — CONSENT GATED.
+     GA is NOT loaded here. It is injected by loadAnalytics() only after the
+     visitor clicks Accept on the cookie banner (or has accepted previously).
+     Loading it in <head> set analytics cookies before any consent existed,
+     which contradicted the privacy policy's stated legal basis. -->
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){ dataLayer.push(arguments); }
+function loadAnalytics(){
+  if (window.__cnAnalyticsLoaded) return;
+  window.__cnAnalyticsLoaded = true;
+  var sc = document.createElement('script');
+  sc.async = true;
+  sc.src = 'https://www.googletagmanager.com/gtag/js?id=G-EGY30977X1';
+  document.head.appendChild(sc);
+  gtag('js', new Date());
+  gtag('config','G-EGY30977X1',{anonymize_ip:true,allow_google_signals:false,allow_ad_personalization_signals:false});
+}
+try{
+  // Honour a previous decision, and Do Not Track, without waiting for the banner.
+  var _cnc = localStorage.getItem('cn-cookie');
+  var _dnt = (navigator.doNotTrack==='1'||window.doNotTrack==='1'||navigator.msDoNotTrack==='1');
+  if (_cnc === 'accepted' && !_dnt) loadAnalytics();
+}catch(e){}
+</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -512,7 +527,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
       <h2 style="font-family:'Barlow Condensed',sans-serif;font-size:clamp(26px,4vw,38px);font-weight:900;color:#fff;margin-bottom:14px;line-height:1.1">The free version works.<br><span style="color:var(--amber)">Pro is for when it&rsquo;s saving you money every week.</span></h2>
       <p style="font-size:14px;color:rgba(255,255,255,.65);line-height:1.7;margin-bottom:24px">One material is enough to see if CutNest works for you. But most jobs involve more than one material. That&rsquo;s where Pro pays for itself &mdash; usually on the first job.</p>
       <a href="https://cutnest.lemonsqueezy.com/checkout/buy/a9fdfebb-ea08-4962-8aae-45e608f0cc6e" target="_blank" style="background:var(--amber);color:var(--teal2);font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:16px;padding:13px 32px;border-radius:9px;letter-spacing:.5px;display:inline-block;transition:.2s;box-shadow:0 4px 16px rgba(245,158,11,.35)">Get Pro &mdash; &pound;12/month &rarr;</a>
-      <div style="margin-top:12px;font-size:12px;color:rgba(255,255,255,.35)">or &pound;99/year &middot; cancel any time &middot; key emailed instantly</div>
+      <div style="margin-top:12px;font-size:12px;color:rgba(255,255,255,.35)">cancel any time &middot; key emailed instantly</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;border-radius:12px;overflow:hidden" class="pro-compare-grid">
       <div style="background:rgba(255,255,255,.06);padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.06)">
@@ -675,7 +690,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
         <tr><td>CSV export for spreadsheets &amp; quotes</td><td>&#10003;</td></tr>
         <tr><td>Works offline &mdash; install it like an app</td><td>&#10003;</td></tr>
         <tr><td>Your data stays in your browser &mdash; no account needed</td><td>&#10003;</td></tr>
-        <tr><td>Price</td><td style="color:var(--amber);font-weight:800">&pound;12/month &middot; or &pound;99/year</td></tr>
+        <tr><td>Price</td><td style="color:var(--amber);font-weight:800">&pound;12/month</td></tr>
       </tbody>
     </table>
     <div class="vs-note">Every capability above is live in CutNest Pro today. No account, no install, no card needed to try the free version.</div>
@@ -730,28 +745,26 @@ footer{background:var(--teal2);padding:44px 5% 32px}
       </ul>
       <a href="app.html" class="btn-free">Start Free &rarr;</a>
       <div style="margin-top:10px;display:flex;gap:6px">
-        <input type="email" id="notify-email" placeholder="Get notified of new features" style="flex:1;padding:8px 10px;border:1px solid var(--bdr2);border-radius:7px;font-family:Barlow,sans-serif;font-size:12px;background:var(--sky);color:var(--text);outline:none"/>
+        <input type="email" id="notify-email" placeholder="Email me about new features" style="flex:1;padding:8px 10px;border:1px solid var(--bdr2);border-radius:7px;font-family:Barlow,sans-serif;font-size:12px;background:var(--sky);color:var(--text);outline:none"/>
         <button onclick="notifySignup()" style="background:var(--teal);border:none;color:#fff;border-radius:7px;padding:8px 12px;cursor:pointer;font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:12px;white-space:nowrap">Notify me</button>
       </div>
-      <div id="notify-confirm" style="display:none;margin-top:7px;font-size:12px;color:var(--green);font-weight:600">✓ Got it — we’ll email you about updates</div>
+      <div id="notify-confirm" style="display:none;margin-top:7px;font-size:12px;color:var(--green);font-weight:600"></div>
     </div>
     <div class="price-card featured">
       <div class="plan-label">Pro</div>
-      <!-- Billing toggle -->
-      <div style="display:flex;background:var(--sky);border-radius:8px;padding:3px;margin-bottom:14px;gap:3px">
-        <button id="toggle-monthly" onclick="setBilling('monthly')" style="flex:1;padding:7px;border:none;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;cursor:pointer;background:var(--teal);color:#fff;transition:.15s">Monthly</button>
-        <button id="toggle-annual" onclick="setBilling('annual')" style="flex:1;padding:7px;border:none;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;cursor:pointer;background:none;color:var(--text2);transition:.15s">Annual <span style="background:var(--green);color:#fff;border-radius:4px;padding:1px 5px;font-size:10px;margin-left:3px">-31%</span></button>
-      </div>
+      <!-- ANNUAL PLAN REMOVED.
+           There is only ONE checkout URL and it is the MONTHLY subscription.
+           The annual toggle advertised "£99 billed annually · save £45" and then
+           sent the customer to the £12/month checkout — an advertised price that
+           was never charged. Do not re-add any annual pricing UI until a real
+           annual variant exists in Lemon Squeezy and LS_ANNUAL_URL points at its
+           own checkout link. -->
       <div id="price-monthly">
         <div class="plan-price">&pound;12<span>/mo</span></div>
         <div class="plan-period">Per company &middot; cancel any time</div>
       </div>
-      <div id="price-annual" style="display:none">
-        <div class="plan-price">&pound;8.25<span>/mo</span></div>
-        <div class="plan-period">&pound;99 billed annually &middot; save &pound;45</div>
-      </div>
       <div style="background:var(--sky);border-left:3px solid var(--amber);border-radius:0 6px 6px 0;padding:7px 12px;margin:12px 0 14px;font-size:12px;color:var(--text2);line-height:1.5">
-        One sheet of stainless saved pays for <b>a year&rsquo;s subscription</b>. Most jobs save more than that.
+        One sheet of stainless saved pays for <b>months of subscription</b>. Most jobs save more than that.
       </div>
       <ul class="plan-feats">
         <li><span class="fi">&#10003;</span>Everything in Free</li>
@@ -854,8 +867,11 @@ footer{background:var(--teal2);padding:44px 5% 32px}
 
 <!-- COOKIE -->
 <div class="cookie" id="cookie">
-  We use your browser&rsquo;s local storage to save your settings, and Google Analytics for anonymised usage stats. No ads, no cross-site tracking. See our <a href="#" onclick="openLegal('privacy');return false;">Privacy Policy</a>.
-  <button class="btn-cookie" onclick="acceptCookie()">Got it</button>
+  <span>CutNest saves your settings in your browser&rsquo;s local storage (always &mdash; it&rsquo;s how the app works offline). We&rsquo;d also like to use Google Analytics for anonymised usage stats. No ads, no cross-site tracking. See our <a href="#" onclick="openLegal('privacy');return false;">Privacy Policy</a>.</span>
+  <span style="display:flex;gap:8px;flex-shrink:0">
+    <button class="btn-cookie" style="background:none;border:1px solid rgba(255,255,255,.35);color:rgba(255,255,255,.85)" onclick="declineCookie()">Decline analytics</button>
+    <button class="btn-cookie" onclick="acceptCookie()">Accept</button>
+  </span>
 </div>
 
 <!-- LEGAL MODAL -->
@@ -881,10 +897,10 @@ const TERMS = `
 <p style="margin-bottom:10px">CutNest is a browser-based cut list optimisation tool for sheet materials including steel, timber, acrylic and glass. It is provided as-is for professional and commercial use. A free tier and a paid Pro subscription are available.</p>
 
 <h4 style="color:#0f4c5c;margin:16px 0 6px">3. Pro Subscription</h4>
-<p style="margin-bottom:10px">Pro subscriptions are processed by Lemon Squeezy (Tropical Forest LLC), who act as Merchant of Record. Pricing is &pound;12/month or &pound;99/year. Your licence key unlocks Pro features on any browser where it is entered. Keys are issued per company and may be shared with members of your team. You may not resell, publicly distribute or transfer your key to a third party outside your organisation. We reserve the right to revoke keys found to be shared in breach of these terms.</p>
+<p style="margin-bottom:10px">Pro subscriptions are processed by Lemon Squeezy (Tropical Forest LLC), who act as Merchant of Record. Pricing is &pound;12/month. Your licence key unlocks Pro features on any browser where it is entered. Keys are issued per company and may be shared with members of your team. You may not resell, publicly distribute or transfer your key to a third party outside your organisation. We reserve the right to revoke keys found to be shared in breach of these terms.</p>
 
 <h4 style="color:#0f4c5c;margin:16px 0 6px">4. Cancellation and Refunds</h4>
-<p style="margin-bottom:10px">Monthly subscriptions may be cancelled at any time. Access continues until the end of the current billing period. No partial refunds are issued for unused portions of a monthly subscription. Annual subscriptions are non-refundable except where required by law. If you experience a material technical failure preventing use of the service, contact hello@cutnest.co.uk within 7 days of purchase and we will review your case. Your statutory rights under the Consumer Rights Act 2015 are not affected.</p>
+<p style="margin-bottom:10px">Subscriptions may be cancelled at any time. Access continues until the end of the current billing period. No partial refunds are issued for unused portions of a billing period. If you experience a material technical failure preventing use of the service, contact hello@cutnest.co.uk within 7 days of purchase and we will review your case. Your statutory rights under the Consumer Rights Act 2015 are not affected.</p>
 
 <h4 style="color:#0f4c5c;margin:16px 0 6px">5. Accuracy and Fitness for Purpose</h4>
 <p style="margin-bottom:10px">CutNest generates cut list estimates based on the dimensions and quantities you enter. All results are algorithmic and must be reviewed by a qualified professional before placing material orders. CutNest does not guarantee that layouts are optimal for your specific machine, material or process. You are solely responsible for verifying outputs before ordering.</p>
@@ -922,10 +938,10 @@ const PRIVACY = `
 <p style="margin-bottom:10px">Your email address is used to: deliver your licence key after purchase; respond to support or billing enquiries; notify you of material changes to pricing or these terms. We will not use your email for marketing without your explicit consent. Legal basis: contract performance (sending the licence key you purchased) and legitimate interests (support).</p>
 
 <h4 style="color:#0f4c5c;margin:16px 0 6px">4. Data Stored in Your Browser</h4>
-<p style="margin-bottom:10px">CutNest stores the following data in your browser&rsquo;s localStorage on your device only. This data never leaves your device and is never transmitted to us or any third party: your stock library (material names, sizes, prices); job history (last 50 calculations); app settings (kerf, company name); your licence key. You can delete all of this at any time by clearing your browser data.</p>
+<p style="margin-bottom:10px">CutNest stores the following data in your browser&rsquo;s localStorage on your device only. This data never leaves your device and is never transmitted to us or any third party: your stock library (material names, sizes, prices); the job you are currently working on; job history (last 50 calculations); app settings (kerf, minimum usable offcut, company name); your light/dark theme choice; which pre-built material grades you have hidden; your licence key; and your cookie-banner choice. You can delete all of this at any time by clearing your browser data.</p>
 
 <h4 style="color:#0f4c5c;margin:16px 0 6px">5. Analytics</h4>
-<p style="margin-bottom:10px">CutNest uses Google Analytics (GA4) to understand aggregate, anonymised usage &mdash; for example which pages are visited and roughly how many people try the app &mdash; so we can improve the product. Google Analytics sets cookies and may process a truncated version of your IP address; we have IP anonymisation enabled and do not use Google Analytics for advertising or remarketing. We do not use the Meta Pixel or advertising/retargeting pixels. Your cut-list data, piece dimensions, material library and prices are never sent to Google Analytics or to us &mdash; they stay in your browser (see section 4). You can block analytics with any browser privacy setting or extension, and we honour &ldquo;Do Not Track&rdquo; where your browser sends it. Legal basis: consent (analytics cookies) and our legitimate interest in improving the service.</p>
+<p style="margin-bottom:10px">CutNest uses Google Analytics (GA4) to understand aggregate, anonymised usage &mdash; for example which pages are visited and roughly how many people try the app &mdash; so we can improve the product. Google Analytics sets cookies and may process a truncated version of your IP address; we have IP anonymisation enabled and do not use Google Analytics for advertising or remarketing. We do not use the Meta Pixel or advertising/retargeting pixels. Your cut-list data, piece dimensions, material library and prices are never sent to Google Analytics or to us &mdash; they stay in your browser (see section 4). Google Analytics is only loaded after you click Accept on the cookie banner; if you decline, or your browser sends &ldquo;Do Not Track&rdquo;, it is never loaded at all. You can also block it with any browser privacy setting or extension. Legal basis: your consent.</p>
 
 <h4 style="color:#0f4c5c;margin:16px 0 6px">6. Third-Party Data Processors</h4>
 <p style="margin-bottom:10px"><b>Lemon Squeezy (Tropical Forest LLC)</b> &mdash; processes payments and manages subscriptions. They act as Merchant of Record and have their own privacy policy at lemonsqueezy.com. <b>Google Analytics (Google LLC)</b> &mdash; provides anonymised, aggregate usage analytics as described in section 5. <b>GitHub Pages</b> &mdash; hosts this website. GitHub may log IP addresses for security purposes per their privacy policy. <b>Google Fonts</b> &mdash; serves typography. Google may log font requests per their privacy policy.</p>
@@ -937,7 +953,7 @@ const PRIVACY = `
 <p style="margin-bottom:10px">You have the right to: access the personal data we hold about you; correct inaccurate data; request deletion of your data; object to processing; data portability. To exercise any of these rights contact hello@cutnest.co.uk. We will respond within 30 days. You also have the right to lodge a complaint with the Information Commissioner&rsquo;s Office (ico.org.uk).</p>
 
 <h4 style="color:#0f4c5c;margin:16px 0 6px">9. Cookies</h4>
-<p style="margin-bottom:10px">CutNest uses a single localStorage key (&ldquo;cn-cookie&rdquo;) to remember that you have acknowledged this notice, plus the cookies set by Google Analytics (see section 5) to measure aggregate usage. We do not use advertising or cross-site tracking cookies. You can clear or block these at any time through your browser settings.</p>
+<p style="margin-bottom:10px">CutNest itself sets no cookies. It uses localStorage keys on your device for the items listed in section 4, including one (&ldquo;cn-cookie&rdquo;) recording whether you accepted or declined analytics. Google Analytics sets cookies, but <b>only if you click Accept on the cookie banner</b> &mdash; decline, or send a Do Not Track signal, and Google Analytics is never loaded and no analytics cookie is ever set. We do not use advertising or cross-site tracking cookies. You can clear or block anything stored at any time through your browser settings.</p>
 
 <h4 style="color:#0f4c5c;margin:16px 0 6px">10. Changes to This Policy</h4>
 <p style="margin-bottom:10px">We may update this policy from time to time. Material changes will be notified via email to active subscribers. The current version is always available at cutnest.co.uk.</p>
@@ -955,50 +971,45 @@ function closeLegal() {
   document.getElementById('legal-overlay').classList.remove('open');
 }
 function acceptCookie() {
-  localStorage.setItem('cn-cookie','1');
+  try{ localStorage.setItem('cn-cookie','accepted'); }catch(e){}
   document.getElementById('cookie').classList.remove('show');
+  loadAnalytics();
 }
-if (!localStorage.getItem('cn-cookie')) {
-  setTimeout(function() { document.getElementById('cookie').classList.add('show'); }, 2000);
+function declineCookie() {
+  try{ localStorage.setItem('cn-cookie','declined'); }catch(e){}
+  document.getElementById('cookie').classList.remove('show');
+  // Nothing to unload: GA was never injected.
+}
+try{
+  var _cnChoice = localStorage.getItem('cn-cookie');
+  // '1' is the legacy value written before there was a Decline option. It only
+  // ever meant "banner dismissed", not "analytics accepted", so ask again.
+  if (_cnChoice !== 'accepted' && _cnChoice !== 'declined') {
+    setTimeout(function() { document.getElementById('cookie').classList.add('show'); }, 1200);
+  }
+}catch(e){
+  setTimeout(function() { document.getElementById('cookie').classList.add('show'); }, 1200);
 }
 // ── PRICING TOGGLE ──
 // ════════════════════════════════════════════════════════════════
 // ⚠️ LEMON SQUEEZY CONFIG — THE ONLY PLACE YOU EVER CHANGE URLS
 // When you switch to Live mode:
 //  1. Replace LS_MONTHLY_URL with your LIVE monthly checkout link
-//  2. Replace LS_ANNUAL_URL with your LIVE annual checkout link
 // (LS dashboard → Products → your product → Share → copy link)
 // Every Buy button on this page updates automatically from these.
 // ════════════════════════════════════════════════════════════════
+// There is ONE product and ONE checkout link: the monthly subscription.
+// If you add an annual variant in Lemon Squeezy later, add LS_ANNUAL_URL here
+// AND restore the billing toggle in the pricing card — never one without the
+// other, or the page advertises a price the checkout does not charge.
 const LS_MONTHLY_URL = 'https://cutnest.lemonsqueezy.com/checkout/buy/a9fdfebb-ea08-4962-8aae-45e608f0cc6e';
-const LS_ANNUAL_URL  = 'https://cutnest.lemonsqueezy.com/checkout/buy/a9fdfebb-ea08-4962-8aae-45e608f0cc6e';
 
-// On load: point every checkout link at the monthly URL (setBilling switches the main CTA)
+// On load: point every checkout link at the one live checkout URL.
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('a[href*="lemonsqueezy.com/checkout"]').forEach(function(a) {
     a.href = LS_MONTHLY_URL;
   });
 });
-
-function setBilling(type) {
-  const monthly = document.getElementById('price-monthly');
-  const annual  = document.getElementById('price-annual');
-  const tmBtn   = document.getElementById('toggle-monthly');
-  const taBtn   = document.getElementById('toggle-annual');
-  const cta     = document.getElementById('pro-cta-btn');
-  if (!monthly || !annual) return;
-  if (type === 'annual') {
-    monthly.style.display = 'none'; annual.style.display = 'block';
-    tmBtn.style.background = 'none'; tmBtn.style.color = 'var(--text2)';
-    taBtn.style.background = 'var(--teal)'; taBtn.style.color = '#fff';
-    if (cta) { cta.textContent = 'Get Pro Annual — £99/year →'; cta.href = LS_ANNUAL_URL; }
-  } else {
-    monthly.style.display = 'block'; annual.style.display = 'none';
-    tmBtn.style.background = 'var(--teal)'; tmBtn.style.color = '#fff';
-    taBtn.style.background = 'none'; taBtn.style.color = 'var(--text2)';
-    if (cta) { cta.textContent = 'Get Pro — £12/month →'; cta.href = LS_MONTHLY_URL; }
-  }
-}
 
 // ── FAQ ACCORDION ──
 document.querySelectorAll('.faq-item').forEach(function(item) {
@@ -1074,12 +1085,18 @@ function notifySignup() {
     return;
   }
   emailEl.style.borderColor = '';
-  // Store locally
-  try { localStorage.setItem('cutnest-notify', email); } catch(e) {}
-  // Open mailto so the email actually lands in Ryan's inbox
-  window.location.href = 'mailto:hello@cutnest.co.uk?subject=CutNest%20Feature%20Updates&body=Please%20add%20' + encodeURIComponent(email) + '%20to%20the%20CutNest%20updates%20list.';
-  if (confirmEl) confirmEl.style.display = 'block';
-  emailEl.style.display = 'none';
+  // There is no mailing-list backend. All this can do is open the visitor's own
+  // mail client with a draft — so the confirmation must say exactly that, not
+  // "we'll email you", which claimed a signup that had not happened. Nothing is
+  // stored locally either: an email address the site cannot act on is personal
+  // data with no purpose, and the privacy policy says browser storage is only
+  // used for library, history, settings and licence key.
+  window.location.href = 'mailto:hello@cutnest.co.uk?subject=' + encodeURIComponent('CutNest feature updates')
+    + '&body=' + encodeURIComponent('Please add ' + email + ' to the CutNest updates list.');
+  if (confirmEl) {
+    confirmEl.textContent = '\u2709 Your email app should open with a draft \u2014 send it and I\u2019ll add you.';
+    confirmEl.style.display = 'block';
+  }
 }
 
 

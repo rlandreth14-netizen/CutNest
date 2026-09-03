@@ -25,9 +25,29 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-EGY30977X1"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-EGY30977X1',{anonymize_ip:true,allow_google_signals:false,allow_ad_personalization_signals:false});</script>
+<!-- Google Analytics — CONSENT GATED.
+     app.html previously loaded gtag.js unconditionally: no banner, no way to
+     decline, while the privacy policy claimed consent as the legal basis.
+     GA now loads only if the visitor accepted on the landing page (or accepts
+     on the banner below), and never when Do Not Track is set. -->
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){ dataLayer.push(arguments); }
+function loadAnalytics(){
+  if (window.__cnAnalyticsLoaded) return;
+  window.__cnAnalyticsLoaded = true;
+  var sc = document.createElement('script');
+  sc.async = true;
+  sc.src = 'https://www.googletagmanager.com/gtag/js?id=G-EGY30977X1';
+  document.head.appendChild(sc);
+  gtag('js', new Date());
+  gtag('config','G-EGY30977X1',{anonymize_ip:true,allow_google_signals:false,allow_ad_personalization_signals:false});
+}
+try{
+  var _dnt = (navigator.doNotTrack==='1'||window.doNotTrack==='1'||navigator.msDoNotTrack==='1');
+  if (localStorage.getItem('cn-cookie') === 'accepted' && !_dnt) loadAnalytics();
+}catch(e){}
+</script>
 <script>try{if(localStorage.getItem('cutnest-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -268,6 +288,11 @@ tr:hover td{background:rgba(232,244,248,.5)}
 .calc-overlay-sub{color:rgba(255,255,255,.6);font-size:13px;margin-top:4px}
 
 
+/* ── FIRST-RUN KERF CHOICE ── */
+.kerf-choice{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;background:var(--sky);border:1.5px solid var(--bdr2);border-radius:10px;padding:13px 16px;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-size:16px;font-weight:700;color:var(--teal);text-align:left;transition:.15s}
+.kerf-choice:hover{border-color:var(--teal3);background:var(--sky2)}
+.kerf-choice span{font-family:"Barlow",sans-serif;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap}
+
 /* ── GHOST PRO UI ── */
 .ghost-block{border-radius:14px;overflow:hidden;margin-bottom:18px;border:2px dashed var(--bdr2);position:relative;cursor:pointer;transition:.2s}
 .ghost-block:hover{border-color:var(--amber);transform:translateY(-1px)}
@@ -450,7 +475,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
 <body>
 
 <!-- SPINNER -->
-<div class="calc-overlay hidden" id="calc-overlay">
+<div class="calc-overlay hidden" id="calc-overlay" role="status" aria-live="polite">
   <div class="spinner"></div>
   <div class="calc-overlay-text">Optimising layouts&hellip;</div>
   <div class="calc-overlay-sub">Finding the most cost-effective arrangement</div>
@@ -480,9 +505,9 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
     <button class="btn-hdr no-print" id="undo-btn" onclick="undo()" title="Undo (Ctrl+Z)" aria-label="Undo" disabled style="opacity:.4">↩</button>
     <button class="btn-hdr no-print" id="redo-btn" onclick="redo()" title="Redo (Ctrl+Y)" aria-label="Redo" disabled style="opacity:.4">↪</button>
     <button class="btn-hdr no-print" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode" aria-label="Toggle dark mode">☀︎</button>
-    <button class="btn-hdr no-print" id="history-btn" onclick="openHistory()">&#128336;</button>
-    <button class="btn-hdr no-print" onclick="openLib()">&#128230;<span class="btn-hdr-label"> Library</span></button>
-    <button class="btn-hdr no-print" onclick="openSettings()">&#9881;</button>
+    <button class="btn-hdr no-print" id="history-btn" onclick="openHistory()" title="Job history" aria-label="Job history">&#128336;</button>
+    <button class="btn-hdr no-print" onclick="openLib()" title="Stock library" aria-label="Stock library">&#128230;<span class="btn-hdr-label"> Library</span></button>
+    <button class="btn-hdr no-print" onclick="openSettings()" title="Settings" aria-label="Settings">&#9881;</button>
   </div>
 </header>
 
@@ -579,7 +604,10 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
         <div class="print-header-meta" id="print-header-meta"></div>
       </div>
       <div class="results-hdr">
-        <div class="results-title">&#128203; Sheet Usage <span id="units-badge" style="font-size:13px;font-weight:400;opacity:.7;margin-left:6px"></span></div>
+        <div>
+          <div class="results-title">&#128203; Sheet Usage <span id="units-badge" style="font-size:13px;font-weight:400;opacity:.7;margin-left:6px"></span></div>
+          <div id="results-assumptions" style="font-size:11px;color:rgba(255,255,255,.6);margin-top:2px"></div>
+        </div>
         <div class="res-acts">
           <button class="btn-exp" onclick="exportCSV()">⬇ CSV</button>
           <button class="btn-exp" onclick="exportDXF()" title="Machine-ready DXF for CNC/laser/router">⬇ DXF</button>
@@ -590,6 +618,10 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
       </div>
       <div class="pricing-wrap">
         <div class="pricing-ttl">Sheets required per material</div>
+        <div id="order-line" style="display:none;background:var(--sky);border:1.5px solid var(--teal3);border-left-width:4px;border-radius:9px;padding:11px 14px;margin-bottom:11px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:4px">What to order</div>
+          <div id="order-line-text" style="font-size:15px;font-weight:700;color:var(--teal);line-height:1.6"></div>
+        </div>
         <div id="pricing-cards"></div>
         <div id="total-cost-bar" style="display:none" class="total-cost-bar">
           <div style="color:rgba(255,255,255,.7);font-size:12px;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px;text-transform:uppercase">Total Material Cost</div>
@@ -626,7 +658,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
 </main>
 
 <!-- HISTORY MODAL -->
-<div class="overlay" id="history-modal" style="display:none">
+<div class="overlay" id="history-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Job history">
   <div class="modal" style="max-width:660px">
     <div class="modal-hdr"><div class="modal-title">&#128336; Job History</div><button class="modal-x" onclick="closeHistory()">&#10005;</button></div>
     <div class="modal-body">
@@ -652,9 +684,9 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
 </div>
 
 <!-- SETTINGS MODAL -->
-<div class="overlay" id="settings-modal" style="display:none">
+<div class="overlay" id="settings-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Settings">
   <div class="modal" style="max-width:560px">
-    <div class="modal-hdr"><div class="modal-title">&#9881; Settings</div><button class="modal-x" onclick="closeSettings()">&#10005;</button></div>
+    <div class="modal-hdr"><div class="modal-title">&#9881; Settings</div><button class="modal-x" onclick="cancelSettings()" aria-label="Close settings without saving">&#10005;</button></div>
     <div class="modal-body">
       <div class="settings-section">
         <div class="settings-title">&#128273; Licence Key</div>
@@ -695,7 +727,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
         <div style="background:var(--sky);border:1px solid var(--bdr);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text2)"><span id="master-lib-txt">Loading&hellip;</span></div>
       </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:5px">
-        <button class="btn btn-out" onclick="closeSettings()" style="padding:8px 15px">Cancel</button>
+        <button class="btn btn-out" onclick="cancelSettings()" style="padding:8px 15px">Cancel</button>
         <button class="btn btn-teal" onclick="saveSettingsAndClose()" style="padding:8px 20px">&#128190; Save</button>
       </div>
     </div>
@@ -703,7 +735,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
 </div>
 
 <!-- LIBRARY MODAL -->
-<div class="overlay" id="lib-modal" style="display:none">
+<div class="overlay" id="lib-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Stock library">
   <div class="modal">
     <div class="modal-hdr"><div class="modal-title">&#128230; Stock Library</div><button class="modal-x" onclick="closeLib()">&#10005;</button></div>
     <div class="modal-body">
@@ -738,7 +770,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
 </div>
 
 <!-- UPGRADE MODAL -->
-<div class="overlay" id="upgrade-modal" style="display:none">
+<div class="overlay" id="upgrade-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Upgrade to CutNest Pro">
   <div class="modal" style="max-width:440px">
     <div class="modal-hdr" style="background:linear-gradient(135deg,var(--teal2),var(--teal))">
       <div class="modal-title">&#11088; Upgrade to CutNest Pro</div>
@@ -750,24 +782,79 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
       <p style="font-size:13px;color:var(--text2);margin-bottom:18px;line-height:1.6" id="upgrade-desc">Upgrade to unlock this feature.</p>
       <div style="background:var(--sky);border:1px solid var(--bdr);border-radius:9px;padding:12px;margin-bottom:14px">
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:900;color:var(--teal)">&pound;12<span style="font-size:14px;color:var(--muted)">/month</span></div>
-        <div style="font-size:12px;color:var(--muted)">or &pound;99/year &middot; cancel anytime</div>
+        <div style="font-size:12px;color:var(--muted)">cancel anytime</div>
       </div>
+      <!-- ANNUAL PLAN: intentionally not offered here. There is currently only a
+           MONTHLY checkout URL (LS_URL). Do NOT re-add a "£99/year" link until a
+           real annual variant exists in Lemon Squeezy and its own checkout URL is
+           wired up — advertising an annual price that bills monthly is a
+           consumer-protection problem, not just a broken link. -->
       <a href="https://cutnest.lemonsqueezy.com/checkout/buy/a9fdfebb-ea08-4962-8aae-45e608f0cc6e" target="_blank" style="display:block;background:linear-gradient(135deg,var(--amber),var(--amber2));color:var(--teal2);font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;padding:12px;border-radius:9px;text-decoration:none;margin-bottom:6px">Get Pro &mdash; &pound;12/month &rarr;</a>
-      <a href="https://cutnest.lemonsqueezy.com/checkout/buy/a9fdfebb-ea08-4962-8aae-45e608f0cc6e" target="_blank" style="font-size:12px;color:var(--teal3)">Or &pound;99/year (save &pound;45)</a>
     </div>
   </div>
 </div>
 
 <!-- LEGAL MODAL -->
-<div class="overlay" id="legal-modal" style="display:none">
+<div class="overlay" id="legal-modal" style="display:none" role="dialog" aria-modal="true">
   <div class="modal" style="max-width:620px">
     <div class="modal-hdr"><div class="modal-title" id="legal-modal-title"></div><button class="modal-x" onclick="document.getElementById('legal-modal').style.display='none'">&#10005;</button></div>
     <div class="modal-body" id="legal-modal-body" style="font-size:13px;line-height:1.8;color:var(--text2)"></div>
   </div>
 </div>
 
+<!-- FIRST-RUN KERF QUESTION -->
+<!-- Kerf is the single setting that most changes sheet count and cost, and it
+     was buried in Settings behind a gear icon. A turret-punch shop that never
+     opens Settings runs every job at 4mm and under-counts sheets on all of them
+     — precisely the failure this product exists to prevent. Ask once, up front. -->
+<div class="overlay" id="kerf-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Set your blade kerf">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-hdr"><div class="modal-title">&#10002; One quick question</div></div>
+    <div class="modal-body">
+      <p class="modal-sub" style="margin-bottom:16px">What cuts your material? This sets the <b>kerf</b> &mdash; the strip of material each cut destroys. Get it wrong and your sheet count will be wrong on every job. You can change it any time in Settings.</p>
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <button onclick="setKerfChoice(4)" class="kerf-choice">Laser, saw or router <span>4mm kerf</span></button>
+        <button onclick="setKerfChoice(3)" class="kerf-choice">Fine blade / thin acrylic <span>3mm kerf</span></button>
+        <button onclick="setKerfChoice(5)" class="kerf-choice">Plasma <span>5mm kerf</span></button>
+        <button onclick="setKerfChoice(18)" class="kerf-choice">CNC turret punch <span>18mm kerf</span></button>
+      </div>
+      <div style="text-align:center;margin-top:14px">
+        <button onclick="setKerfChoice(null)" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;font-family:inherit">Not sure &mdash; use 4mm for now</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PASTE CUT LIST MODAL -->
+<div class="overlay" id="paste-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Paste a cut list">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-hdr"><div class="modal-title">&#128203; Paste your cut list</div><button class="modal-x" onclick="closePaste()" aria-label="Close">&#10005;</button></div>
+    <div class="modal-body">
+      <p class="modal-sub">Paste straight from an email, a spreadsheet or a text. One piece per line. Most formats work:</p>
+      <div style="background:var(--sky);border:1px solid var(--bdr);border-radius:8px;padding:9px 12px;margin-bottom:11px;font-family:monospace;font-size:12px;color:var(--text2);line-height:1.8">
+        600x400x4 &nbsp;&middot;&nbsp; 600 x 400 x 4 &nbsp;&middot;&nbsp; 600,400,4<br>
+        Door Front,800,600,4 &nbsp;&middot;&nbsp; 4 off 600x400<br>
+        600x400 qty 4 &nbsp;&middot;&nbsp; 600x400 <span style="color:var(--muted)">(qty 1)</span>
+      </div>
+      <label class="lbl">Your list</label>
+      <textarea id="paste-input" rows="7" oninput="renderPastePreview()"
+        placeholder="Door Front, 800, 600, 4&#10;Side Panel 450 380 6&#10;700x280x4"
+        style="width:100%;background:var(--sky);border:1px solid var(--bdr);color:var(--text);border-radius:8px;padding:9px 11px;font-family:monospace;font-size:13px;outline:none;resize:vertical"></textarea>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:9px;font-size:13px;color:var(--text2);cursor:pointer;user-select:none">
+        <input type="checkbox" id="paste-replace" style="width:17px;height:17px;accent-color:var(--teal)"/>
+        Replace the pieces already in this material
+      </label>
+      <div style="margin-top:11px" id="paste-preview"></div>
+      <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+        <button class="btn btn-out" onclick="closePaste()" style="padding:8px 14px">Cancel</button>
+        <button class="btn btn-teal" id="paste-confirm" onclick="confirmPaste()" style="padding:8px 20px" disabled>Add pieces</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- SHEET ZOOM MODAL -->
-<div class="overlay" id="zoom-modal" style="display:none" onclick="if(event.target===this)document.getElementById('zoom-modal').style.display='none'">
+<div class="overlay" id="zoom-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Sheet layout, enlarged" onclick="if(event.target===this)document.getElementById('zoom-modal').style.display='none'">
   <div style="background:#fff;border-radius:14px;max-width:98vw;max-height:96vh;overflow:auto;padding:16px;position:relative">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div id="zoom-title" style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:var(--teal)"></div>
@@ -776,6 +863,14 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
     <div id="zoom-canvas" style="overflow:auto"></div>
     <div id="zoom-legend" style="margin-top:14px;display:flex;flex-wrap:wrap;gap:6px"></div>
   </div>
+</div>
+<!-- COOKIE BANNER — shown only if no analytics choice has been made yet. -->
+<div id="cn-cookie-bar" class="no-print" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--teal2);border-top:2px solid var(--teal3);color:rgba(255,255,255,.85);padding:12px 16px;z-index:90;font-size:12.5px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;line-height:1.5">
+  <span style="flex:1;min-width:200px">CutNest saves your library and jobs in this browser (that&rsquo;s how it works offline). We&rsquo;d also like anonymised usage stats via Google Analytics. No ads, no cross-site tracking. <button onclick="openLegal('privacy')" style="background:none;border:none;color:var(--amber);cursor:pointer;font-size:12.5px;padding:0;text-decoration:underline;font-family:inherit">Privacy Policy</button></span>
+  <span style="display:flex;gap:8px;flex-shrink:0">
+    <button onclick="cnDeclineCookies()" style="background:none;border:1px solid rgba(255,255,255,.35);color:rgba(255,255,255,.85);font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;padding:7px 14px;border-radius:7px;cursor:pointer">Decline analytics</button>
+    <button onclick="cnAcceptCookies()" style="background:var(--amber);border:none;color:var(--teal2);font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;padding:7px 16px;border-radius:7px;cursor:pointer">Accept</button>
+  </span>
 </div>
 <footer style="text-align:center;padding:13px;font-size:11px;color:var(--muted);border-top:1px solid var(--bdr)" class="no-print">
   CutNest v1.0 &nbsp;&middot;&nbsp;
@@ -846,8 +941,41 @@ function loadStarterPack(type) {
       try { localStorage.setItem(SETT_KEY, JSON.stringify(settings)); } catch(e){}
       const kd = document.getElementById('kerf-display'); if (kd) kd.textContent = KERF + 'mm';
     }
+    // ...then confirm it, because the trade default is only a guess. A punch
+    // shop picking "Sheet Metal" would otherwise silently run at 4mm forever.
+    _pendingKerfAsk = true;
   }
-  saveData(library).then(function() { renderAll(); setSS('ok','Starter materials loaded'); });
+  // Pre-select the first grade so the user lands ready to type pieces instead of
+  // having to pick from a dropdown they just implicitly chose.
+  if (mats && mats.length && library.length && !mats[0].selectedMatId) {
+    mats[0].selectedMatId = library[0].id;
+  }
+  saveData(library).then(function() {
+    renderAll();
+    setSS('ok','Starter materials loaded');
+    if (_pendingKerfAsk) { _pendingKerfAsk = false; setTimeout(askKerf, 350); }
+  });
+}
+
+let _pendingKerfAsk = false;
+
+function askKerf() {
+  const m = document.getElementById('kerf-modal');
+  if (m) m.style.display = 'flex';
+}
+
+// null = "not sure", which keeps whatever the trade default set but still marks
+// the question as answered so it is never asked again.
+function setKerfChoice(k) {
+  if (k != null) {
+    settings.kerf = k;
+    KERF = k;
+  }
+  settings.kerfTouched = true;
+  try { localStorage.setItem(SETT_KEY, JSON.stringify(settings)); } catch(e){}
+  const kd = document.getElementById('kerf-display'); if (kd) kd.textContent = KERF + 'mm';
+  const m = document.getElementById('kerf-modal'); if (m) m.style.display = 'none';
+  showToast('\u2713 Kerf set to ' + KERF + 'mm \u2014 change it any time in Settings');
 }
 
 function renderAll() {
@@ -1048,12 +1176,170 @@ function buildBlock(m, idx) {
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px">
           <button class="btn-add-piece" onclick="addPiece('${m.id}')">+ Add Piece</button>
+          <button class="btn-add-piece" onclick="openPaste('${m.id}')" style="border-style:solid;border-color:var(--teal3);color:var(--teal)">📋 Paste list</button>
           <button class="btn-add-piece" onclick="addMultiplePieces('${m.id}')" style="font-size:12px">+ Add
             <input type="number" id="bulk-qty-${m.id}" value="5" min="2" max="50" style="width:36px;margin:0 2px;padding:2px 4px;font-size:12px;display:inline-block" onclick="event.stopPropagation()" /> rows
           </button>
         </div>
       </div>
     </div>`;
+}
+
+
+// ── PASTE A CUT LIST ──────────────────────────────────────────
+// The only bulk tool was "+ Add 5 empty rows". Every fabricator already has the
+// sizes somewhere — an email, a drawing schedule, an Excel column, a text from
+// site — and entering a 30-piece job by hand on a phone is ~90 taps. This parser
+// accepts the formats people actually have, forgivingly:
+//   600x400x4        600 x 400 x 4      600*400*4
+//   600x400          600 400 4          600,400,4
+//   Door Front,800,600,4                Door Front  800  600  4   (Excel paste)
+//   4 off 600x400    600x400 qty 4      600mm x 400mm x 4
+// Anything it cannot read is reported line by line rather than silently dropped.
+function parsePastedPieces(text) {
+  const rows = [], errors = [];
+  String(text || '').split(/\r?\n/).forEach(function (raw, i) {
+    let line = String(raw || '').trim();
+    if (!line) return;
+    if (/^[#/]/.test(line)) return;                 // comment line
+    if (!/\d/.test(line)) return;                   // header row / prose: no numbers at all
+
+    // Normalise: × -> x, drop unit suffixes and stray quotes.
+    line = line.replace(/\u00d7/g, 'x')
+               .replace(/\bmm\b/gi, ' ')
+               .replace(/["']/g, ' ');
+
+    // Leading trade quantity: "4 off 600x400", "4 no 600x400", "4 pcs ..."
+    let leadQty = null;
+    const lead = line.match(/^\s*(\d+)\s*(?:off|no\.?|nr|pcs?|pieces?)\s+(.*)$/i);
+    if (lead) { leadQty = parseInt(lead[1], 10); line = lead[2]; }
+
+    // Explicit qty keyword anywhere: "600x400 qty 4"
+    let kwQty = null;
+    const kw = line.match(/\bqty\.?\s*[:=]?\s*(\d+)\b/i);
+    if (kw) { kwQty = parseInt(kw[1], 10); line = line.replace(kw[0], ' '); }
+
+    // Split into cells when the line is delimited; otherwise treat as one cell.
+    const cells = /[\t,;]/.test(line)
+      ? line.split(/[\t,;]+/).map(function (c) { return c.trim(); }).filter(function (c) { return c !== ''; })
+      : [line];
+
+    // Label = the first cell containing no digits (Excel/CSV style), else the
+    // leading text before the first number on a freeform line.
+    let label = '';
+    const numeric = [];
+    if (cells.length > 1) {
+      cells.forEach(function (c) {
+        if (/^-?\d*\.?\d+$/.test(c.replace(/\s/g, ''))) numeric.push(parseFloat(c));
+        else if (/\d/.test(c)) {
+          // A cell like "600x400" inside a CSV row.
+          (c.match(/\d*\.?\d+/g) || []).forEach(function (n) { numeric.push(parseFloat(n)); });
+        } else if (!label) label = c.trim();
+      });
+    } else {
+      const m = line.match(/^([^\d]*?)(?=\d)/);
+      if (m && m[1]) label = m[1].replace(/[\sx*:\-]+$/i, '').trim();
+      const rest = line.slice(m && m[1] ? m[1].length : 0);
+      (rest.match(/\d*\.?\d+/g) || []).forEach(function (n) { numeric.push(parseFloat(n)); });
+    }
+
+    if (numeric.length < 2) {
+      errors.push('Line ' + (i + 1) + ': need a width and a height \u2014 "' + raw.trim().slice(0, 40) + '"');
+      return;
+    }
+
+    const w = numeric[0], h = numeric[1];
+    let qty = leadQty != null ? leadQty
+            : kwQty  != null ? kwQty
+            : (numeric.length >= 3 ? numeric[2] : 1);
+
+    if (!(w > 0) || !(h > 0)) {
+      errors.push('Line ' + (i + 1) + ': width and height must be greater than 0 \u2014 "' + raw.trim().slice(0, 40) + '"');
+      return;
+    }
+    if (w > 99999 || h > 99999) {
+      errors.push('Line ' + (i + 1) + ': dimension looks wrong (over 99999mm) \u2014 "' + raw.trim().slice(0, 40) + '"');
+      return;
+    }
+    qty = Math.max(1, Math.min(9999, Math.round(qty) || 1));
+    rows.push({ w: w, h: h, qty: qty, label: label.slice(0, 40) });
+  });
+  return { rows: rows, errors: errors };
+}
+
+let _pasteTargetMat = null;
+
+function openPaste(matId) {
+  _pasteTargetMat = matId;
+  const ta = document.getElementById('paste-input');
+  if (ta) ta.value = '';
+  const rep = document.getElementById('paste-replace');
+  if (rep) rep.checked = false;
+  renderPastePreview();
+  const m = document.getElementById('paste-modal');
+  if (m) m.style.display = 'flex';
+  if (ta) setTimeout(function () { ta.focus(); }, 60);
+}
+function closePaste() {
+  const m = document.getElementById('paste-modal');
+  if (m) m.style.display = 'none';
+}
+
+function renderPastePreview() {
+  const ta = document.getElementById('paste-input');
+  const out = document.getElementById('paste-preview');
+  const btn = document.getElementById('paste-confirm');
+  if (!ta || !out) return;
+  const res = parsePastedPieces(ta.value);
+  if (!ta.value.trim()) {
+    out.innerHTML = '<div style="color:var(--muted);font-size:13px">Paste or type your list above and it will be parsed here before anything is added.</div>';
+    if (btn) { btn.disabled = true; btn.style.opacity = '.5'; btn.textContent = 'Add pieces'; }
+    return;
+  }
+  const totalCuts = res.rows.reduce(function (a, r) { return a + r.qty; }, 0);
+  let html = '';
+  if (res.rows.length) {
+    html += '<div style="font-size:12px;color:var(--teal);font-weight:700;margin-bottom:6px">\u2713 ' + res.rows.length +
+            ' row' + (res.rows.length !== 1 ? 's' : '') + ' \u00b7 ' + totalCuts + ' total cut' + (totalCuts !== 1 ? 's' : '') + '</div>';
+    html += '<div style="max-height:180px;overflow:auto;border:1px solid var(--bdr);border-radius:8px"><table style="font-size:12px">' +
+            '<thead><tr><th>Label</th><th>W</th><th>H</th><th>Qty</th></tr></thead><tbody>' +
+            res.rows.slice(0, 100).map(function (r) {
+              return '<tr><td>' + esc(r.label || '\u2014') + '</td><td>' + r.w + '</td><td>' + r.h + '</td><td>' + r.qty + '</td></tr>';
+            }).join('') + '</tbody></table></div>';
+    if (res.rows.length > 100) html += '<div style="font-size:11px;color:var(--muted);margin-top:5px">(showing first 100)</div>';
+  }
+  if (res.errors.length) {
+    html += '<div style="background:#fff5f5;border:1px solid var(--red);border-radius:8px;padding:9px 11px;margin-top:8px;font-size:12px;color:var(--red);line-height:1.6">' +
+            '<b>' + res.errors.length + ' line' + (res.errors.length !== 1 ? 's' : '') + ' could not be read \u2014 they will be skipped:</b><br>' +
+            res.errors.slice(0, 8).map(esc).join('<br>') +
+            (res.errors.length > 8 ? '<br>\u2026and ' + (res.errors.length - 8) + ' more' : '') + '</div>';
+  }
+  out.innerHTML = html;
+  if (btn) {
+    btn.disabled = !res.rows.length;
+    btn.style.opacity = res.rows.length ? '1' : '.5';
+    btn.textContent = res.rows.length ? ('Add ' + res.rows.length + ' row' + (res.rows.length !== 1 ? 's' : '')) : 'Nothing to add';
+  }
+}
+
+function confirmPaste() {
+  const ta = document.getElementById('paste-input');
+  const m = mats.find(function (x) { return x.id === _pasteTargetMat; });
+  if (!ta || !m) return;
+  const res = parsePastedPieces(ta.value);
+  if (!res.rows.length) return;
+  pushUndo();
+  const replace = (document.getElementById('paste-replace') || {}).checked;
+  // Blank starter rows are noise once real pieces arrive.
+  const existing = replace ? [] : m.pieces.filter(function (p) { return p.w > 0 && p.h > 0; });
+  m.pieces = existing.concat(res.rows);
+  if (!m.pieces.length) m.pieces = [{ w: '', h: '', qty: 1, label: '' }];
+  closePaste();
+  renderAll();
+  saveState();
+  const cuts = res.rows.reduce(function (a, r) { return a + r.qty; }, 0);
+  showToast('\u2713 Added ' + res.rows.length + ' row' + (res.rows.length !== 1 ? 's' : '') + ' \u00b7 ' + cuts + ' cuts');
+  if (calcResult) { const sb = document.getElementById('stale-banner'); if (sb) sb.style.display = 'block'; }
 }
 
 // ── MAT MANAGEMENT ────────────────────────────
@@ -1070,7 +1356,15 @@ function removeMat(id) {
 }
 function onMatSelect(id, val) {
   const m = mats.find(m => m.id === id);
-  if (m) { pushUndo(); m.selectedMatId = val ? parseInt(val) : null; renderAll(); }
+  if (m) {
+    pushUndo();
+    // Do NOT parseInt: shared-link materials use ids like 'shared-1750…-0' and
+    // normalizeLibEntry falls back to 'lib-…', both of which parseInt turns into
+    // NaN — silently losing the material the moment the dropdown is touched.
+    // Everything downstream compares with == so a string id is fine.
+    m.selectedMatId = val || null;
+    renderAll();
+  }
 }
 
 // ── PIECE MANAGEMENT ─────────────────────────
@@ -1085,6 +1379,7 @@ function removePiece(matId, pi) {
 function stepQty(matId, pi, delta) {
   const m = mats.find(m => m.id === matId);
   if (!m) return;
+  pushUndoTyping();
   const cur = Math.max(1, (+m.pieces[pi].qty || 1) + delta);
   m.pieces[pi].qty = cur;
   // Update input directly for speed without full re-render
@@ -1201,6 +1496,8 @@ function showToast(msg, duration) {
     t = document.createElement('div');
     t.id = 'cn-toast';
     t.className = 'toast';
+    t.setAttribute('role','status');
+    t.setAttribute('aria-live','polite');
     document.body.appendChild(t);
   }
   t.textContent = msg;
@@ -1211,6 +1508,7 @@ function showToast(msg, duration) {
 function updatePiece(matId, pi, field, val) {
   const m = mats.find(m => m.id === matId);
   if (m) {
+    pushUndoTyping();
     // Validate numeric fields
     if (field === 'w' || field === 'h') {
       val = Math.max(0, Math.min(99999, Number(val) || 0));
@@ -1269,9 +1567,13 @@ function pruneFreeRects(rects) {
 function largestEmptyRect(sheetW, sheetH, placed) {
   if (!placed.length) return { x:0, y:0, w:sheetW, h:sheetH, area:sheetW*sheetH };
 
-  // Treat each placed piece as a blocker (include kerf so the offcut is a true clean cut)
+  // Treat each placed piece as a blocker, with a full blade-kerf moat on ALL
+  // FOUR sides. Previously the moat was only added to the right and bottom, so
+  // an offcut lying to a part's LEFT or ABOVE it was reported KERF mm too wide
+  // or too tall — 20mm out on a turret punch — and could be labelled "usable"
+  // when the real cut leaves it just under the threshold.
   const blocks = placed.map(function(p){
-    return { x:p.x, y:p.y, w:p.w + KERF, h:p.h + KERF };
+    return { x:p.x - KERF, y:p.y - KERF, w:p.w + 2*KERF, h:p.h + 2*KERF };
   });
 
   // Candidate left/right (X) and top/bottom (Y) edges
@@ -1323,8 +1625,10 @@ function largestEmptyRect(sheetW, sheetH, placed) {
 // still tune behaviour intuitively: raise either to keep fewer, bigger offcuts.
 function isUsableOffcut(rect) {
   if (!rect || rect.w<=0 || rect.h<=0) return false;
-  const minL = (settings && settings.minOffcutLong)  || 1000;
-  const minS = (settings && settings.minOffcutShort) || 300;
+  // Use != null, not ||: a user who deliberately sets the threshold to 0 was
+  // silently given the 1000/300 defaults back.
+  const minL = (settings && settings.minOffcutLong  != null) ? +settings.minOffcutLong  : 1000;
+  const minS = (settings && settings.minOffcutShort != null) ? +settings.minOffcutShort : 300;
   const longSide  = Math.max(rect.w, rect.h);
   const shortSide = Math.min(rect.w, rect.h);
   const minArea = minL * minS;          // e.g. 1000 × 300 = 0.3 m²
@@ -1893,9 +2197,20 @@ function normalizeRotatedFlags(sheets, pieces) {
   });
 }
 
+// Smallest stock sheet that would take a piece of w×h. With rotation allowed
+// the orientation is free, so the answer is short-side × long-side. With grain
+// locked the piece can only go one way up, so the sheet must be at least w×h
+// exactly. Used to turn "this doesn't fit" into "order a sheet at least this big".
+function minSheetFor(w, h, allowRot) {
+  w = +w; h = +h;
+  return allowRot ? { w: Math.min(w,h), h: Math.max(w,h) } : { w: w, h: h };
+}
+
 // Fallback packer: greedy only, no consolidation/rebalancing. Used if the
 // full runMat throws, so one material's optimisation bug can't break the job.
-function runMatSafe(libMat, pieces, jobQty) {
+// Takes the remnant too — without it, a crash in runMat silently made the user
+// pay for an extra sheet they already had on the rack.
+function runMatSafe(libMat, pieces, jobQty, remnant) {
   const mult = Math.max(1, parseInt(jobQty) || 1);
   let queue = [];
   pieces.forEach(function(p, pi){
@@ -1911,6 +2226,16 @@ function runMatSafe(libMat, pieces, jobQty) {
 
   const ar = libMat.allowRotation !== false;
   const cm = libMat.cuttingMethod || 'free';
+  const remnantSheets = [];
+  if (remnant && remnant.w >= 10 && remnant.h >= 10) {
+    const rr = packSheetBest(remnant.w, remnant.h, queue, ar, cm);
+    if (rr.placed.length > 0) {
+      rr.isRemnant = true; rr.sheetW = remnant.w; rr.sheetH = remnant.h;
+      remnantSheets.push(rr);
+      const rdone = new Set(rr.placed.map(function(p){return p.pieceIndex+'-'+p.instanceIndex;}));
+      queue = queue.filter(function(p){ return !rdone.has(p.pieceIndex+'-'+p.instanceIndex); });
+    }
+  }
   const sheets = [];
   let limit = 200;
   while (queue.length && limit-- > 0) {
@@ -1930,6 +2255,8 @@ function runMatSafe(libMat, pieces, jobQty) {
   const sizeMap = {};
   sheets.forEach(function(s){
     const k = s.sheetW+'\u00d7'+s.sheetH; sizeMap[k] = (sizeMap[k]||0)+1;
+  });
+  remnantSheets.concat(sheets).forEach(function(s){
     const offcut = largestEmptyRect(s.sheetW, s.sheetH, s.placed);
     const usable = isUsableOffcut(offcut);
     s.offcut = offcut; s.usableOffcut = usable ? offcut : null;
@@ -1939,8 +2266,9 @@ function runMatSafe(libMat, pieces, jobQty) {
     s.usablePercent = usable ? Math.round(offcut.area/sa*100) : 0;
     s.scrapPercent = Math.max(0, 100 - s.utilPercent - s.usablePercent);
   });
-  normalizeRotatedFlags(sheets, pieces);
-  return { sheets, unplaced:queue, sizeMap };
+  const safeAll = remnantSheets.concat(sheets);
+  normalizeRotatedFlags(safeAll, pieces);
+  return { sheets: safeAll, unplaced:queue, sizeMap };
 }
 
 function runMat(libMat, pieces, remnant, jobQty) {
@@ -1960,8 +2288,9 @@ function runMat(libMat, pieces, remnant, jobQty) {
   // layout with no lost, duplicated, overlapping or sub-kerf parts.
   const totalParts = queue.length;
   if      (totalParts <= 60)  PACK_EFFORT = 8;   // small job: try everything
-  else if (totalParts <= 120) PACK_EFFORT = 5;
-  else if (totalParts <= 220) PACK_EFFORT = 3;
+  else if (totalParts <= 120) PACK_EFFORT = 6;
+  else if (totalParts <= 250) PACK_EFFORT = 4;
+  else if (totalParts <= 450) PACK_EFFORT = 2;
   else                        PACK_EFFORT = 1;   // huge job: strongest single heuristic
   // The remaining-sheets lookahead (estimateRemaining) itself runs a full pack
   // per size; skip it on large jobs where its guidance is marginal.
@@ -2015,12 +2344,19 @@ function runMat(libMat, pieces, remnant, jobQty) {
   // Estimate sheets still needed after this layout. This lookahead runs a full
   // pack per size, so on large jobs we skip it and use a cheap area-based proxy
   // (it only feeds the no-price scoring branch below).
-      let estRemaining;
-      if (useLookahead) {
-        estRemaining = estimateRemaining(r.unplaced, sizes, _ar, _cm);
-      } else {
-        const remArea = r.unplaced.reduce((a,p)=>a+p.w*p.h,0);
-        estRemaining = remArea / largestSheetArea; // approximate sheets-worth still to cut
+      // Only the no-price branch below reads estRemaining. Computing it on a
+      // priced job (which is every job using a starter pack or the master
+      // library) ran a FULL pack per sheet size, up to 10 times, and threw the
+      // answer away — measured at ~93ms per call on an 80-part queue and the
+      // bulk of total calculate time. Compute it only when it is used.
+      let estRemaining = 0;
+      if (!havePrices) {
+        if (useLookahead) {
+          estRemaining = estimateRemaining(r.unplaced, sizes, _ar, _cm);
+        } else {
+          const remArea = r.unplaced.reduce((a,p)=>a+p.w*p.h,0);
+          estRemaining = remArea / largestSheetArea; // approximate sheets-worth still to cut
+        }
       }
 
   let score;
@@ -2101,11 +2437,17 @@ function runMat(libMat, pieces, remnant, jobQty) {
   // and well-packed — at worst it uses a few more sheets than the fully
   // optimised version — and the job stays fast and responsive. Correctness
   // (no lost/duplicated/overlapping parts) is identical either way.
-  const OPTIMISE_PART_LIMIT = 200;
+  // Consolidation is the cheaper of the two passes and pays for itself well past
+  // the old 200-part ceiling. Cross-size rebalancing runs a branch search whose
+  // cost grows with SHEET count, not part count, so it is gated on sheets.
+  const CONSOLIDATE_PART_LIMIT = 450;
+  const REBALANCE_SHEET_LIMIT  = 30;
   let consolidated = sheets;
-  if (_placedCount <= OPTIMISE_PART_LIMIT) {
+  if (_placedCount <= CONSOLIDATE_PART_LIMIT) {
     consolidated = consolidateSheets(sheets, libMat.allowRotation !== false, libMat.cuttingMethod || 'free');
-    consolidated = rebalanceSheets(consolidated, sizes, libMat.allowRotation !== false, libMat.cuttingMethod || 'free');
+    if (consolidated.length <= REBALANCE_SHEET_LIMIT) {
+      consolidated = rebalanceSheets(consolidated, sizes, libMat.allowRotation !== false, libMat.cuttingMethod || 'free');
+    }
   }
 
   // Replace sheets with the optimised set.
@@ -2181,7 +2523,14 @@ function _doCalculate() {
   const errors = [];
   const results = [];
 
-  for (const m of mats) {
+  // Free plan = 1 material per job. Enforced here as well as on import so no
+  // future entry point can bypass it.
+  const activeMats = isPro ? mats : mats.slice(0, 1);
+  if (!isPro && mats.length > 1) {
+    errors.push('Free plan calculates 1 material per job — showing the first. Upgrade to Pro to nest all ' + mats.length + ' together.');
+  }
+
+  for (const m of activeMats) {
     const libMat = library.find(l => l.id == m.selectedMatId);
     if (!libMat) { errors.push(`Material ${mats.indexOf(m)+1}: Please select a material.`); continue; }
     const valid = m.pieces.filter(p=>p.w>0&&p.h>0&&p.qty>0);
@@ -2198,34 +2547,53 @@ function _doCalculate() {
       errors.push(`${esc(libMat.name)}: no valid sheet size set. Open Library → Edit ${esc(libMat.name)} and enter Size 1 width and height.`);
       continue;
     }
-    let anyTooBig = false;
+    // ── OVERSIZED PIECES ──
+    // Previously ONE piece that could not fit made the whole material `continue`,
+    // so the material vanished from the results entirely: no card, no sheet
+    // count, no cost, no layout, and nothing in CSV/PDF either — just a red
+    // banner that is easy to scroll past. Now the pieces that DO fit are packed
+    // and reported as normal, and the offenders are carried through as
+    // `oversized` so every surface can show a per-material "not placed" block.
     const allowRot = libMat.allowRotation !== false;
+    const fitting = [], oversized = [];
     for (const p of valid) {
       const pw = +p.w, ph = +p.h;
       const fits = sizes.some(function(sz){
         const sw = +sz.w, sh = +sz.h;
         // Only count the rotated orientation if this material actually permits
         // rotation (e.g. brushed stainless / grain-direction timber do not).
-        // Otherwise a piece that "only fits rotated" would pass this gate and
-        // then silently land in Unplaced instead of giving a clear error.
         return (pw<=sw && ph<=sh) || (allowRot && ph<=sw && pw<=sh);
       });
-      if (!fits) {
-        anyTooBig = true;
-        const sizeStr = sizes.map(function(s){return (+s.w)+'×'+(+s.h)+'mm';}).join(' or ');
-        const rotNote = allowRot ? '' : ' (rotation off for this material)';
-        errors.push(`${esc(libMat.name)}: "${esc(p.label||pw+'×'+ph)}" (${pw}×${ph}mm) is too big for the ${sizeStr} sheet${rotNote}.`);
-      }
+      if (fits) { fitting.push(p); continue; }
+      // Would it have fitted if rotation were allowed? That is a different fix
+      // for the user (unlock the grain) than "buy a bigger sheet".
+      const fitsRotated = !allowRot && sizes.some(function(sz){ return ph<=+sz.w && pw<=+sz.h; });
+      oversized.push({
+        w: pw, h: ph, qty: (+p.qty||1), label: p.label || '',
+        reason: fitsRotated ? 'grain-locked' : 'too-big',
+        minSheet: minSheetFor(pw, ph, allowRot)
+      });
+      const sizeStr = sizes.map(function(s){return (+s.w)+'×'+(+s.h)+'mm';}).join(' or ');
+      errors.push(fitsRotated
+        ? `${esc(libMat.name)}: "${esc(p.label||pw+'×'+ph)}" (${pw}×${ph}mm) only fits rotated, but grain is locked for this material.`
+        : `${esc(libMat.name)}: "${esc(p.label||pw+'×'+ph)}" (${pw}×${ph}mm) is too big for the ${sizeStr} sheet.`);
     }
-    if (anyTooBig) continue;
+
+    // Nothing fits at all: still emit a result so the material keeps its card
+    // and its "not placed" block, instead of disappearing.
+    if (!fitting.length) {
+      results.push({ libMat, sheets: [], unplaced: [], sizeMap: {}, oversized });
+      continue;
+    }
+
     let res;
     try {
-      res = runMat(libMat, valid, m.remnant, jobQty);
+      res = runMat(libMat, fitting, m.remnant, jobQty);
     } catch (ex) {
       // A crash in packing/consolidation/rebalancing for ONE material must not
       // kill the others. Fall back to a basic greedy pack with no optimisation.
       try {
-        res = runMatSafe(libMat, valid, jobQty);
+        res = runMatSafe(libMat, fitting, jobQty, m.remnant);
       } catch (ex2) {
         errors.push(`${esc(libMat.name)}: could not calculate (${ex && ex.message ? esc(ex.message) : 'error'}).`);
         continue;
@@ -2235,27 +2603,26 @@ function _doCalculate() {
       errors.push(`${esc(libMat.name)}: no valid sheet size. Open Library → Edit ${esc(libMat.name)} and set Size 1.`);
       continue;
     }
-    // DIAGNOSTIC: if a material placed nothing, explain exactly why instead of
-    // silently showing "0 sheets". Lists the sheet sizes and the offending pieces.
+    res.oversized = oversized;
+    // Every piece here already passed the fit gate above, so zero sheets means a
+    // genuine packing failure, not an oversized part. Keep the material in the
+    // results (so its card and "not placed" block still render) and flag it.
     if (res.sheets.length === 0) {
-      // Detailed diagnostic: show the EXACT sizes and pieces runMat received
       const s1 = libMat.size1 ? (libMat.size1.w+'×'+libMat.size1.h) : 'none';
       const s2 = libMat.size2 ? (libMat.size2.w+'×'+libMat.size2.h) : 'none';
-      const pcs = valid.map(function(p){return esc((p.label||'?')+' '+p.w+'×'+p.h+'(x'+p.qty+')');}).join(', ');
-      const tooBig = valid.filter(function(p){
-        return ![libMat.size1, libMat.size2].some(function(sz){
-          return sz && +sz.w>0 && +sz.h>0 && ((+p.w<=+sz.w&&+p.h<=+sz.h)||(allowRot&&+p.h<=+sz.w&&+p.w<=+sz.h));
-        });
-      });
-      if (tooBig.length) {
-        errors.push(`${esc(libMat.name)}: piece "${esc(tooBig[0].label||(tooBig[0].w+'×'+tooBig[0].h))}" (${tooBig[0].w}×${tooBig[0].h}mm) too big for sheets ${s1} / ${s2}.`);
-      } else {
-        errors.push(`${esc(libMat.name)}: packing returned nothing. Sheets: ${s1} / ${s2}. Pieces: ${pcs}. [This is a bug — please report]`);
-      }
-      continue;
+      errors.push(`${esc(libMat.name)}: packing returned nothing for pieces that should fit. Sheets: ${s1} / ${s2}. [This is a bug — please email hello@cutnest.co.uk]`);
     }
     results.push({ libMat, ...res });
   }
+
+  // A job that blows the 150-sheet ceiling reports its overflow as "unplaced",
+  // which previously rendered as "check dimensions are smaller than your sheet
+  // sizes" — the wrong diagnosis entirely. Name the real cause.
+  results.forEach(function(r){
+    if (r.unplaced && r.unplaced.length && r.sheets.filter(function(s){return !s.isRemnant;}).length >= 150) {
+      errors.push(`${esc(r.libMat.name)}: this job needs more than 150 sheets. Split it into smaller jobs — the remaining pieces are listed as not placed.`);
+    }
+  });
 
   if (errors.length && !results.length) { showErr(errors.join(' | ')); return; }
   if (errors.length) {
@@ -2282,6 +2649,79 @@ function showErr(msg) {
   b.style.display = 'block';
 }
 
+// ── NOT-PLACED REPORTING ──────────────────────────────────────
+// A material can fail to place pieces two ways: a piece is bigger than any
+// stock sheet (oversized — caught before packing), or the packer ran out of
+// sheets (unplaced). Both used to surface as, at best, a small red line that is
+// easy to miss, and an oversized piece removed the whole material from the
+// results. These helpers give every surface — screen, CSV, PDF — one consistent,
+// unmissable block naming each piece and the minimum sheet that would take it.
+function groupUnplaced(unplaced){
+  const by = {};
+  (unplaced||[]).forEach(function(p){
+    const k = (p.label||'') + '|' + p.w + '|' + p.h;
+    if (!by[k]) by[k] = { label:p.label||'', w:p.w, h:p.h, qty:0 };
+    by[k].qty++;
+  });
+  return Object.keys(by).map(function(k){ return by[k]; });
+}
+
+// Plain-text lines, used by CSV and PDF so an export can never hide a problem
+// that the screen shows.
+function notPlacedLines(libMat, unplaced, oversized){
+  const allowRot = libMat.allowRotation !== false;
+  const out = [];
+  (oversized||[]).forEach(function(o){
+    const ms = o.minSheet || minSheetFor(o.w, o.h, allowRot);
+    out.push({
+      label: o.label || (o.w+'\u00d7'+o.h),
+      w:o.w, h:o.h, qty:o.qty,
+      why: o.reason === 'grain-locked'
+        ? 'Only fits rotated, but grain is locked for this material'
+        : 'Larger than every stock sheet size',
+      fix: o.reason === 'grain-locked'
+        ? ('Unlock grain in Library, or order a sheet at least ' + ms.w + '\u00d7' + ms.h + 'mm')
+        : ('Order a sheet at least ' + ms.w + '\u00d7' + ms.h + 'mm')
+    });
+  });
+  groupUnplaced(unplaced).forEach(function(u){
+    out.push({
+      label: u.label || (u.w+'\u00d7'+u.h),
+      w:u.w, h:u.h, qty:u.qty,
+      why: 'Packer ran out of sheets for this job',
+      fix: 'Split the job, or add a second sheet size in Library'
+    });
+  });
+  return out;
+}
+
+function notPlacedCount(unplaced, oversized){
+  return (unplaced||[]).length +
+         (oversized||[]).reduce(function(a,o){ return a + (+o.qty||1); }, 0);
+}
+
+// The on-screen block. Deliberately loud: red header bar, one row per piece.
+function notPlacedHtml(libMat, unplaced, oversized){
+  const rows = notPlacedLines(libMat, unplaced, oversized);
+  if (!rows.length) return '';
+  const n = notPlacedCount(unplaced, oversized);
+  return `<div style="background:#fff5f5;border:2px solid var(--red);border-radius:11px;margin-top:14px;overflow:hidden">
+    <div style="background:var(--red);color:#fff;padding:9px 13px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;letter-spacing:.5px">
+      ⚠ ${n} PIECE${n!==1?'S':''} NOT PLACED — ${esc(libMat.name)}
+    </div>
+    <div style="padding:11px 13px">
+      ${rows.map(function(r){
+        return `<div style="padding:7px 0;border-bottom:1px solid #fbdcdc">
+          <div style="font-size:13px;font-weight:700;color:var(--red)">${esc(r.label)} — ${r.w}×${r.h}mm ×${r.qty}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">${esc(r.why)}</div>
+          <div style="font-size:12px;color:var(--teal);font-weight:600;margin-top:2px">→ ${esc(r.fix)}</div>
+        </div>`;
+      }).join('')}
+      <div style="font-size:11px;color:var(--muted);margin-top:9px">These pieces are NOT included in the sheet count or cost above.</div>
+    </div>
+  </div>`;
+}
+
 // ── RENDER OUTPUT ─────────────────────────────
 function renderOutput() {
   document.getElementById('output').style.display='block';
@@ -2294,8 +2734,14 @@ function renderOutput() {
   window._zoomSheets = [];
 
   // Pricing cards
-  document.getElementById('pricing-cards').innerHTML = results.map(({libMat, sheets, unplaced, sizeMap}) => {
-    const total = sheets.length;
+  document.getElementById('pricing-cards').innerHTML = results.map(({libMat, sheets, unplaced, sizeMap, oversized}) => {
+    // A remnant is stock the user ALREADY OWNS. It must never be counted as a
+    // sheet to buy or billed at the full sheet price — previously the headline
+    // count and the total cost both included it while the size chips (built from
+    // sizeMap) did not, so the same card showed two contradictory numbers and
+    // the total over-charged by one sheet.
+    const remnantSheets = sheets.filter(s => s.isRemnant);
+    const total = sheets.length - remnantSheets.length;
     const chips = Object.entries(sizeMap).map(([dim,cnt]) => {
       const [sw, sh] = dim.split('×').map(Number);
       const matchedSize = [libMat.size1, libMat.size2].find(s => s && s.w === sw && s.h === sh);
@@ -2311,20 +2757,20 @@ function renderOutput() {
     // how well the material was used. Area-weighted so big sheets count more.
     const matUsedArea = sheets.reduce((a,sh)=>a + sh.placed.reduce((aa,p)=>aa+p.w*p.h,0), 0);
     const matStockArea = sheets.reduce((a,sh)=>a + sh.sheetW*sh.sheetH, 0);
-    const matUtil10 = matStockArea > 0 ? Math.round((matUsedArea/matStockArea)*10)*10 : 0;
+    const matUtil10 = matStockArea > 0 ? Math.round((matUsedArea/matStockArea)*100) : 0;
     const utilCol = matUtil10 >= 70 ? 'var(--green)' : matUtil10 >= 45 ? 'var(--yel)' : 'var(--red)';
 
     return `<div class="pres-card">
       <div class="pres-left">
         <div class="pres-name">${esc(libMat.name)}<span class="pres-thk">${esc(libMat.thickness||'')}</span></div>
-        <div class="pres-sizes">${chips || '<span style="color:var(--red);font-size:13px">No pieces placed</span>'}</div>
-        ${unplaced.length ? `<div class="pres-warn">⚠ ${unplaced.length} piece(s) could not be placed</div>` : ''}
+        <div class="pres-sizes">${chips || '<span style="color:var(--red);font-size:13px">No pieces placed</span>'}${remnantSheets.map(r=>`<div class="pres-size-chip" style="background:#d1fae5;border-color:#6ee7b7;color:#065f46">＋ your remnant ${r.sheetW}×${r.sheetH}mm <b>£0</b></div>`).join('')}</div>
+        ${notPlacedCount(unplaced, oversized) ? `<div class="pres-warn" style="background:var(--red);color:#fff;font-weight:700;border-radius:5px;padding:3px 8px;display:inline-block;margin-top:5px">⚠ ${notPlacedCount(unplaced, oversized)} piece(s) NOT placed — see below</div>` : ''}
       </div>
       <div class="pres-right">
         <div style="text-align:center">
           <div class="pres-count">${total}</div>
           <div class="pres-unit">sheet${total!==1?'s':''}</div>
-          ${total ? `<div class="pres-util" style="font-size:11px;font-weight:700;color:${utilCol};margin-top:3px">~${matUtil10}% used</div>` : ''}
+          ${total ? `<div class="pres-util" style="font-size:11px;font-weight:700;color:${utilCol};margin-top:3px">${matUtil10}% used</div>` : ''}
         </div>
       </div>
     </div>`;
@@ -2333,8 +2779,13 @@ function renderOutput() {
   // Total cost
   let grandTotal = 0;
   let allPriced = true;
+  // Someone quoting 10 enclosures needs £ per enclosure; only the total existed.
+  const jobQtyForCost = isPro
+    ? Math.max(1, Math.min(999, parseInt((document.getElementById('job-qty')||{}).value) || 1))
+    : 1;
   results.forEach(({libMat, sheets}) => {
     sheets.forEach(sh => {
+      if (sh.isRemnant) return; // already owned — costs nothing
       const size = (libMat.size2 && libMat.size2.w && libMat.size2.h &&
                     sh.sheetW === libMat.size2.w && sh.sheetH === libMat.size2.h)
                     ? libMat.size2 : libMat.size1;
@@ -2346,7 +2797,11 @@ function renderOutput() {
   const tcVal = document.getElementById('total-cost-val');
   const hintBar = document.getElementById('price-hint-bar');
   if (tcBar && tcVal && grandTotal > 0) {
-    tcVal.textContent = '£' + grandTotal.toFixed(2) + (allPriced ? '' : '*');
+    tcVal.innerHTML = '£' + grandTotal.toFixed(2) + (allPriced ? '' : '*')
+      + (jobQtyForCost > 1
+          ? '<div style="font-size:12px;font-weight:400;color:rgba(255,255,255,.75);margin-top:2px">£'
+            + (grandTotal / jobQtyForCost).toFixed(2) + ' per unit × ' + jobQtyForCost + '</div>'
+          : '');
     tcBar.style.display = 'flex';
     // Some sheets unpriced → show the hint as a "partial total" note too.
     if (hintBar) {
@@ -2364,14 +2819,40 @@ function renderOutput() {
     }
   }
 
+  // Say it plainly, in the words the user will type into a supplier email.
+  // This text already existed inside _quoteText but was hidden behind a
+  // "Copy for quote" button in the bottom corner.
+  const orderEl = document.getElementById('order-line');
+  const orderTxt = document.getElementById('order-line-text');
+  if (orderEl && orderTxt) {
+    const parts = [];
+    results.forEach(function(r){
+      Object.entries(r.sizeMap).forEach(function(e){
+        parts.push(e[1] + ' × ' + e[0] + 'mm ' + r.libMat.name + (r.libMat.thickness ? ' ' + r.libMat.thickness : ''));
+      });
+    });
+    if (parts.length) { orderTxt.textContent = parts.join('  ·  '); orderEl.style.display = 'block'; }
+    else { orderEl.style.display = 'none'; }
+  }
+
   window._quoteText = ['CutNest Cut List', 'Job: ' + ((document.getElementById('job-ref')||{}).value||'Untitled'), 'Date: ' + new Date().toLocaleDateString('en-GB'), ''].concat(quoteLines).concat(grandTotal > 0 ? ['', 'Total Material Cost: £' + grandTotal.toFixed(2)] : []).join('\n');
 
   // Stats
-  const totalSheets = results.reduce((s,r)=>s+r.sheets.length,0);
+  // Kerf is hidden in the header on mobile, so the single most cost-affecting
+  // assumption was invisible on a phone. State it on the results themselves.
+  const ra = document.getElementById('results-assumptions');
+  if (ra) ra.textContent = 'Calculated with a ' + KERF + 'mm blade kerf'
+    + (results.some(r=>r.libMat.allowRotation===false) ? ' \u00b7 grain locked on some materials' : '');
+
+  const totalSheets = results.reduce((s,r)=>s+r.sheets.filter(sh=>!sh.isRemnant).length,0);
   const totalPlaced = results.reduce((s,r)=>s+r.sheets.reduce((a,sh)=>a+sh.placed.length,0),0);
   const totalUnplaced = results.reduce((s,r)=>s+r.unplaced.length,0);
-  const utils = results.flatMap(r=>r.sheets.map(sh=>sh.utilPercent||0));
-  const avgUtil = utils.length ? Math.round(utils.reduce((a,b)=>a+b,0)/utils.length) : 0;
+  // Area-weighted, matching the per-material card exactly. The old unweighted
+  // mean of per-sheet percentages let one nearly-empty small sheet swing the
+  // headline number away from the figure shown on the card right above it.
+  const allUsedArea  = results.reduce((a,r)=>a + r.sheets.reduce((x,sh)=>x + sh.placed.reduce((y,p)=>y+p.w*p.h,0),0), 0);
+  const allStockArea = results.reduce((a,r)=>a + r.sheets.reduce((x,sh)=>x + sh.sheetW*sh.sheetH,0), 0);
+  const avgUtil = allStockArea > 0 ? Math.round((allUsedArea/allStockArea)*100) : 0;
   const reclaimable = results.reduce((s,r)=>s+r.sheets.filter(sh=>sh.usableOffcut).length,0);
   document.getElementById('s-sheets').textContent = totalSheets;
   document.getElementById('s-placed').textContent = totalPlaced;
@@ -2408,15 +2889,27 @@ function renderOutput() {
   const visWrap = document.getElementById('mat-visuals');
   visWrap.innerHTML='';
   // Responsive: use container width for scaling
-  const containerW = visWrap.parentElement ? Math.min(visWrap.parentElement.offsetWidth - 32, 700) : 500;
-  const MAX_W = Math.max(280, containerW * 0.62);
-  const MAX_H = 240;
+  const vw = (typeof window !== 'undefined' && window.innerWidth) ? window.innerWidth : 1200;
+  const isNarrow = vw < 700;
+  const containerW = visWrap.parentElement ? Math.min(visWrap.parentElement.offsetWidth - 32, 900) : 500;
+  // The old 240px height cap and 700px container cap rendered a 2450x1150
+  // sheet at roughly 1:11 — a postage stamp on the one screen with room to
+  // check it, and label text under 7px on a phone. Size to the viewport.
+  const MAX_W = isNarrow ? Math.max(260, containerW) : Math.max(420, containerW * 0.66);
+  const MAX_H = isNarrow ? 300 : 420;
 
   let globalSheetIdx = 0;
-  results.forEach(({libMat, sheets, unplaced}) => {
+  results.forEach(({libMat, sheets, unplaced, oversized}) => {
     const sec = document.createElement('div');
     sec.className = 'detail-section';
-    let html = `<div class="ds-title"><div class="ds-bar"></div>${esc(libMat.name)} — ${sheets.length} sheet${sheets.length!==1?'s':''}</div>`;
+    const buyCount = sheets.filter(s=>!s.isRemnant).length;
+    const remCount = sheets.length - buyCount;
+    let html = `<div class="ds-title"><div class="ds-bar"></div>${esc(libMat.name)} — ${buyCount} sheet${buyCount!==1?'s':''} to order${remCount?` + ${remCount} remnant`:''}`
+      + `<span style="margin-left:auto;display:flex;gap:5px;flex-wrap:wrap">`
+      + `<span class="mode-chip">${libMat.cuttingMethod==='guillotine'?'⊞ Guillotine':'⊡ Free placement'}</span>`
+      + (libMat.allowRotation===false?'<span class="mode-chip grain-on">🔒 Grain locked</span>':'')
+      + `<span class="mode-chip">Kerf ${KERF}mm</span>`
+      + `</span></div>`;
 
     sheets.forEach((sh, si) => {
       const anchorId = 'sheet-anchor-' + globalSheetIdx++;
@@ -2479,14 +2972,27 @@ function renderOutput() {
           </div>
           <div style="flex:1;min-width:140px;max-width:280px">
             <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px">Pieces on this sheet</div>
-            ${sh.placed.map(p=>`<div class="legend-item"><div class="ldot" style="background:${COLORS[p.pieceIndex%COLORS.length]}"></div><span style="font-size:12px">${esc(p.label||'P'+(p.pieceIndex+1))}</span><span style="color:var(--muted);font-size:11px;margin-left:auto">${p.w}×${p.h}mm${p.rotated?' ↻':''}</span></div>`).join('')}
+            ${(function(){
+              /* One row per PIECE meant a 40-part sheet was 40 rows of scroll on a
+                 phone. Group identical parts into "12 x Front 600x400". */
+              const g = {};
+              sh.placed.forEach(function(p){
+                const k = p.pieceIndex+'|'+p.w+'|'+p.h+'|'+(p.rotated?1:0);
+                if(!g[k]) g[k] = {n:0, p:p};
+                g[k].n++;
+              });
+              return Object.keys(g).map(function(k){
+                const e = g[k], p = e.p;
+                return `<div class="legend-item"><div class="ldot" style="background:${COLORS[p.pieceIndex%COLORS.length]}"></div><span style="font-size:12px">${e.n>1?`<b>${e.n}×</b> `:''}${esc(p.label||'P'+(p.pieceIndex+1))}</span><span style="color:var(--muted);font-size:11px;margin-left:auto">${p.w}×${p.h}mm${p.rotated?' ↻':''}</span></div>`;
+              }).join('');
+            })()}
             ${sh.usableOffcut?`<div class="legend-item" style="margin-top:6px;border-top:1px dashed var(--bdr);padding-top:6px"><div class="ldot" style="background:repeating-linear-gradient(45deg,#059669,#059669 3px,#10b981 3px,#10b981 6px)"></div><span style="font-size:12px;color:#065f46;font-weight:600">Reclaim offcut</span><span style="color:var(--muted);font-size:11px;margin-left:auto">${Math.round(sh.usableOffcut.w)}×${Math.round(sh.usableOffcut.h)}mm</span></div>`:''}
           </div>
         </div>
       </div>`;
     });
 
-    if (unplaced.length) html += `<div class="warn">⚠ ${unplaced.length} piece${unplaced.length!==1?'s':''} could not be placed — check dimensions are smaller than your sheet sizes: ${unplaced.map(p=>esc(p.label||p.w+'×'+p.h+'mm')).join(', ')}</div>`;
+    html += notPlacedHtml(libMat, unplaced, oversized);
     sec.innerHTML = html;
     visWrap.appendChild(sec);
   });
@@ -2546,12 +3052,14 @@ function exportPDF() {
   body += `</tbody></table>`;
 
   // Sheet visuals per material
-  calcResult.results.forEach(({libMat, sheets, unplaced}) => {
-    body += `<div class="mat-sec"><div class="mat-hdr">${esc(libMat.name)} — ${sheets.length} sheet${sheets.length!==1?'s':''}</div>`;
+  calcResult.results.forEach(({libMat, sheets, unplaced, oversized}) => {
+    const pdfBuy = sheets.filter(s=>!s.isRemnant).length;
+    const pdfRem = sheets.length - pdfBuy;
+    body += `<div class="mat-sec"><div class="mat-hdr">${esc(libMat.name)} — ${pdfBuy} sheet${pdfBuy!==1?'s':''} to order${pdfRem?` + ${pdfRem} remnant`:''}</div>`;
     sheets.forEach((sh,si) => {
       const scale = Math.min(480/sh.sheetW, 200/sh.sheetH, 0.32);
       const cw=Math.round(sh.sheetW*scale), ch=Math.round(sh.sheetH*scale);
-      body += `<div class="sh-block"><div class="sh-title">Sheet ${si+1} — ${sh.sheetW}×${sh.sheetH}mm · ${sh.placed.length} pieces · ${sh.utilPercent||0}% utilised${sh.usableOffcut?` · usable offcut ${Math.round(sh.usableOffcut.w)}×${Math.round(sh.usableOffcut.h)}mm`:''}</div>`;
+      body += `<div class="sh-block"><div class="sh-title">Sheet ${si+1} — ${sh.sheetW}×${sh.sheetH}mm${sh.isRemnant?' (YOUR REMNANT — not ordered)':''} · ${sh.placed.length} pieces · ${sh.utilPercent||0}% utilised${sh.usableOffcut?` · usable offcut ${Math.round(sh.usableOffcut.w)}×${Math.round(sh.usableOffcut.h)}mm`:''}</div>`;
       body += `<div class="sh-canvas" style="width:${cw}px;height:${ch}px;position:relative">`;
       if (sh.usableOffcut) {
         const o = sh.usableOffcut;
@@ -2569,7 +3077,15 @@ function exportPDF() {
       });
       body += `</div></div>`;
     });
-    if (unplaced.length) body += `<div class="warn-row">⚠ Unplaced: ${unplaced.map(p=>esc(p.label||p.w+'×'+p.h+'mm')).join(', ')}</div>`;
+    const npRows = notPlacedLines(libMat, unplaced, oversized);
+    if (npRows.length) {
+      body += `<div class="np-box"><div class="np-hdr">⚠ ${notPlacedCount(unplaced, oversized)} piece(s) NOT placed — not included in the sheets or cost above</div>`;
+      body += `<table class="sum-tbl" style="margin-bottom:0"><thead><tr><th>Part</th><th>Size</th><th>Qty</th><th>Why</th><th>What to do</th></tr></thead><tbody>`;
+      npRows.forEach(function(r){
+        body += `<tr><td>${esc(r.label)}</td><td>${r.w}×${r.h}mm</td><td>${r.qty}</td><td>${esc(r.why)}</td><td>${esc(r.fix)}</td></tr>`;
+      });
+      body += `</tbody></table></div>`;
+    }
     body += `</div>`;
   });
 
@@ -2600,6 +3116,10 @@ function exportPDF() {
     .sh-title{font-size:10px;color:#6a9aaa;margin-bottom:6px;font-weight:600}
     .sh-canvas{border:2px solid #cde4ea;border-radius:3px;background:repeating-linear-gradient(-45deg,rgba(15,76,92,.04),rgba(15,76,92,.04) 1px,transparent 1px,transparent 8px)}
     .warn-row{color:#dc2626;font-size:11px;padding:6px 0}
+    .np-box{border:2px solid #dc2626;border-radius:6px;margin:10px 0 14px;overflow:hidden;break-inside:avoid}
+    .np-hdr{background:#dc2626;color:#fff;font-weight:700;font-size:11px;padding:6px 10px}
+    .np-box .sum-tbl{margin:0}
+    .np-box .sum-tbl th{background:#7f1d1d}
     @media print{body{padding:10px}.sh-block{break-inside:avoid}div{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
   </style></head><body>${body}<div style="margin-top:24px;padding-top:12px;border-top:1px solid #e2ecef;font-size:10px;color:#9dcad6;text-align:center">Generated by CutNest — cutnest.co.uk</div></body></html>`;
 
@@ -2730,14 +3250,24 @@ function exportCSV() {
     ...(csvTotal > 0 ? [['TOTAL MATERIAL COST',`£${csvTotal.toFixed(2)}`]] : []),
     [],['PLACEMENT DETAIL'],
     ['Material','Sheet #','Sheet Size','Label','W','H','X','Y','Rotated'],
-    ...calcResult.results.flatMap(({libMat,sheets})=>sheets.flatMap((sh,si)=>sh.placed.map(p=>[libMat.name,si+1,`${sh.sheetW}x${sh.sheetH}`,p.label||`P${p.pieceIndex+1}`,p.w,p.h,p.x,p.y,p.rotated?'Yes':'No']))),
+    ...calcResult.results.flatMap(({libMat,sheets})=>sheets.flatMap((sh,si)=>sh.placed.map(p=>[libMat.name,si+1,`${sh.sheetW}x${sh.sheetH}`+(sh.isRemnant?' (remnant)':''),p.label||`P${p.pieceIndex+1}`,p.w,p.h,p.x,p.y,p.rotated?'Yes':'No']))),
   ];
-  const unplAll=calcResult.results.flatMap(({libMat,unplaced})=>unplaced.map(p=>[libMat.name,p.label||'?',p.w,p.h]));
-  if(unplAll.length){rows.push([],['UNPLACED'],['Material','Label','W','H'],...unplAll);}
+  // Every not-placed piece — oversized AND unplaced — with the reason and the
+  // minimum sheet that would take it. An export must never hide a dropped piece.
+  const npAll = calcResult.results.flatMap(({libMat,unplaced,oversized}) =>
+    notPlacedLines(libMat, unplaced, oversized).map(r =>
+      [libMat.name, r.label, r.w, r.h, r.qty, r.why, r.fix]));
+  if(npAll.length){
+    rows.push([],['*** PIECES NOT PLACED — NOT INCLUDED IN THE SHEETS OR COST ABOVE ***'],
+      ['Material','Label','W','H','Qty','Why','What to do'],...npAll);
+  }
   const jr = (document.getElementById('job-ref')||{}).value||'cutlist';
   const safe = jr.replace(/[^a-z0-9]/gi,'-').toLowerCase();
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([rows.map(r=>r.map(csvCell).join(',')).join('\n')],{type:'text/csv'}));
+  // BOM + explicit charset: without these, Excel on Windows opens the file in the
+  // local ANSI codepage and every £ becomes "Â£" and every × becomes "Ã—".
+  const csvText = '\uFEFF' + rows.map(r=>r.map(csvCell).join(',')).join('\r\n');
+  a.href=URL.createObjectURL(new Blob([csvText],{type:'text/csv;charset=utf-8'}));
   a.download=`cutnest-${safe}-${new Date().toISOString().slice(0,10)}.csv`; a.click();
 }
 
@@ -2760,17 +3290,56 @@ function buildDXF(results) {
   };
   const rect = function(x,y,w,h,layer){ poly([[x,y],[x+w,y],[x+w,y+h],[x,y+h]], layer); };
   const txt = function(x,y,h,str,layer){
+    // Group 7 names the text style explicitly. Without it the entity implicitly
+    // referenced STANDARD, which was never defined in the file — AutoCAD heals
+    // that, but stricter CAM posts and laser controllers can drop the text or
+    // reject the drawing outright.
     push('0','TEXT','5',hx(),'100','AcDbEntity','8',layer,'100','AcDbText',
-         '10',n(x),'20',n(y),'30','0','40',n(h),'1',String(str).replace(/[\r\n]/g,' '),'100','AcDbText');
+         '10',n(x),'20',n(y),'30','0','40',n(h),'1',String(str).replace(/[\r\n]/g,' '),
+         '7','STANDARD','100','AcDbText');
   };
   const layerDef = function(name,color){
     push('0','LAYER','5',hx(),'100','AcDbSymbolTableRecord','100','AcDbLayerTableRecord','2',name,'70','0','62',String(color),'6','CONTINUOUS');
   };
 
-  push('0','SECTION','2','HEADER','9','$ACADVER','1','AC1015','9','$INSUNITS','70','4','0','ENDSEC');
-  push('0','SECTION','2','TABLES','0','TABLE','2','LAYER','5',hx(),'100','AcDbSymbolTable','70','4');
+  // HEADER. $HANDSEED tells the reader the next free handle; without it some
+  // readers assume 0 and can collide with the handles we emit.
+  push('0','SECTION','2','HEADER',
+       '9','$ACADVER','1','AC1015',
+       '9','$INSUNITS','70','4',
+       '9','$HANDSEED','5','FFFF',
+       '0','ENDSEC');
+
+  // TABLES. Previously only LAYER was emitted. A conforming R2000 file also
+  // needs LTYPE (the CONTINUOUS linetype every layer references), STYLE (the
+  // STANDARD text style every TEXT entity references) and APPID.
+  push('0','SECTION','2','TABLES');
+
+  push('0','TABLE','2','LTYPE','5',hx(),'100','AcDbSymbolTable','70','2');
+  push('0','LTYPE','5',hx(),'100','AcDbSymbolTableRecord','100','AcDbLinetypeTableRecord',
+       '2','ByBlock','70','0','3','','72','65','73','0','40','0.0');
+  push('0','LTYPE','5',hx(),'100','AcDbSymbolTableRecord','100','AcDbLinetypeTableRecord',
+       '2','CONTINUOUS','70','0','3','Solid line','72','65','73','0','40','0.0');
+  push('0','ENDTAB');
+
+  push('0','TABLE','2','STYLE','5',hx(),'100','AcDbSymbolTable','70','1');
+  push('0','STYLE','5',hx(),'100','AcDbSymbolTableRecord','100','AcDbTextStyleTableRecord',
+       '2','STANDARD','70','0','40','0.0','41','1.0','50','0.0','71','0','42','2.5',
+       '3','txt','4','');
+  push('0','ENDTAB');
+
+  push('0','TABLE','2','APPID','5',hx(),'100','AcDbSymbolTable','70','1');
+  push('0','APPID','5',hx(),'100','AcDbSymbolTableRecord','100','AcDbRegAppTableRecord',
+       '2','ACAD','70','0');
+  push('0','ENDTAB');
+
+  push('0','TABLE','2','LAYER','5',hx(),'100','AcDbSymbolTable','70','4');
   layerDef('0',7); layerDef('SHEET',5); layerDef('PARTS',3); layerDef('TEXT',7);
-  push('0','ENDTAB','0','ENDSEC');
+  push('0','ENDTAB');
+
+  push('0','ENDSEC');
+  // Empty BLOCKS section: required by the R2000 spec even when unused.
+  push('0','SECTION','2','BLOCKS','0','ENDSEC');
   push('0','SECTION','2','ENTITIES');
 
   let offsetX = 0;
@@ -2792,7 +3361,12 @@ function buildDXF(results) {
     });
   });
 
-  push('0','ENDSEC','0','EOF');
+  push('0','ENDSEC');
+  // Minimal OBJECTS section with the root dictionary — R2000 readers expect it.
+  push('0','SECTION','2','OBJECTS',
+       '0','DICTIONARY','5',hx(),'100','AcDbDictionary','281','1',
+       '0','ENDSEC');
+  push('0','EOF');
   return out.join('\n') + '\n';
 }
 
@@ -2827,19 +3401,66 @@ async function saveLibClose() {
     delete c._transient;
     return c;
   });
+  if (isPro) {
+    // Any master grade the user removed from the list is recorded so loadLib
+    // does not simply re-inject it on the next load. Restoring one (see the
+    // "Hidden CutNest grades" strip) puts it back in the list, which clears it
+    // from this set automatically on the next save.
+    const present = {};
+    library.forEach(function(e){ if (e && e.id != null) present[e.id] = 1; });
+    setDeletedMasterIds(MASTER_LIBRARY.filter(function(m){ return !present[m.id]; }).map(function(m){ return m.id; }));
+  }
   await persistLib(library);
   renderAll();
   closeLib();
   showToast('✓ Library saved — ' + library.length + ' material' + (library.length!==1?'s':''));
 }
+// True if this id belongs to a CutNest master grade (Pro pre-built library).
+function isMasterId(id){ return MASTER_LIBRARY.some(function(m){ return m.id === id; }); }
+
+// Put the CutNest default back for one master grade, discarding the user's edits
+// to it. Only touches `pending`, so nothing is committed until Save Library.
+function resetMasterEntry(id){
+  const m = MASTER_LIBRARY.find(function(x){ return x.id === id; });
+  if (!m) return;
+  const i = pending.findIndex(function(x){ return x.id === id; });
+  const copy = JSON.parse(JSON.stringify(m));
+  if (i === -1) pending.push(copy); else pending[i] = copy;
+  renderLibEntries();
+  showToast('↺ ' + m.name + ' reset to CutNest default');
+}
+
+// Bring back a master grade the user previously deleted.
+function restoreMaster(id){ resetMasterEntry(id); }
+
+// Markup for the "Hidden CutNest grades" strip: master grades that are not
+// currently in `pending`, i.e. the user deleted them. Without this there is no
+// route back once a grade is removed.
+function hiddenMastersHtml(){
+  if (!isPro) return '';
+  const present = {};
+  pending.forEach(function(e){ if (e && e.id != null) present[e.id] = 1; });
+  const missing = MASTER_LIBRARY.filter(function(m){ return !present[m.id]; });
+  if (!missing.length) return '';
+  return `<div style="background:var(--sky);border:1px dashed var(--bdr2);border-radius:10px;padding:11px 13px;margin-bottom:8px">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">Hidden CutNest grades (${missing.length})</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      ${missing.map(function(m){
+        return `<button class="btn-sm-bl" onclick="restoreMaster(${JSON.stringify(m.id)})">+ ${esc(m.name)}</button>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
 function renderLibEntries() {
   const wrap=document.getElementById('lib-entries');
-  if(!pending.length){wrap.innerHTML='<p style="color:var(--muted);font-size:13px;margin-bottom:12px">Your library is empty. Add your first material below — enter the sheet sizes and prices from your supplier.</p>';return;}
+  if(!pending.length){wrap.innerHTML='<p style="color:var(--muted);font-size:13px;margin-bottom:12px">Your library is empty. Add your first material below — enter the sheet sizes and prices from your supplier.</p>'+hiddenMastersHtml();return;}
   wrap.innerHTML=pending.map(e=>`
     <div class="lib-entry">
       <div class="le-hdr">
         <div><div class="le-name">${esc(e.name)}</div><div class="le-meta">${esc(e.material||'')}${e.thickness?' · '+esc(e.thickness):''}</div></div>
         <div style="display:flex;gap:7px;align-items:center">
+          ${isMasterId(e.id) ? `<button class="btn-sm-bl" title="Restore the CutNest default for this grade" onclick="resetMasterEntry(${JSON.stringify(e.id)})">↺ Reset</button>` : ''}
           <button class="btn-sm-bl" onclick="toggleEdit(${e.id})">Edit</button>
           <button class="btn-del" onclick="delPending(${e.id})">✕</button>
         </div>
@@ -2898,7 +3519,7 @@ function renderLibEntries() {
         </div>
         <div style="text-align:right;margin-top:9px"><button class="btn-sm-gr" onclick="toggleEdit(${e.id})">✓ Done</button></div>
       </div>
-    </div>`).join('');
+    </div>`).join('') + hiddenMastersHtml();
 }
 // Sweep all open edit forms and flush their current DOM values into pending
 // This ensures values are captured even if the user never blurred a field
@@ -2906,9 +3527,12 @@ function flushEditForms() {
   pending.forEach(e => {
     const ed = document.getElementById(`ee-${e.id}`);
     if (!ed || ed.style.display === 'none') return;
-    const nameEl  = ed.querySelector('input[type=text]:nth-of-type(1)');
-    const matEl   = ed.querySelector('input[type=text]:nth-of-type(2)');
-    const thkEl   = ed.querySelector('input[type=text]:nth-of-type(3)');
+    // Each text input sits alone in its own <div>, so :nth-of-type(2)/(3) matched
+    // NOTHING and material/thickness were never flushed. Index the node list.
+    const texts   = ed.querySelectorAll('input[type=text]');
+    const nameEl  = texts[0] || null;
+    const matEl   = texts[1] || null;
+    const thkEl   = texts[2] || null;
     if (nameEl)  e.name      = nameEl.value.trim()  || e.name;
     if (matEl)   e.material  = matEl.value.trim();
     if (thkEl)   e.thickness = thkEl.value.trim();
@@ -3019,8 +3643,21 @@ function redo() {
 function updateUndoUI() {
   const u = document.getElementById('undo-btn');
   const r = document.getElementById('redo-btn');
-  if (u) u.disabled = !undoStack.length;
-  if (r) r.disabled = !redoStack.length;
+  // The buttons ship with inline opacity:.4 to look disabled. Only `disabled`
+  // was ever toggled, so they stayed greyed out forever even once live.
+  if (u) { u.disabled = !undoStack.length; u.style.opacity = undoStack.length ? '1' : '.4'; }
+  if (r) { r.disabled = !redoStack.length; r.style.opacity = redoStack.length ? '1' : '.4'; }
+}
+
+// Typing a dimension was not undoable at all, so Ctrl+Z jumped straight past
+// every number the user had entered to the last structural change — which reads
+// as data loss. Coalesce typing into one undo step per burst so the stack does
+// not fill with a snapshot per keystroke.
+let _lastTypeUndo = 0;
+function pushUndoTyping() {
+  const now = Date.now();
+  if (now - _lastTypeUndo > 1200) pushUndo();
+  _lastTypeUndo = now;
 }
 
 // ── SECURITY: sanitise user input before injecting into HTML ──
@@ -3034,6 +3671,17 @@ function esc(str) {
 }
 
 const KEY_STORE='cutnest-licence-v1',SETT_KEY='cutnest-settings-v1',HIST_KEY='cutnest-hist-v1',HIST_MAX=50,FREE_LIB_LIMIT=5;
+// Master grades the Pro user has explicitly deleted. Without this list, loadLib
+// would re-inject every master entry on each load and a deletion could never
+// stick. Stored separately from the library so it survives a library rewrite.
+const MASTER_DEL_KEY='cutnest-master-deleted-v1';
+function getDeletedMasterIds(){
+  try{ const r=localStorage.getItem(MASTER_DEL_KEY); const a=r?JSON.parse(r):[]; return Array.isArray(a)?a:[]; }
+  catch(e){ return []; }
+}
+function setDeletedMasterIds(ids){
+  try{ localStorage.setItem(MASTER_DEL_KEY, JSON.stringify(ids||[])); }catch(e){}
+}
 // ════════════════════════════════════════════════════════════════
 // ⚠️ LEMON SQUEEZY CONFIG — THE ONLY PLACE YOU EVER CHANGE THE URL
 // When you switch to Live mode: replace the UUID below with your
@@ -3090,10 +3738,21 @@ let isPro=false,settings={kerf:4,companyName:''};
 const LS_STORE_ID = null;     // e.g. 123456
 const LS_VARIANT_ID = null;   // optional, e.g. 654321
 
+// One-time console warning so an unbound build can never ship unnoticed again.
+// (The previous comment claimed this was logged; nothing actually logged it.)
+let _lsBindWarned = false;
+function warnIfUnbound(){
+  if (_lsBindWarned) return;
+  _lsBindWarned = true;
+  if (LS_STORE_ID == null && LS_VARIANT_ID == null && typeof console !== 'undefined' && console.warn) {
+    console.warn('[CutNest] LS_STORE_ID is not set — ANY active Lemon Squeezy licence key, from ANY store, will unlock Pro. Set LS_STORE_ID in app.html.');
+  }
+}
+
 // Returns true if the API response's meta belongs to our product. If no binding
-// is configured, returns true (skips the check) but logs a one-time warning.
+// is configured, returns true (skips the check) and warns once in the console.
 function licenceMetaMatches(resp){
-  if (LS_STORE_ID == null && LS_VARIANT_ID == null) return true;
+  if (LS_STORE_ID == null && LS_VARIANT_ID == null) { warnIfUnbound(); return true; }
   const meta = resp && resp.meta;
   if (!meta) return false;
   if (LS_STORE_ID != null && meta.store_id !== LS_STORE_ID) return false;
@@ -3294,7 +3953,28 @@ function updateProUI(){
 function showLanding(){window.location.href='/';}
 function showApp(){}
 function handleRoute(){}
-function acceptCookies(){localStorage.setItem('cutnest-cookies','1');}
+
+// The old acceptCookies() wrote 'cutnest-cookies' and was never called by
+// anything — there was no banner in the app at all. These are the real handlers.
+function cnHideCookieBar(){ const b=document.getElementById('cn-cookie-bar'); if(b) b.style.display='none'; }
+function cnAcceptCookies(){
+  try{ localStorage.setItem('cn-cookie','accepted'); }catch(e){}
+  cnHideCookieBar();
+  if (typeof loadAnalytics === 'function') loadAnalytics();
+}
+function cnDeclineCookies(){
+  try{ localStorage.setItem('cn-cookie','declined'); }catch(e){}
+  cnHideCookieBar();
+}
+function cnInitCookieBar(){
+  let choice = null;
+  try{ choice = localStorage.getItem('cn-cookie'); }catch(e){}
+  // '1' is the legacy landing-page value meaning only "banner dismissed", not
+  // "analytics accepted", so it does not count as consent.
+  if (choice === 'accepted' || choice === 'declined') return;
+  const b = document.getElementById('cn-cookie-bar');
+  if (b) setTimeout(function(){ b.style.display = 'flex'; }, 1200);
+}
 
 const LEGAL_CONTENT={
   terms:{title:'Terms of Service',body:`
@@ -3303,7 +3983,7 @@ const LEGAL_CONTENT={
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">The Service</p>
     <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest provides browser-based cut list optimisation software. The free tier provides limited features. The Pro tier provides full access via a paid subscription processed by Lemon Squeezy.</p>
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">Subscriptions &amp; Payment</p>
-    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">Pro subscriptions are £12/month or £99/year, billed via Lemon Squeezy. Monthly subscriptions can be cancelled at any time — access continues until the end of the billing period. Annual subscriptions are non-refundable except where required by law. Lemon Squeezy acts as the Merchant of Record for all transactions.</p>
+    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">Pro subscriptions are £12/month, billed via Lemon Squeezy. Subscriptions can be cancelled at any time — access continues until the end of the billing period. Lemon Squeezy acts as the Merchant of Record for all transactions.</p>
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">Licence</p>
     <p style="margin-bottom:10px;font-size:13px;line-height:1.6">Your licence key is for personal or single-business use only. Keys may not be shared, resold, or used across multiple unrelated businesses. We reserve the right to deactivate keys used in breach of this policy.</p>
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">Limitation of Liability</p>
@@ -3317,15 +3997,15 @@ const LEGAL_CONTENT={
     <p style="margin-bottom:12px"><strong>CutNest Privacy Policy — Effective June 2025</strong></p>
     <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest is operated by Ryan Landreth, Newcastle upon Tyne, UK. We take privacy seriously. This policy explains what data we handle and why.</p>
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">Data we do NOT collect</p>
-    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest runs entirely in your browser. Your job data, piece dimensions, and material library are stored only in your browser's local storage — never sent to our servers. We do not use advertising pixels or cross-site tracking. We do use Google Analytics for anonymised, aggregate usage statistics (see Analytics below).</p>
+    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest runs entirely in your browser. Your job data, piece dimensions, and material library are stored only in your browser's local storage — never sent to our servers. We do not use advertising pixels or cross-site tracking. We offer Google Analytics for anonymised, aggregate usage statistics, and it only runs if you accept it (see Analytics below).</p>
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">Payment data</p>
     <p style="margin-bottom:10px;font-size:13px;line-height:1.6">All payments are processed by Lemon Squeezy, who act as Merchant of Record. We receive confirmation that a licence key is valid but never see your card details. Lemon Squeezy's privacy policy applies to payment processing.</p>
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">Licence key validation</p>
     <p style="margin-bottom:10px;font-size:13px;line-height:1.6">When you enter a licence key, it is sent to the Lemon Squeezy API to verify it is active, and re-checked periodically while you use Pro. Your key is stored in your browser's local storage only. Aside from this, Google Analytics and Google Fonts, CutNest makes no external requests with your data.</p>
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">Your rights</p>
-    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">Because we hold no personal data on our servers, there is nothing for us to delete or export. You can clear all CutNest data at any time by clearing your browser's local storage.</p>
+    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">Because we hold no personal data on our servers, there is nothing for us to delete or export. Everything CutNest keeps lives in this browser: your stock library, the job you are working on, your job history, your settings (kerf, minimum usable offcut, company name), your theme choice, which pre-built grades you have hidden, your licence key, and your cookie-banner choice. You can clear all of it at any time by clearing your browser's local storage.</p>
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">Analytics</p>
-    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">We use Google Analytics (GA4) to measure anonymised, aggregate usage so we can improve the app. It sets cookies and may process a truncated IP address; we do not use it for advertising. Your cut-list data, dimensions, library and prices are never sent to Google Analytics. You can block it with any browser privacy setting.</p>
+    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">We offer Google Analytics (GA4) to measure anonymised, aggregate usage so we can improve the app. <b>It is loaded only if you click Accept on the cookie banner.</b> If you decline, or your browser sends a Do Not Track signal, it is never loaded and no analytics cookie is set. It sets cookies and may process a truncated IP address; we do not use it for advertising. Your cut-list data, dimensions, library and prices are never sent to Google Analytics. Legal basis: your consent.</p>
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">Data Protection</p>
     <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest is operated by a UK sole trader and complies with UK GDPR. To exercise any data rights, or for any privacy query, contact hello@cutnest.co.uk.</p>
     <p style="margin-bottom:6px;font-weight:700;font-size:13px">Contact</p>
@@ -3345,8 +4025,15 @@ function loadSettings(){
   KERF=Math.max(0,parseInt(settings.kerf)||4);
   const kd=document.getElementById('kerf-display');if(kd)kd.textContent=KERF+'mm';
 }
+// Snapshot taken when Settings opens so Cancel has something to restore. Every
+// field in the modal saves on `oninput`, and closeSettings() itself wrote to
+// localStorage, so "Cancel" previously just saved and closed — there was no way
+// to back out of a kerf change, the one setting that most changes the answer.
+let _settingsSnapshot = null;
+
 function openSettings(){
   loadSettings();
+  try { _settingsSnapshot = JSON.parse(JSON.stringify(settings)); } catch(e) { _settingsSnapshot = null; }
   const kf=document.getElementById('kerf-setting'),cn=document.getElementById('company-name');
   const ki=document.getElementById('licence-key-input'),ks=document.getElementById('key-status');
   if(kf)kf.value=(settings.kerf!=null?settings.kerf:4);if(cn)cn.value=settings.companyName||'';
@@ -3367,12 +4054,20 @@ function openSettings(){
   updateProUI();
   const sm=document.getElementById('settings-modal');if(sm)sm.style.display='flex';
 }
+// Discard everything changed since the modal opened, then close.
+function cancelSettings(){
+  if(_settingsSnapshot){
+    settings = JSON.parse(JSON.stringify(_settingsSnapshot));
+    KERF = Math.max(0, parseInt(settings.kerf) || 4);
+    try{ localStorage.setItem(SETT_KEY, JSON.stringify(settings)); }catch(e){}
+    const kd=document.getElementById('kerf-display'); if(kd) kd.textContent = KERF + 'mm';
+  }
+  const sm=document.getElementById('settings-modal'); if(sm) sm.style.display='none';
+}
+
+// Kept for the licence-activation flow, which closes the modal after a
+// successful unlock and must NOT roll settings back.
 function closeSettings(){
-  const kf=document.getElementById('kerf-setting'),cn=document.getElementById('company-name');
-  if(kf){settings.kerf=Math.max(0,Math.min(100,parseInt(kf.value)||0));settings.kerfTouched=true;KERF=settings.kerf;}
-  if(cn)settings.companyName=cn.value?cn.value.trim():'';
-  localStorage.setItem(SETT_KEY,JSON.stringify(settings));
-  const kd=document.getElementById('kerf-display');if(kd)kd.textContent=KERF+'mm';
   const sm=document.getElementById('settings-modal');if(sm)sm.style.display='none';
 }
 function saveSettings() {
@@ -3400,6 +4095,20 @@ async function saveData(lib){
   // shared job renders, but only become permanent when the user explicitly
   // promotes them (saveLibClose clears the _transient flag first).
   const persistable = (lib || []).filter(function(e){ return !(e && e._transient); });
+  if (!isPro) {
+    // A non-Pro session never holds master-library entries in `library`, so
+    // saving it verbatim would erase any master grades the user edited while
+    // they were subscribed. Carry those stored entries forward untouched so a
+    // lapsed subscription never destroys their price work.
+    try {
+      const prev = JSON.parse(localStorage.getItem(STOR_KEY) || '[]');
+      if (Array.isArray(prev)) {
+        const masterIds = {}; MASTER_LIBRARY.forEach(function(m){ masterIds[m.id] = 1; });
+        const have = {}; persistable.forEach(function(e){ if (e && e.id != null) have[e.id] = 1; });
+        prev.forEach(function(e){ if (e && masterIds[e.id] && !have[e.id]) persistable.push(e); });
+      }
+    } catch(e){}
+  }
   localStorage.setItem(STOR_KEY,JSON.stringify(persistable));
 }
 
@@ -3441,11 +4150,12 @@ async function loadLib(){
     } else {
       savedLib = null;
     }
+    const masterById = {};
+    MASTER_LIBRARY.forEach(function(m){ masterById[m.id] = m; });
+
     if(isPro){
       // Start from the master library, then add the user's custom entries.
       // Custom entries are kept by ID (so a job referencing them never breaks).
-      const masterById = {};
-      MASTER_LIBRARY.forEach(function(m){ masterById[m.id] = m; });
       const masterByName = {};
       MASTER_LIBRARY.forEach(function(m){ masterByName[(m.name||'').trim().toLowerCase()] = m; });
 
@@ -3468,10 +4178,30 @@ async function loadLib(){
         }
       });
 
-      library = MASTER_LIBRARY.concat(custom);
+      // MERGE, don't replace. Previously any saved entry whose id matched a
+      // master id was filtered out and the hard-coded master used instead, so a
+      // Pro user's edits to a master grade (their real supplier price, their
+      // real sheet size, their grain lock) were written to localStorage, appeared
+      // to work, then silently reverted on the next load. Master grades are now
+      // DEFAULTS: a stored entry with the same id wins, and a deleted one stays
+      // deleted. "Reset" in the Library modal restores the CutNest default.
+      const storedById = {};
+      (savedLib||[]).forEach(function(e){ if(e && e.id!=null) storedById[e.id] = e; });
+      const deleted = getDeletedMasterIds();
+      const masters = [];
+      MASTER_LIBRARY.forEach(function(m){
+        if (deleted.indexOf(m.id) !== -1) return;              // user deleted it
+        masters.push(storedById[m.id] ? storedById[m.id] : m); // user's edit wins
+      });
+
+      library = masters.concat(custom);
       setSS('ok','Pro library active');
     }else{
-      library = savedLib || defaultLib();
+      // Not Pro: the master library is a Pro feature, so master-id entries are
+      // withheld. They are NOT erased from storage — a lapsed subscriber's edited
+      // prices come straight back if they re-subscribe. Their own custom
+      // materials are always kept.
+      library = (savedLib || defaultLib()).filter(function(e){ return e && !masterById[e.id]; });
       setSS('ok','Ready');
     }
     await saveData(library);
@@ -3485,7 +4215,7 @@ function saveToHistory(){
   if(!isPro||!calcResult)return;
   try{
     const jr=(document.getElementById('job-ref')||{}).value||'Untitled';
-    const ts=calcResult.results.reduce(function(s,r){return s+r.sheets.length;},0);
+    const ts=calcResult.results.reduce(function(s,r){return s+r.sheets.filter(function(sh){return !sh.isRemnant;}).length;},0);
     const sm=calcResult.results.map(function(r){
       return r.libMat.name+': '+Object.entries(r.sizeMap).map(function(e){return e[1]+'x '+e[0]+'mm';}).join(', ');
     }).join(' | ');
@@ -3494,6 +4224,12 @@ function saveToHistory(){
       mats:JSON.parse(JSON.stringify(mats))
     };
     const h=JSON.parse(localStorage.getItem(HIST_KEY)||'[]');
+    // saveToHistory runs on EVERY calculate, so tweaking one dimension and
+    // recalculating five times used to burn five of the fifty slots on the same
+    // job. If the newest entry is the same job reference with the same pieces,
+    // replace it instead of stacking another copy.
+    const sig = JSON.stringify(entry.mats);
+    if (h.length && h[0].jobRef === entry.jobRef && JSON.stringify(h[0].mats) === sig) h.shift();
     h.unshift(entry);if(h.length>HIST_MAX)h.splice(HIST_MAX);
     localStorage.setItem(HIST_KEY,JSON.stringify(h));
   }catch(err){}
@@ -3525,6 +4261,17 @@ function loadHistoryJob(id){
     const entry=h.find(function(e){return e.id===id;});
     if(!entry)return;
     mats=entry.mats;renderAll();
+    // The job stores material IDs, not the materials themselves. If one has
+    // since been deleted or hidden, the dropdown silently comes back empty and
+    // calculate says "Please select a material" with no explanation. Say so.
+    const missing = mats.filter(function(m){
+      return m.selectedMatId && !library.some(function(l){ return l.id == m.selectedMatId; });
+    }).length;
+    if (missing) {
+      setTimeout(function(){
+        showToast('⚠ ' + missing + ' material' + (missing!==1?'s are':' is') + ' no longer in your library — re-select ' + (missing!==1?'them':'it') + ' before calculating', 5200);
+      }, 400);
+    }
     const jr=document.getElementById('job-ref');if(jr)jr.value=entry.jobRef;
     const out=document.getElementById('output');if(out)out.style.display='none';
     calcResult=null;closeHistory();window.scrollTo({top:0,behavior:'smooth'});
@@ -3606,12 +4353,24 @@ function updateLibLimitNotice() {
   }
 }
 
+// Scrolling the page with the cursor over a focused number input used to
+// increment/decrement it silently. Blur instead: the page scrolls, the value
+// does not change.
+document.addEventListener('wheel', function(e){
+  const el = document.activeElement;
+  if (el && el.tagName === 'INPUT' && el.type === 'number' && el === e.target) el.blur();
+}, { passive: true });
+
 document.addEventListener('keydown', function(e) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); calculate(); }
   if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
   if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
   if (e.key === 'Escape') {
-    ['settings-modal','lib-modal','history-modal','upgrade-modal','legal-modal','zoom-modal'].forEach(function(id) {
+    const sm = document.getElementById('settings-modal');
+    // Settings saves on every keystroke, so Escape must roll back like Cancel
+    // rather than leaving a half-typed kerf committed.
+    if (sm && sm.style.display !== 'none') { cancelSettings(); return; }
+    ['lib-modal','history-modal','upgrade-modal','legal-modal','zoom-modal','paste-modal'].forEach(function(id) {
       const el = document.getElementById(id);
       if (el && el.style.display !== 'none') el.style.display = 'none';
     });
@@ -3707,6 +4466,7 @@ function removeRemnant(matId) {
 document.addEventListener('DOMContentLoaded',function(){
   checkLicence();
   loadSettings();
+  cnInitCookieBar();
   // Re-check the licence against Lemon Squeezy in the background (online only).
   // Can restore Pro (rolls the offline grace window forward) or revoke it
   // (expired / disabled / refunded). Never blocks startup.
@@ -3781,11 +4541,23 @@ document.addEventListener('DOMContentLoaded',function(){
       });
 
       if (newMats.length) {
-        mats = newMats;
+        // Free plan is 1 material per job. A shared link could carry up to 50,
+        // and nothing downstream gated on isPro, so opening a link was a free
+        // upgrade. Truncate and say why — that sells Pro better than a leak.
+        const droppedMats = (!isPro && newMats.length > 1) ? newMats.length - 1 : 0;
+        mats = isPro ? newMats : newMats.slice(0, 1);
         const jr = document.getElementById('job-ref'); if (jr) jr.value = clampStr(state.jobRef, 60);
         const jq = document.getElementById('job-qty'); if (jq) jq.value = String(clampNum(state.jobQty, 1, 999) || 1);
         renderAll();
-        showToast('📋 Shared job loaded — review, then save to your library to keep these materials');
+        if (droppedMats) {
+          showToast('📋 Shared job loaded — showing 1 of ' + newMats.length + ' materials. Pro nests them all together.', 5200);
+          setTimeout(function(){
+            showUpgradeModal('📦','This job uses ' + newMats.length + ' materials',
+              'Your shared link contains ' + newMats.length + ' materials. The free plan calculates one at a time — Pro nests all of them in a single job and costs them together.');
+          }, 900);
+        } else {
+          showToast('📋 Shared job loaded — review, then save to your library to keep these materials');
+        }
       } else {
         restoreState();
       }
