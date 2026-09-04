@@ -4053,69 +4053,57 @@ function exportCSV() {
 // sheet — a part at the top-left on screen lands at the top-left in CAD, not
 // mirrored. Feeds straight into CNC/laser/router CAM.
 function buildDXF(results) {
-  let H = 0x100;
-  const hx = function(){ H += 1; return H.toString(16).toUpperCase(); };
+  // ── DXF R12 (AC1009) ──────────────────────────────────────────
+  // Rewritten after a real-world failure: the previous output was R2000 with
+  // LWPOLYLINE entities, bare LF line endings, no VPORT table and no drawing
+  // extents. It passed a Python CAD library's audit, which is exactly why that
+  // was not good enough — a library that repairs as it reads is not the same
+  // as a Windows CAD viewer that rejects on the first violation.
+  //
+  // Three defects, all now fixed:
+  //   1. LF line endings. ASCII DXF convention is CRLF; Windows-native readers
+  //      are the strictest about it.
+  //   2. LWPOLYLINE is an R13+ entity. R12 uses POLYLINE / VERTEX / SEQEND.
+  //   3. No $EXTMIN/$EXTMAX and no VPORT table, so a reader has no idea where
+  //      the drawing is or how to frame it — some open blank, some refuse.
+  //
+  // R12 is the lowest common denominator every CAD package, CAM post, laser
+  // controller and viewer on earth reads, and closed rectangles plus text lose
+  // absolutely nothing by being expressed in it.
   const n = function(v){ return (Math.round(v*1000)/1000).toString(); };
   const out = [];
   const push = function(){ for (let i=0;i<arguments.length;i++) out.push(arguments[i]); };
-  const poly = function(pts, layer){
-    push('0','LWPOLYLINE','5',hx(),'100','AcDbEntity','8',layer,'100','AcDbPolyline','90',String(pts.length),'70','1');
-    pts.forEach(function(p){ push('10',n(p[0]),'20',n(p[1])); });
-  };
-  const rect = function(x,y,w,h,layer){ poly([[x,y],[x+w,y],[x+w,y+h],[x,y+h]], layer); };
-  const txt = function(x,y,h,str,layer){
-    // Group 7 names the text style explicitly. Without it the entity implicitly
-    // referenced STANDARD, which was never defined in the file — AutoCAD heals
-    // that, but stricter CAM posts and laser controllers can drop the text or
-    // reject the drawing outright.
-    push('0','TEXT','5',hx(),'100','AcDbEntity','8',layer,'100','AcDbText',
-         '10',n(x),'20',n(y),'30','0','40',n(h),'1',String(str).replace(/[\r\n]/g,' '),
-         '7','STANDARD','100','AcDbText');
-  };
-  const layerDef = function(name,color){
-    push('0','LAYER','5',hx(),'100','AcDbSymbolTableRecord','100','AcDbLayerTableRecord','2',name,'70','0','62',String(color),'6','CONTINUOUS');
+
+  // Track real drawing extents for the header.
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const seen = function(x, y){
+    if (x < minX) minX = x; if (x > maxX) maxX = x;
+    if (y < minY) minY = y; if (y > maxY) maxY = y;
   };
 
-  // HEADER. $HANDSEED tells the reader the next free handle; without it some
-  // readers assume 0 and can collide with the handles we emit.
-  push('0','SECTION','2','HEADER',
-       '9','$ACADVER','1','AC1015',
-       '9','$INSUNITS','70','4',
-       '9','$HANDSEED','5','FFFF',
-       '0','ENDSEC');
+  const body = [];
+  const bpush = function(){ for (let i=0;i<arguments.length;i++) body.push(arguments[i]); };
 
-  // TABLES. Previously only LAYER was emitted. A conforming R2000 file also
-  // needs LTYPE (the CONTINUOUS linetype every layer references), STYLE (the
-  // STANDARD text style every TEXT entity references) and APPID.
-  push('0','SECTION','2','TABLES');
+  // Closed rectangle as an R12 POLYLINE. Group 66 = "vertices follow",
+  // 70 = 1 (closed). Every vertex is its own entity, terminated by SEQEND.
+  const rect = function(x, y, w, h, layer){
+    bpush('0','POLYLINE','8',layer,'66','1','70','1',
+          '10','0.0','20','0.0','30','0.0');
+    const pts = [[x,y],[x+w,y],[x+w,y+h],[x,y+h]];
+    pts.forEach(function(pt){
+      seen(pt[0], pt[1]);
+      bpush('0','VERTEX','8',layer,'10',n(pt[0]),'20',n(pt[1]),'30','0.0');
+    });
+    bpush('0','SEQEND','8',layer);
+  };
 
-  push('0','TABLE','2','LTYPE','5',hx(),'100','AcDbSymbolTable','70','2');
-  push('0','LTYPE','5',hx(),'100','AcDbSymbolTableRecord','100','AcDbLinetypeTableRecord',
-       '2','ByBlock','70','0','3','','72','65','73','0','40','0.0');
-  push('0','LTYPE','5',hx(),'100','AcDbSymbolTableRecord','100','AcDbLinetypeTableRecord',
-       '2','CONTINUOUS','70','0','3','Solid line','72','65','73','0','40','0.0');
-  push('0','ENDTAB');
+  const txt = function(x, y, h, str, layer){
+    seen(x, y);
+    bpush('0','TEXT','8',layer,'10',n(x),'20',n(y),'30','0.0','40',n(h),
+          '1',String(str).replace(/[\r\n]/g,' ').slice(0,240),'7','STANDARD');
+  };
 
-  push('0','TABLE','2','STYLE','5',hx(),'100','AcDbSymbolTable','70','1');
-  push('0','STYLE','5',hx(),'100','AcDbSymbolTableRecord','100','AcDbTextStyleTableRecord',
-       '2','STANDARD','70','0','40','0.0','41','1.0','50','0.0','71','0','42','2.5',
-       '3','txt','4','');
-  push('0','ENDTAB');
-
-  push('0','TABLE','2','APPID','5',hx(),'100','AcDbSymbolTable','70','1');
-  push('0','APPID','5',hx(),'100','AcDbSymbolTableRecord','100','AcDbRegAppTableRecord',
-       '2','ACAD','70','0');
-  push('0','ENDTAB');
-
-  push('0','TABLE','2','LAYER','5',hx(),'100','AcDbSymbolTable','70','4');
-  layerDef('0',7); layerDef('SHEET',5); layerDef('PARTS',3); layerDef('TEXT',7);
-  push('0','ENDTAB');
-
-  push('0','ENDSEC');
-  // Empty BLOCKS section: required by the R2000 spec even when unused.
-  push('0','SECTION','2','BLOCKS','0','ENDSEC');
-  push('0','SECTION','2','ENTITIES');
-
+  // ── ENTITIES (built first so the extents are known for the header) ──
   let offsetX = 0;
   const GAP = 200;
   results.forEach(function(res){
@@ -4125,6 +4113,8 @@ function buildDXF(results) {
       rect(offsetX, 0, SW, SH, 'SHEET');
       txt(offsetX, -40, 30, matName + ' - Sheet ' + (si+1) + ' (' + SW + 'x' + SH + 'mm)', 'TEXT');
       sh.placed.forEach(function(p){
+        // DXF Y runs up, screen Y runs down — flip so the drawing is the right
+        // way up in CAD rather than mirrored.
         const dy = SH - p.y - p.h;
         rect(offsetX + p.x, dy, p.w, p.h, 'PARTS');
         const lbl = (p.label || (p.w+'x'+p.h)) + (p.rotated ? ' (R)' : '');
@@ -4134,25 +4124,82 @@ function buildDXF(results) {
       offsetX += SW + GAP;
     });
   });
+  if (!isFinite(minX)) { minX = 0; minY = 0; maxX = 100; maxY = 100; }
+
+  // ── HEADER ──
+  push('0','SECTION','2','HEADER',
+       '9','$ACADVER','1','AC1009',
+       '9','$INSBASE','10','0.0','20','0.0','30','0.0',
+       '9','$EXTMIN','10',n(minX),'20',n(minY),'30','0.0',
+       '9','$EXTMAX','10',n(maxX),'20',n(maxY),'30','0.0',
+       '9','$LIMMIN','10',n(minX),'20',n(minY),
+       '9','$LIMMAX','10',n(maxX),'20',n(maxY),
+       '9','$MEASUREMENT','70','1',     // 1 = metric
+       '0','ENDSEC');
+
+  // ── TABLES ──
+  push('0','SECTION','2','TABLES');
+
+  // VPORT tells the reader how to frame the drawing. Without it some viewers
+  // open to an empty screen or refuse the file outright.
+  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+  const vh = Math.max(1, (maxY - minY) * 1.1);
+  push('0','TABLE','2','VPORT','70','1',
+       '0','VPORT','2','*ACTIVE','70','0',
+       '10','0.0','20','0.0','11','1.0','21','1.0',
+       '12',n(cx),'22',n(cy),
+       '13','0.0','23','0.0','14','10.0','24','10.0','15','10.0','25','10.0',
+       '16','0.0','26','0.0','36','1.0','17','0.0','27','0.0','37','0.0',
+       '40',n(vh),'41','1.9','42','50.0','43','0.0','44','0.0',
+       '50','0.0','51','0.0','71','0','72','100','73','1','74','3','75','0',
+       '76','0','77','0','78','0',
+       '0','ENDTAB');
+
+  push('0','TABLE','2','LTYPE','70','1',
+       '0','LTYPE','2','CONTINUOUS','70','64','3','Solid line','72','65','73','0','40','0.0',
+       '0','ENDTAB');
+
+  push('0','TABLE','2','LAYER','70','4');
+  [['0',7],['SHEET',5],['PARTS',3],['TEXT',7]].forEach(function(L){
+    push('0','LAYER','2',L[0],'70','0','62',String(L[1]),'6','CONTINUOUS');
+  });
+  push('0','ENDTAB');
+
+  push('0','TABLE','2','STYLE','70','1',
+       '0','STYLE','2','STANDARD','70','0','40','0.0','41','1.0','50','0.0',
+       '71','0','42','2.5','3','txt','4','',
+       '0','ENDTAB');
 
   push('0','ENDSEC');
-  // Minimal OBJECTS section with the root dictionary — R2000 readers expect it.
-  push('0','SECTION','2','OBJECTS',
-       '0','DICTIONARY','5',hx(),'100','AcDbDictionary','281','1',
-       '0','ENDSEC');
-  push('0','EOF');
-  return out.join('\n') + '\n';
-}
 
+  // Empty BLOCKS section — expected even when unused.
+  push('0','SECTION','2','BLOCKS','0','ENDSEC');
+
+  push('0','SECTION','2','ENTITIES');
+  for (let i = 0; i < body.length; i++) push(body[i]);
+  push('0','ENDSEC');
+  push('0','EOF');
+
+  // CRLF, per the ASCII DXF convention.
+  return out.join('\r\n') + '\r\n';
+}
 function exportDXF() {
   if (!isPro) { showUpgradeModal('&#128208;','DXF Export','Pro exports a machine-ready DXF of your cut layout &mdash; drop it straight into your CNC, laser or router CAM. Real dimensions, every part on its own layer.'); return; }
   if (!calcResult || !calcResult.results) return;
   const dxf = buildDXF(calcResult.results);
   const jr = (document.getElementById('job-ref')||{}).value||'cutlist';
   const safe = jr.replace(/[^a-z0-9]/gi,'-').toLowerCase();
+  // image/vnd.dxf is the registered type; some browsers save an unknown type
+  // with a .txt suffix, which then will not open in any CAD package.
+  const url = URL.createObjectURL(new Blob([dxf], {type:'image/vnd.dxf'}));
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([dxf], {type:'application/dxf'}));
-  a.download = `cutnest-${safe}-${new Date().toISOString().slice(0,10)}.dxf`; a.click();
+  a.href = url;
+  a.download = `cutnest-${safe}-${new Date().toISOString().slice(0,10)}.dxf`;
+  // Some browsers ignore .click() on an anchor that is not in the document.
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
 }
 
 // ── LIBRARY MODAL ─────────────────────────────
