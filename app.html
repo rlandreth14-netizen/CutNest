@@ -613,6 +613,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
           <button class="btn-exp" onclick="exportDXF()" title="Machine-ready DXF for CNC/laser/router">⬇ DXF</button>
           <button class="btn-exp pdf-btn" onclick="exportPDF()" title="Download print-quality PDF">⬇ PDF</button>
           <button class="btn-exp" onclick="shareJob()" title="Share this job">🔗 Share</button>
+          <button class="btn-exp" onclick="exportCutSheets()" title="One page per sheet, drawn to scale, dimensioned, with the cut sequence — for the machine">📐 Cut sheets</button>
           <button class="btn-exp" onclick="doPrint()">🖨 Print</button>
         </div>
       </div>
@@ -1209,6 +1210,13 @@ function parsePastedPieces(text) {
                .replace(/\bmm\b/gi, ' ')
                .replace(/["']/g, ' ');
 
+    // THOUSANDS SEPARATORS. A comma is ambiguous: in "600,400,4" it separates
+    // fields, but in "1,200 x 800 x 4" it is a thousands separator — and read
+    // the wrong way that line becomes 800 pieces of 1x200mm, silently. Rule:
+    // if the line already uses x / * as its dimension separator, then any comma
+    // sitting between a digit and exactly three digits is a thousands mark.
+    if (/[x*]/i.test(line)) line = line.replace(/(\d),(\d{3})(?!\d)/g, '$1$2');
+
     // Leading trade quantity: "4 off 600x400", "4 no 600x400", "4 pcs ..."
     let leadQty = null;
     const lead = line.match(/^\s*(\d+)\s*(?:off|no\.?|nr|pcs?|pieces?)\s+(.*)$/i);
@@ -1262,11 +1270,21 @@ function parsePastedPieces(text) {
       return;
     }
     qty = Math.max(1, Math.min(9999, Math.round(qty) || 1));
-    rows.push({ w: w, h: h, qty: qty, label: label.slice(0, 40) });
+
+    // SUSPICIOUS-ROW WARNINGS. The parser is deliberately forgiving, which means
+    // an unusual line can parse to something technically valid but obviously
+    // wrong ("6e2 x 4e2" reads as 6x2mm). Rather than pretend to handle every
+    // notation, flag anything that does not look like a real part so the user
+    // sees it in the preview instead of finding out at the saw.
+    let warn = null;
+    if (w < 5 || h < 5) warn = 'dimension under 5mm \u2014 check this line';
+    else if (qty > 500) warn = 'quantity over 500 \u2014 check this line';
+    rows.push({ w: w, h: h, qty: qty, label: label.slice(0, 40), warn: warn });
   });
   return { rows: rows, errors: errors };
 }
 
+const PASTE_ROW_LIMIT = 500;   // same ceiling as the shared-link importer
 let _pasteTargetMat = null;
 
 function openPaste(matId) {
@@ -1297,14 +1315,26 @@ function renderPastePreview() {
     return;
   }
   const totalCuts = res.rows.reduce(function (a, r) { return a + r.qty; }, 0);
+  const warned = res.rows.filter(function (r) { return r.warn; }).length;
   let html = '';
+  if (warned) {
+    html += '<div style="background:#fffbeb;border:1px solid var(--amber);border-radius:8px;padding:8px 11px;margin-bottom:8px;font-size:12px;color:#92400e;line-height:1.5">' +
+            '<b>\u26a0 ' + warned + ' row' + (warned !== 1 ? 's look' : ' looks') + ' wrong</b> \u2014 highlighted below. ' +
+            'Common cause: a thousands separator or an unusual format. Fix the line and re-paste, or add them and correct them in the table.</div>';
+  }
+  if (res.rows.length > PASTE_ROW_LIMIT) {
+    html += '<div style="background:#fff5f5;border:1px solid var(--red);border-radius:8px;padding:8px 11px;margin-bottom:8px;font-size:12px;color:var(--red)">' +
+            'Only the first ' + PASTE_ROW_LIMIT + ' rows will be added (' + res.rows.length + ' found).</div>';
+  }
   if (res.rows.length) {
     html += '<div style="font-size:12px;color:var(--teal);font-weight:700;margin-bottom:6px">\u2713 ' + res.rows.length +
             ' row' + (res.rows.length !== 1 ? 's' : '') + ' \u00b7 ' + totalCuts + ' total cut' + (totalCuts !== 1 ? 's' : '') + '</div>';
     html += '<div style="max-height:180px;overflow:auto;border:1px solid var(--bdr);border-radius:8px"><table style="font-size:12px">' +
-            '<thead><tr><th>Label</th><th>W</th><th>H</th><th>Qty</th></tr></thead><tbody>' +
+            '<thead><tr><th>Label</th><th>W</th><th>H</th><th>Qty</th><th></th></tr></thead><tbody>' +
             res.rows.slice(0, 100).map(function (r) {
-              return '<tr><td>' + esc(r.label || '\u2014') + '</td><td>' + r.w + '</td><td>' + r.h + '</td><td>' + r.qty + '</td></tr>';
+              const bad = r.warn ? ' style="background:#fff5f5;color:#b91c1c;font-weight:600"' : '';
+              return '<tr' + bad + '><td>' + esc(r.label || '\u2014') + '</td><td>' + r.w + '</td><td>' + r.h + '</td><td>' + r.qty +
+                     '</td><td style="font-size:11px">' + (r.warn ? '\u26a0 ' + esc(r.warn) : '') + '</td></tr>';
             }).join('') + '</tbody></table></div>';
     if (res.rows.length > 100) html += '<div style="font-size:11px;color:var(--muted);margin-top:5px">(showing first 100)</div>';
   }
@@ -1318,7 +1348,8 @@ function renderPastePreview() {
   if (btn) {
     btn.disabled = !res.rows.length;
     btn.style.opacity = res.rows.length ? '1' : '.5';
-    btn.textContent = res.rows.length ? ('Add ' + res.rows.length + ' row' + (res.rows.length !== 1 ? 's' : '')) : 'Nothing to add';
+    const willAdd = Math.min(res.rows.length, PASTE_ROW_LIMIT);
+    btn.textContent = res.rows.length ? ('Add ' + willAdd + ' row' + (willAdd !== 1 ? 's' : '')) : 'Nothing to add';
   }
 }
 
@@ -1332,7 +1363,13 @@ function confirmPaste() {
   const replace = (document.getElementById('paste-replace') || {}).checked;
   // Blank starter rows are noise once real pieces arrive.
   const existing = replace ? [] : m.pieces.filter(function (p) { return p.w > 0 && p.h > 0; });
-  m.pieces = existing.concat(res.rows);
+  // Hard cap, matching the shared-link importer. Without it a stray paste of a
+  // 10,000-line file would be accepted whole, then rendered as 10,000 table
+  // rows and written to localStorage on every keystroke.
+  const room = Math.max(0, PASTE_ROW_LIMIT - existing.length);
+  m.pieces = existing.concat(res.rows.slice(0, room).map(function (r) {
+    return { w: r.w, h: r.h, qty: r.qty, label: r.label };   // drop the warn flag
+  }));
   if (!m.pieces.length) m.pieces = [{ w: '', h: '', qty: 1, label: '' }];
   closePaste();
   renderAll();
@@ -1866,6 +1903,323 @@ function findEmptySpot(sheetW, sheetH, placed, pc, allowRotation) {
 // tightness for speed when the job is big.
 let PACK_EFFORT = 8;
 
+
+
+
+// ── SHOP-FLOOR CUT SHEETS ─────────────────────────────────────
+// The audit's biggest finding: CutNest produced a provably optimal nest and
+// then handed it to the operator as a 1:11 postage stamp with no numbers on it.
+// This is the document that goes to the machine — one sheet per page, drawn
+// large, every part dimensioned, a marked datum corner, and (where the layout
+// allows) the numbered cut sequence.
+function buildCutSheetsHtml() {
+  if (!calcResult || !calcResult.results.length) return null;
+  const co = (settings.companyName || '').trim();
+  const jr = (((document.getElementById('job-ref') || {}).value) || '').trim();
+  const dateStr = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+
+  // A4 landscape working area in CSS px at 96dpi, minus 10mm margins:
+  // 297-20 = 277mm wide (~1047px), 210-20 = 190mm tall (~718px).
+  // The whole point of this document is ONE SHEET PER PAGE, so the drawing
+  // height is whatever is left after the header, dimension line, tables and
+  // footer have taken their share — not a fixed number that overflows.
+  const PAGE_W = 1040, PAGE_H = 718;
+  // These are MEASURED from a real print render, not guessed — an underestimate
+  // pushes the tables onto a second page and destroys the one-sheet-per-page
+  // guarantee that is the entire point of this document.
+  const H_HEADER = 50, H_DIMX = 22, H_FOOTER = 24, H_NOTE = 24;
+  const H_TBL_CHROME = 36;         // h3 + table header row
+  const TBL_ROW = 18;              // measured row height at 10px font
+  const SAFETY = 24;               // slack for font-metric differences per engine
+  const MAX_TBL_ROWS = 10;         // beyond this, spill into another column
+
+  let pages = '';
+  calcResult.results.forEach(function (r) {
+    const libMat = r.libMat;
+    const buy = r.sheets.filter(function (x) { return !x.isRemnant; }).length;
+    r.sheets.forEach(function (sh, si) {
+      const cuts = deriveGuillotineCuts(sh.placed, sh.sheetW, sh.sheetH, KERF);
+
+      // Parts, sorted the way an operator works: top-left to bottom-right.
+      const parts = sh.placed.slice().sort(function (a, b) {
+        return (a.y - b.y) || (a.x - b.x);
+      });
+
+      // Chunk long lists into extra columns so the tables stay short and the
+      // drawing keeps the space. A 40-part sheet becomes 4 columns of 10, not
+      // one 40-row table that pushes the page over.
+      const chunk = function (arr) {
+        const cols = Math.max(1, Math.ceil(arr.length / MAX_TBL_ROWS));
+        const per = Math.ceil(arr.length / cols);
+        const out = [];
+        for (let i = 0; i < arr.length; i += per) out.push(arr.slice(i, i + per));
+        return out;
+      };
+      const partCols = chunk(parts);
+      const cutCols  = chunk(cuts && cuts.length ? cuts : [null]);
+      const tallest  = Math.max(partCols[0].length, cutCols[0].length);
+      const tablesH  = H_TBL_CHROME + tallest * TBL_ROW;
+
+      // Whatever is left is the drawing. Never smaller than 210px or the
+      // drawing stops being useful — at that point the tables can spill.
+      const DRAW_H = Math.max(200, PAGE_H - H_HEADER - H_DIMX - H_FOOTER - H_NOTE - tablesH - SAFETY);
+      const scale = Math.min((PAGE_W - 70) / sh.sheetW, DRAW_H / sh.sheetH);
+      const dw = sh.sheetW * scale, dh = sh.sheetH * scale;
+
+      const rects = parts.map(function (p, i) {
+        const x = p.x * scale, y = p.y * scale, w = p.w * scale, h = p.h * scale;
+        // Only draw text that will actually be legible at this scale.
+        const showDims = w > 54 && h > 30;
+        const showNum  = w > 18 && h > 16;
+        return `<div class="pt" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px">
+          ${showNum ? `<span class="pt-no">${i+1}</span>` : ''}
+          ${showDims ? `<span class="pt-dim">${p.w}&times;${p.h}</span>
+                        ${p.label ? `<span class="pt-lab">${esc(String(p.label).slice(0,22))}</span>` : ''}
+                        ${p.rotated ? '<span class="pt-rot">&#8635; rotated</span>' : ''}` : ''}
+        </div>`;
+      }).join('');
+
+      // Cut lines drawn over the layout, numbered in order.
+      const cutMarks = (cuts || []).map(function (c) {
+        const mid = ((c.from + c.to) / 2) * scale;
+        return c.axis === 'V'
+          ? `<div class="cut cut-v" style="left:${c.pos*scale}px;top:${c.from*scale}px;height:${(c.to-c.from)*scale}px"><span class="cut-no" style="top:${mid-(c.from*scale)-6}px">${c.no}</span></div>`
+          : `<div class="cut cut-h" style="top:${c.pos*scale}px;left:${c.from*scale}px;width:${(c.to-c.from)*scale}px"><span class="cut-no" style="left:${mid-(c.from*scale)-6}px">${c.no}</span></div>`;
+      }).join('');
+
+      let startIdx = 0;
+      const partTables = partCols.map(function (col) {
+        const rows = col.map(function (p) {
+          startIdx++;
+          return `<tr><td class="c">${startIdx}</td><td>${esc(p.label || '\u2014')}</td>
+            <td class="c">${p.w}</td><td class="c">${p.h}</td>
+            <td class="c">${Math.round(p.x)}</td><td class="c">${Math.round(p.y)}</td>
+            <td class="c">${p.rotated ? '&#8635;' : ''}</td></tr>`;
+        }).join('');
+        return `<table><thead><tr><th>#</th><th>Label</th><th>W</th><th>H</th><th>X</th><th>Y</th><th>Rot</th></tr></thead><tbody>${rows}</tbody></table>`;
+      }).join('');
+
+      const cutTables = (cuts && cuts.length)
+        ? cutCols.map(function (col) {
+            const rows = col.map(function (c) {
+              return `<tr><td class="c">${c.no}</td><td>${c.axis === 'V' ? 'Rip (down)' : 'Crosscut (across)'}</td>
+                <td class="c">${Math.round(c.pos)}mm</td>
+                <td class="c">${Math.round(c.from)}\u2013${Math.round(c.to)}mm</td></tr>`;
+            }).join('');
+            return `<table><thead><tr><th>#</th><th>Cut</th><th>At</th><th>Span</th></tr></thead><tbody>${rows}</tbody></table>`;
+          }).join('')
+        : `<table><tbody><tr><td class="nocut">This layout is not guillotine-cuttable \u2014 parts must be cut
+             individually (normal for free placement: laser, router, plasma).</td></tr></tbody></table>`;
+
+      pages += `<section class="page">
+        <header class="hd">
+          <div>
+            <div class="hd-t">${esc(libMat.name)}${libMat.thickness ? ' \u00b7 ' + esc(libMat.thickness) : ''}
+              &mdash; Sheet ${si+1} of ${r.sheets.length}${sh.isRemnant ? ' (YOUR REMNANT)' : ''}</div>
+            <div class="hd-m">${sh.sheetW} &times; ${sh.sheetH}mm &nbsp;\u00b7&nbsp; ${sh.placed.length} parts
+              &nbsp;\u00b7&nbsp; ${sh.utilPercent || 0}% used
+              &nbsp;\u00b7&nbsp; <b>Kerf ${KERF}mm</b>
+              &nbsp;\u00b7&nbsp; ${libMat.allowRotation === false ? '<b>GRAIN LOCKED \u2014 do not rotate</b>' : 'Rotation allowed'}</div>
+          </div>
+          <div class="hd-r">
+            ${co ? `<div class="hd-co">${esc(co)}</div>` : ''}
+            ${jr ? `<div class="hd-m">Job: ${esc(jr)}</div>` : ''}
+            <div class="hd-m">${dateStr}</div>
+          </div>
+        </header>
+
+        <div class="drawwrap">
+          <!-- Y dimension down the left edge -->
+          <div class="dim-y" style="height:${dh}px"><span>${sh.sheetH}mm</span></div>
+          <div class="sheet" style="width:${dw}px;height:${dh}px">
+            ${rects}${cutMarks}
+            ${(sh.offcut && sh.offcut.w > 0 && sh.offcut.h > 0) ? `<div class="offcut ${sh.usableOffcut ? 'keep' : ''}"
+              style="left:${sh.offcut.x*scale}px;top:${sh.offcut.y*scale}px;width:${sh.offcut.w*scale}px;height:${sh.offcut.h*scale}px">
+              ${(sh.offcut.w*scale > 90 && sh.offcut.h*scale > 18)
+                ? `<span>${sh.usableOffcut ? '\u2713 KEEP OFFCUT' : 'Offcut'} ${Math.round(sh.offcut.w)}&times;${Math.round(sh.offcut.h)}</span>` : ''}
+            </div>` : ''}
+            <div class="datum"></div>
+            <div class="datum-lab">0,0 datum</div>
+            <div class="axis-x">X &rarr;</div>
+            <div class="axis-y">Y &darr;</div>
+          </div>
+        </div>
+        <!-- X dimension under the sheet -->
+        <div class="dim-x" style="width:${dw}px">
+          <span>${sh.sheetW}mm</span>
+        </div>
+
+        <div class="tables">
+          <div class="tbl-col">
+            <h3>Parts on this sheet (${parts.length}) \u2014 cut top-left first</h3>
+            <div class="tbl-split">${partTables}</div>
+          </div>
+          <div class="tbl-col">
+            <h3>Cut sequence${cuts && cuts.length ? ' \u2014 ' + cuts.length + ' cuts, in order' : ''}</h3>
+            <div class="tbl-split">${cutTables}</div>
+          </div>
+        </div>
+        <div class="note">X / Y = distance from the datum corner to each part's top-left corner, in mm.${
+          cuts && cuts.length ? ` Every cut runs edge to edge across the piece you are holding; measure "At" from the datum edge. The ${KERF}mm kerf is already allowed for.` : ''}</div>
+        <footer class="ft">CutNest \u00b7 cutnest.co.uk &nbsp;\u00b7&nbsp; Verify against the physical sheet before cutting.</footer>
+      </section>`;
+    });
+  });
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"/>
+<title>Cut sheets${jr ? ' \u2014 ' + esc(jr) : ''}</title>
+<style>
+  @page { size: A4 landscape; margin: 10mm; }
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#10202a;margin:0;background:#fff}
+  .page{page-break-after:always;break-after:page;padding:6px 0 0}
+  .page:last-child{page-break-after:auto;break-after:auto}
+  .hd{border-bottom:2px solid #0f4c5c;padding-bottom:6px;margin-bottom:10px;overflow:hidden}
+  .hd > div:first-child{float:left;max-width:68%}
+  .hd > .hd-r{float:right}
+  .hd-t{font-size:17px;font-weight:800;color:#0f4c5c}
+  .hd-m{font-size:11px;color:#4a6a76;margin-top:2px}
+  .hd-r{text-align:right}
+  .hd-co{font-size:13px;font-weight:700;color:#0f4c5c}
+  .drawwrap{margin-left:6px;font-size:0}
+  .drawwrap > *{display:inline-block;vertical-align:top}
+  .sheet{position:relative;border:2px solid #0f4c5c;background:#fbfdfe}
+  .pt{position:absolute;border:1.2px solid #0f4c5c;background:#e8f4f8;overflow:hidden;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15}
+  .pt-no{position:absolute;top:1px;left:3px;font-size:9px;font-weight:800;color:#0f4c5c;opacity:.75}
+  .pt-dim{font-size:11px;font-weight:800;color:#0f4c5c}
+  .pt-lab{font-size:9px;color:#4a6a76;max-width:96%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .pt-rot{font-size:8px;color:#b45309;font-weight:700}
+  .cut{position:absolute}
+  .cut-v{width:0;border-left:1.4px dashed #dc2626}
+  .cut-h{height:0;border-top:1.4px dashed #dc2626}
+  .cut-no{position:absolute;background:#dc2626;color:#fff;font-size:8px;font-weight:800;
+          border-radius:7px;padding:0 4px;line-height:12px;height:12px}
+  .cut-v .cut-no{left:-7px;top:-6px}
+  .cut-h .cut-no{top:-7px;left:-6px}
+  .offcut{position:absolute;border:1.2px dashed #9dbac4;background:repeating-linear-gradient(45deg,transparent,transparent 5px,#f2f7f9 5px,#f2f7f9 10px);
+          display:flex;align-items:center;justify-content:center}
+  .offcut.keep{border-color:#059669;background:repeating-linear-gradient(45deg,transparent,transparent 5px,#e7f7f0 5px,#e7f7f0 10px)}
+  .offcut span{font-size:9px;font-weight:700;color:#6a8a96}
+  .offcut.keep span{color:#047857}
+  .datum{position:absolute;left:-1px;top:-1px;width:15px;height:15px;border-left:3px solid #b45309;border-top:3px solid #b45309}
+  .datum-lab{position:absolute;left:18px;top:1px;font-size:8px;font-weight:800;color:#b45309}
+  .axis-x{position:absolute;left:2px;bottom:-14px;font-size:9px;color:#b45309;font-weight:700}
+  .axis-y{position:absolute;left:-16px;top:18px;font-size:9px;color:#b45309;font-weight:700}
+  .dim-y{width:26px;border-right:1px solid #9dbac4;text-align:center;position:relative}
+  .dim-y span{position:absolute;top:45%;left:-14px;width:54px;transform:rotate(-90deg);white-space:nowrap;font-size:10px;font-weight:700;color:#4a6a76}
+  .dim-x{margin:4px 0 0 40px;border-top:1px solid #9dbac4;text-align:center;font-size:10px;font-weight:700;color:#4a6a76;padding-top:2px}
+  .tables{margin-top:10px;font-size:0}
+  .tbl-col{display:inline-block;vertical-align:top;width:49%;font-size:10px}
+  .tbl-col + .tbl-col{margin-left:2%}
+  .tbl-split{font-size:0}
+  .tbl-split table{display:inline-table;vertical-align:top;margin-right:1%}
+  h3{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#0f4c5c;margin:0 0 4px}
+  table{width:100%;border-collapse:collapse;font-size:10px}
+  .tbl-split table{width:49%}
+  .tbl-split table:only-child{width:100%}
+  th{background:#0f4c5c;color:#fff;text-align:left;padding:3px 5px;font-weight:700}
+  td{padding:2px 5px;border-bottom:1px solid #e2ecef}
+  td.c{text-align:center}
+  .nocut{color:#7a5b1a;background:#fffbeb;padding:6px}
+  .note{font-size:9px;color:#6a8a96;margin-top:4px;line-height:1.4}
+  .ft{margin-top:8px;border-top:1px solid #e2ecef;padding-top:4px;font-size:9px;color:#9dbac4;text-align:center}
+  @media print{ body{-webkit-print-color-adjust:exact;print-color-adjust:exact} }
+</style></head><body>${pages}</body></html>`;
+}
+
+function exportCutSheets() {
+  if (!calcResult) { showToast('Calculate a job first'); return; }
+  const html = buildCutSheetsHtml();
+  if (!html) { showToast('Nothing to print yet'); return; }
+  const w = window.open('', '_blank');
+  if (!w) {
+    // Popup blocked (common on mobile): fall back to a blob the user can open.
+    try {
+      const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+      const a = document.createElement('a');
+      a.href = url; a.target = '_blank'; a.rel = 'noopener';
+      a.click();
+      showToast('Cut sheets opened in a new tab \u2014 use your browser\u2019s Print / Save as PDF');
+    } catch (e) {
+      showToast('Your browser blocked the window \u2014 allow pop-ups for cutnest.co.uk');
+    }
+    return;
+  }
+  w.document.write(html);
+  w.document.close();
+  setTimeout(function () { w.print(); }, 700);
+}
+
+// ── GUILLOTINE CUT SEQUENCE ───────────────────────────────────
+// A guillotine layout is only useful to a saw operator if it comes with the
+// ORDER of cuts: every cut on a panel saw runs edge to edge, so the sheet has
+// to be split in two, then each half split again, recursively. The app has
+// never output that, which made guillotine mode decorative.
+//
+// This recovers the cut tree from the finished layout: find a line that runs
+// clean across the current region without crossing any part, split, recurse.
+// If no such line exists the layout is not guillotine-cuttable (which is normal
+// and expected for free placement) and we return null rather than inventing a
+// sequence that cannot be sawn.
+function deriveGuillotineCuts(placed, sheetW, sheetH, kerf) {
+  const K = Math.max(0, +kerf || 0);
+  const EPS = 1e-6;
+  const cuts = [];
+  let n = 0;
+  let ok = true;
+
+  function rec(x0, y0, x1, y1, items, depth) {
+    if (!ok || items.length <= 1) return;
+
+    // A cut line is valid if every part lies wholly on one side of it, with at
+    // least one part on each side. Candidates are the far edges of the parts.
+    const tryAxis = function (axis) {
+      const lines = [];
+      items.forEach(function (p) { lines.push(axis === 'V' ? p.x + p.w : p.y + p.h); });
+      lines.sort(function (a, b) { return a - b; });
+      for (let i = 0; i < lines.length; i++) {
+        const c = lines[i];
+        if (axis === 'V' ? (c <= x0 + EPS || c >= x1 - EPS) : (c <= y0 + EPS || c >= y1 - EPS)) continue;
+        const before = [], after = [];
+        let straddles = false;
+        for (const p of items) {
+          const lo = axis === 'V' ? p.x : p.y;
+          const hi = axis === 'V' ? p.x + p.w : p.y + p.h;
+          if (hi <= c + EPS) before.push(p);
+          else if (lo >= c + K - EPS) after.push(p);
+          else { straddles = true; break; }
+        }
+        if (straddles || !before.length || !after.length) continue;
+        return { c: c, before: before, after: after };
+      }
+      return null;
+    };
+
+    // Prefer the cut that runs the longer way across the region first — that is
+    // how an operator breaks a sheet down in practice.
+    const first = (x1 - x0) >= (y1 - y0) ? 'V' : 'H';
+    const second = first === 'V' ? 'H' : 'V';
+    let axis = first, hit = tryAxis(first);
+    if (!hit) { axis = second; hit = tryAxis(second); }
+    if (!hit) { ok = false; return; }
+
+    if (axis === 'V') {
+      cuts.push({ no: ++n, axis: 'V', pos: hit.c, from: y0, to: y1, depth: depth,
+                  label: 'Cut down at X = ' + Math.round(hit.c) + 'mm' });
+      rec(x0, y0, hit.c, y1, hit.before, depth + 1);
+      rec(hit.c + K, y0, x1, y1, hit.after, depth + 1);
+    } else {
+      cuts.push({ no: ++n, axis: 'H', pos: hit.c, from: x0, to: x1, depth: depth,
+                  label: 'Cut across at Y = ' + Math.round(hit.c) + 'mm' });
+      rec(x0, y0, x1, hit.c, hit.before, depth + 1);
+      rec(x0, hit.c + K, x1, y1, hit.after, depth + 1);
+    }
+  }
+
+  rec(0, 0, sheetW, sheetH, placed.slice(), 0);
+  return ok ? cuts : null;
+}
 
 // ── OPEN-SHEETS PACKER (Best-Fit-Decreasing) ──────────────────
 // The greedy pipeline fills sheet 1 as full as it can, then starts sheet 2.
