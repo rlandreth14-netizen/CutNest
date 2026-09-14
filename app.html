@@ -1572,6 +1572,44 @@ function rectIntersects(a, b) {
   return !(a.x+a.w <= b.x || b.x+b.w <= a.x || a.y+a.h <= b.y || b.y+b.h <= a.y);
 }
 
+// ── THE KERF INVARIANT ────────────────────────────────────────
+// The single rule the entire product rests on: a part fits a free rectangle
+// only if there is room for the part PLUS a blade's width of waste on any side
+// that is not already the sheet edge (you cut along the sheet boundary, not
+// between two parts, so no kerf is needed there).
+//
+// This lived in two hand-copied places — maxRectsPack and packOpenSheets —
+// which had to stay byte-identical forever or the two packers would disagree
+// about what fits. One definition now, used by both.
+function fitsWithKerf(r, pw, ph, sheetW, sheetH) {
+  const rRight = r.x + r.w, rBottom = r.y + r.h;
+  const needW = pw + (rRight  >= sheetW - 0.0001 ? 0 : KERF);
+  const needH = ph + (rBottom >= sheetH - 0.0001 ? 0 : KERF);
+  return needW <= r.w && needH <= r.h;
+}
+
+// Identity of one physical part instance. Was written out by hand in 10 places.
+function pieceKey(p) { return p.pieceIndex + '-' + p.instanceIndex; }
+
+// Piece orderings tried by every packer. Was copy-pasted as a literal 8 times.
+const PACK_SORTERS = [
+  function(q){ return [...q].sort(function(a,b){ return b.w*b.h - a.w*a.h; }); },
+  function(q){ return [...q].sort(function(a,b){ return Math.max(b.w,b.h) - Math.max(a.w,a.h); }); },
+  function(q){ return [...q].sort(function(a,b){ return Math.min(b.w,b.h) - Math.min(a.w,a.h); }); },
+  function(q){ return [...q].sort(function(a,b){ return b.w - a.w; }); },
+  function(q){ return [...q].sort(function(a,b){ return b.h - a.h; }); },
+  function(q){ return [...q].sort(function(a,b){ return (b.w+b.h) - (a.w+a.h); }); },
+  function(q){ return [...q].sort(function(a,b){ return Math.abs(b.w-b.h) - Math.abs(a.w-a.h); }); },
+  function(q){ return [...q].sort(function(a,b){ return Math.abs(a.w-a.h) - Math.abs(b.w-b.h); }); }
+];
+
+// Sheets the user actually has to BUY, and what they cost. Re-derived
+// independently in renderOutput, exportPDF, exportCSV and buildCutSheetsHtml —
+// which is exactly how the remnant once got billed as a bought sheet.
+function boughtSheets(sheets) {
+  return (sheets || []).filter(function(s){ return !s.isRemnant; });
+}
+
 function splitFreeRect(fr, px, py, pw, ph) {
   // Split a free rect around a placed piece — produces up to 4 new free rects
   const res = [];
@@ -1726,13 +1764,10 @@ function guillotinePack(sheetW, sheetH, queue, allowRotation) {
 }
 
 function guillotinePackBest(sheetW, sheetH, queue, allowRotation) {
-  const sorters = [
-    q => q.slice().sort((a,b) => b.w*b.h - a.w*a.h),
-    q => q.slice().sort((a,b) => Math.max(b.w,b.h) - Math.max(a.w,a.h)),
-    q => q.slice().sort((a,b) => b.w - a.w),
-    q => q.slice().sort((a,b) => b.h - a.h),
-    q => q.slice().sort((a,b) => (b.w+b.h) - (a.w+a.h))
-  ];
+  // Guillotine uses a deliberate SUBSET of the shared orderings, in this order:
+  // area, longest side, widest, tallest, perimeter. The two "squareness"
+  // orderings are omitted — they do not help a saw that cuts edge to edge.
+  const sorters = [0, 1, 3, 4, 5].map(function(i){ return PACK_SORTERS[i]; });
   let best = null;
   for (const sortFn of sorters) {
     const res = guillotinePack(sheetW, sheetH, sortFn(queue), allowRotation);
@@ -1765,10 +1800,7 @@ function maxRectsPack(sheetW, sheetH, queue, allowRot) {
           // on any side that faces into the sheet interior. If the free rect
           // already reaches the sheet edge on a side, no kerf is needed there
           // (you cut along the sheet boundary, not between two parts).
-          const rRight = r.x + r.w, rBottom = r.y + r.h;
-          const needW = pw + (rRight  >= sheetW - 0.0001 ? 0 : KERF);
-          const needH = ph + (rBottom >= sheetH - 0.0001 ? 0 : KERF);
-          if (needW <= r.w && needH <= r.h) {
+          if (fitsWithKerf(r, pw, ph, sheetW, sheetH)) {
             // Best Area Fit: prefer rect that wastes least space
             const leftoverHoriz = r.w - pw;
             const leftoverVert = r.h - ph;
@@ -1936,7 +1968,7 @@ function buildCutSheetsHtml() {
   let pages = '';
   calcResult.results.forEach(function (r) {
     const libMat = r.libMat;
-    const buy = r.sheets.filter(function (x) { return !x.isRemnant; }).length;
+    const buy = boughtSheets(r.sheets).length;
     r.sheets.forEach(function (sh, si) {
       const cuts = deriveGuillotineCuts(sh.placed, sh.sheetW, sh.sheetH, KERF);
 
@@ -2411,9 +2443,9 @@ function improveNest(W, H, queue, allowRot, maxIters, seed, startBins) {
         if (f < worstFill) { worstFill = f; worstI = i; }
       }
       const victims = {};
-      best[worstI].placed.forEach(function(p){ victims[p.pieceIndex+'|'+p.instanceIndex] = 1; });
+      best[worstI].placed.forEach(function(p){ victims[pieceKey(p)] = 1; });
       const front = [], back = [];
-      for (const p of cand) (victims[p.pieceIndex+'|'+p.instanceIndex] ? front : back).push(p);
+      for (const p of cand) (victims[pieceKey(p)] ? front : back).push(p);
       for (let i = front.length - 1; i > 0; i--) {
         const j = Math.floor(rng() * (i + 1));
         const tmp = front[i]; front[i] = front[j]; front[j] = tmp;
@@ -2470,10 +2502,7 @@ function packOpenSheets(sheetW, sheetH, queue, allowRot, rule) {
       const b = bins[bi];
       for (const o of orientations) {
         for (const r of b.free) {
-          const rRight = r.x + r.w, rBottom = r.y + r.h;
-          const needW = o.pw + (rRight  >= sheetW - 0.0001 ? 0 : KERF);
-          const needH = o.ph + (rBottom >= sheetH - 0.0001 ? 0 : KERF);
-          if (needW > r.w || needH > r.h) continue;
+          if (!fitsWithKerf(r, o.pw, o.ph, sheetW, sheetH)) continue;
           const lh = r.w - o.pw, lv = r.h - o.ph;
           let score;
           if (rule === 'bssf')     score = Math.min(lh, lv);
@@ -2521,16 +2550,7 @@ function packOpenSheets(sheetW, sheetH, queue, allowRot, rule) {
 // Returns null unless EVERY piece was placed — a partial result is useless here
 // and must never be mistaken for a complete one.
 function packOpenBest(sheetW, sheetH, queue, allowRot, effort) {
-  const sorters = [
-    function(q){ return [...q].sort(function(a,b){ return b.w*b.h - a.w*a.h; }); },
-    function(q){ return [...q].sort(function(a,b){ return Math.max(b.w,b.h) - Math.max(a.w,a.h); }); },
-    function(q){ return [...q].sort(function(a,b){ return Math.min(b.w,b.h) - Math.min(a.w,a.h); }); },
-    function(q){ return [...q].sort(function(a,b){ return b.w - a.w; }); },
-    function(q){ return [...q].sort(function(a,b){ return b.h - a.h; }); },
-    function(q){ return [...q].sort(function(a,b){ return (b.w+b.h) - (a.w+a.h); }); },
-    function(q){ return [...q].sort(function(a,b){ return Math.abs(b.w-b.h) - Math.abs(a.w-a.h); }); },
-    function(q){ return [...q].sort(function(a,b){ return Math.abs(a.w-a.h) - Math.abs(b.w-b.h); }); }
-  ];
+  const sorters = PACK_SORTERS;
   const rules = ['legacy','bssf','baf'];
   const nS = Math.max(1, Math.min(sorters.length, effort|0));
   const nR = effort >= 5 ? 3 : effort >= 3 ? 2 : 1;
@@ -2565,16 +2585,7 @@ function packSheetBest(sheetW, sheetH, queue, allowRot, cuttingMethod) {
   const ar = allowRot !== false;
   if (cm === 'guillotine') return guillotinePackBest(sheetW, sheetH, queue, ar);
 
-  const sorters = [
-  q => [...q].sort((a,b) => b.w*b.h - a.w*a.h),                      // largest area first
-  q => [...q].sort((a,b) => Math.max(b.w,b.h) - Math.max(a.w,a.h)), // longest side first
-  q => [...q].sort((a,b) => Math.min(b.w,b.h) - Math.min(a.w,a.h)), // widest short side
-  q => [...q].sort((a,b) => b.w - a.w),                              // widest first
-  q => [...q].sort((a,b) => b.h - a.h),                              // tallest first
-  q => [...q].sort((a,b) => (b.w+b.h) - (a.w+a.h)),                  // largest perimeter
-  q => [...q].sort((a,b) => Math.abs(b.w-b.h) - Math.abs(a.w-a.h)),  // most elongated first
-  q => [...q].sort((a,b) => Math.abs(a.w-a.h) - Math.abs(b.w-b.h)),  // most square first
-];
+  const sorters = PACK_SORTERS;   // see PACK_SORTERS for what each ordering does
   const cap = Math.max(1, Math.min(sorters.length, PACK_EFFORT|0));
   let best = null;
   for (let si = 0; si < cap; si++) {
@@ -2650,7 +2661,7 @@ function rebalanceSheets(sheets, sizes, allowRot, cm) {
     // signature could not detect. Guards the invariant we actually care about.
     const c={};
     arr.forEach(function(s){ s.placed.forEach(function(p){
-      const k = p.pieceIndex+'-'+p.instanceIndex; c[k]=(c[k]||0)+1;
+      const k = pieceKey(p); c[k]=(c[k]||0)+1;
     });});
     return c;
   }
@@ -2747,8 +2758,8 @@ function packPoolBestValue(pool, sizes, allowRot, cm, haveCost) {
     for (const sz of sizes) {
       const r = packSheetBest(sz.w, sz.h, queue, allowRot, cm);
       if (!r.placed.length) continue;
-      const done = new Set(r.placed.map(function(p){ return p.pieceIndex+'-'+p.instanceIndex; }));
-      const rest = queue.filter(function(p){ return !done.has(p.pieceIndex+'-'+p.instanceIndex); });
+      const done = new Set(r.placed.map(function(p){ return pieceKey(p); }));
+      const rest = queue.filter(function(p){ return !done.has(pieceKey(p)); });
       solve(rest, acc.concat([r]), depth+1);
     }
   }
@@ -2774,7 +2785,7 @@ function consolidateSheets(sheets, allowRot, cm) {
         // Key on piece identity (pieceIndex-instanceIndex). Every instance is
         // unique, so this catches loss, duplication AND a swap between two
         // equal-dimension pieces — stronger than a dimension-only signature.
-        const k = p.pieceIndex + '-' + p.instanceIndex;
+        const k = pieceKey(p);
         counts[k] = (counts[k] || 0) + 1;
       });
     });
@@ -2829,13 +2840,13 @@ function consolidateSheets(sheets, allowRot, cm) {
         const repacked = packSheetBest(target.sheetW, target.sheetH, combined, allowRot, cm);
 
         // Which of the COMBINED pieces actually got placed?
-        const placedSet = new Set(repacked.placed.map(function(p){return p.pieceIndex+'|'+p.instanceIndex;}));
+        const placedSet = new Set(repacked.placed.map(function(p){return pieceKey(p);}));
         // All existing target pieces must still be placed (we can't drop them)
-        const keptAllExisting = existing.every(function(p){ return placedSet.has(p.pieceIndex+'|'+p.instanceIndex); });
+        const keptAllExisting = existing.every(function(p){ return placedSet.has(pieceKey(p)); });
         if (!keptAllExisting) continue;
 
         // Did we place any NEW donor pieces here?
-        const newlyPlaced = remaining.filter(function(p){ return placedSet.has(p.pieceIndex+'|'+p.instanceIndex); });
+        const newlyPlaced = remaining.filter(function(p){ return placedSet.has(pieceKey(p)); });
         if (newlyPlaced.length === 0) continue;
 
         // Accept this target's new layout
@@ -2844,8 +2855,8 @@ function consolidateSheets(sheets, allowRot, cm) {
         repacked.unplaced = [];
         candidate[t] = repacked;
         // Remove the donor pieces we just placed
-        const placedDonorKeys = new Set(newlyPlaced.map(function(p){return p.pieceIndex+'|'+p.instanceIndex;}));
-        remaining = remaining.filter(function(p){ return !placedDonorKeys.has(p.pieceIndex+'|'+p.instanceIndex); });
+        const placedDonorKeys = new Set(newlyPlaced.map(function(p){return pieceKey(p);}));
+        remaining = remaining.filter(function(p){ return !placedDonorKeys.has(pieceKey(p)); });
       }
 
       // Only commit if EVERY donor piece was rehomed...
@@ -2926,8 +2937,8 @@ function runMatSafe(libMat, pieces, jobQty, remnant) {
     if (rr.placed.length > 0) {
       rr.isRemnant = true; rr.sheetW = remnant.w; rr.sheetH = remnant.h;
       remnantSheets.push(rr);
-      const rdone = new Set(rr.placed.map(function(p){return p.pieceIndex+'-'+p.instanceIndex;}));
-      queue = queue.filter(function(p){ return !rdone.has(p.pieceIndex+'-'+p.instanceIndex); });
+      const rdone = new Set(rr.placed.map(function(p){return pieceKey(p);}));
+      queue = queue.filter(function(p){ return !rdone.has(pieceKey(p)); });
     }
   }
   const sheets = [];
@@ -2943,8 +2954,8 @@ function runMatSafe(libMat, pieces, jobQty, remnant) {
     }
     if (!best || !best.placed.length) break;
     sheets.push(best);
-    const done = new Set(best.placed.map(function(p){return p.pieceIndex+'-'+p.instanceIndex;}));
-    queue = queue.filter(function(p){ return !done.has(p.pieceIndex+'-'+p.instanceIndex); });
+    const done = new Set(best.placed.map(function(p){return pieceKey(p);}));
+    queue = queue.filter(function(p){ return !done.has(pieceKey(p)); });
   }
   const sizeMap = {};
   sheets.forEach(function(s){
@@ -3012,8 +3023,8 @@ function runMat(libMat, pieces, remnant, jobQty) {
     if (_rr.placed.length > 0) {
       _rr.isRemnant = true; _rr.sheetW = remnant.w; _rr.sheetH = remnant.h;
       remnantSheets.push(_rr);
-      const _done = new Set(_rr.placed.map(function(p){return p.pieceIndex+'-'+p.instanceIndex;}));
-      queue = queue.filter(function(p){return !_done.has(p.pieceIndex+'-'+p.instanceIndex);});
+      const _done = new Set(_rr.placed.map(function(p){return pieceKey(p);}));
+      queue = queue.filter(function(p){return !_done.has(pieceKey(p));});
     }
   }
 
@@ -3504,7 +3515,7 @@ function renderOutput() {
     // sizeMap) did not, so the same card showed two contradictory numbers and
     // the total over-charged by one sheet.
     const remnantSheets = sheets.filter(s => s.isRemnant);
-    const total = sheets.length - remnantSheets.length;
+    const total = boughtSheets(sheets).length;
     const chips = Object.entries(sizeMap).map(([dim,cnt]) => {
       const [sw, sh] = dim.split('×').map(Number);
       const matchedSize = [libMat.size1, libMat.size2].find(s => s && s.w === sw && s.h === sh);
@@ -3615,7 +3626,7 @@ function renderOutput() {
   if (ra) ra.textContent = 'Calculated with a ' + KERF + 'mm blade kerf'
     + (results.some(r=>r.libMat.allowRotation===false) ? ' \u00b7 grain locked on some materials' : '');
 
-  const totalSheets = results.reduce((s,r)=>s+r.sheets.filter(sh=>!sh.isRemnant).length,0);
+  const totalSheets = results.reduce((s,r)=>s+boughtSheets(r.sheets).length,0);
   const totalPlaced = results.reduce((s,r)=>s+r.sheets.reduce((a,sh)=>a+sh.placed.length,0),0);
   const totalUnplaced = results.reduce((s,r)=>s+r.unplaced.length,0);
   // Area-weighted, matching the per-material card exactly. The old unweighted
@@ -3673,7 +3684,7 @@ function renderOutput() {
   results.forEach(({libMat, sheets, unplaced, oversized}) => {
     const sec = document.createElement('div');
     sec.className = 'detail-section';
-    const buyCount = sheets.filter(s=>!s.isRemnant).length;
+    const buyCount = boughtSheets(sheets).length;
     const remCount = sheets.length - buyCount;
     let html = `<div class="ds-title"><div class="ds-bar"></div>${esc(libMat.name)} — ${buyCount} sheet${buyCount!==1?'s':''} to order${remCount?` + ${remCount} remnant`:''}`
       + `<span style="margin-left:auto;display:flex;gap:5px;flex-wrap:wrap">`
@@ -3826,7 +3837,7 @@ function exportPDF() {
   calcResult.results.forEach((_r) => {
     const {libMat, sheets, unplaced, oversized} = _r;
     const _v = optimalityVerdict(_r);
-    const pdfBuy = sheets.filter(s=>!s.isRemnant).length;
+    const pdfBuy = boughtSheets(sheets).length;
     const pdfRem = sheets.length - pdfBuy;
     body += `<div class="mat-sec"><div class="mat-hdr">${esc(libMat.name)} — ${pdfBuy} sheet${pdfBuy!==1?'s':''} to order${pdfRem?` + ${pdfRem} remnant`:''}</div>`;
     sheets.forEach((sh,si) => {
@@ -4439,26 +4450,54 @@ const UNDO_MAX = 30;
 let undoStack = [];
 let redoStack = [];
 
+// A snapshot has to cover everything a user would expect Ctrl+Z to reach, and
+// restoring one has to write through to the SAME places a normal edit writes to.
+// Previously the snapshot captured {mats, library} but restoring it called only
+// saveState(), which writes cutnest-job-v1 (the job). Nothing wrote
+// cutnest-lib-v1, so undoing a library change reverted it on screen and left the
+// old value on disk — and the next page load silently brought it back.
+// The job reference and quantity live in the DOM and were never captured at all.
+function snapshotState() {
+  const jr = document.getElementById('job-ref');
+  const jq = document.getElementById('job-qty');
+  return JSON.stringify({
+    mats: mats,
+    library: library,
+    jobRef: jr ? jr.value : '',
+    jobQty: jq ? jq.value : '1'
+  });
+}
+
+function restoreSnapshot(json) {
+  const st = JSON.parse(json);
+  mats = st.mats;
+  library = st.library;
+  const jr = document.getElementById('job-ref');
+  const jq = document.getElementById('job-qty');
+  if (jr && typeof st.jobRef === 'string') jr.value = st.jobRef;
+  if (jq && typeof st.jobQty === 'string') jq.value = st.jobQty;
+  renderAll();
+  saveState();                 // persists the job
+  try { persistLib(library); } catch (e) {}   // persists the library
+  updateUndoUI();
+}
+
 function pushUndo() {
-  undoStack.push(JSON.stringify({ mats, library }));
+  undoStack.push(snapshotState());
   if (undoStack.length > UNDO_MAX) undoStack.shift();
   redoStack = [];
   updateUndoUI();
 }
 function undo() {
   if (!undoStack.length) return;
-  redoStack.push(JSON.stringify({ mats, library }));
-  const prev = JSON.parse(undoStack.pop());
-  mats = prev.mats; library = prev.library;
-  renderAll(); saveState(); updateUndoUI();
+  redoStack.push(snapshotState());
+  restoreSnapshot(undoStack.pop());
   showToast('↩ Undone');
 }
 function redo() {
   if (!redoStack.length) return;
-  undoStack.push(JSON.stringify({ mats, library }));
-  const next = JSON.parse(redoStack.pop());
-  mats = next.mats; library = next.library;
-  renderAll(); saveState(); updateUndoUI();
+  undoStack.push(snapshotState());
+  restoreSnapshot(redoStack.pop());
   showToast('↪ Redone');
 }
 function updateUndoUI() {
@@ -5036,7 +5075,7 @@ function saveToHistory(){
   if(!isPro||!calcResult)return;
   try{
     const jr=(document.getElementById('job-ref')||{}).value||'Untitled';
-    const ts=calcResult.results.reduce(function(s,r){return s+r.sheets.filter(function(sh){return !sh.isRemnant;}).length;},0);
+    const ts=calcResult.results.reduce(function(s,r){return s+boughtSheets(r.sheets).length;},0);
     const sm=calcResult.results.map(function(r){
       return r.libMat.name+': '+Object.entries(r.sizeMap).map(function(e){return e[1]+'x '+e[0]+'mm';}).join(', ');
     }).join(' | ');
@@ -5112,10 +5151,14 @@ function saveState() {
   try {
     const jr = document.getElementById('job-ref');
     const jq = document.getElementById('job-qty');
+    // Was: mats: JSON.parse(JSON.stringify(mats)) — a deep clone that was
+    // immediately re-serialised by the outer stringify, so the job was walked
+    // THREE times instead of once. This runs on every keystroke in a width,
+    // height or quantity field, so the waste was per-character.
     localStorage.setItem('cutnest-job-v1', JSON.stringify({
       jobRef: jr ? jr.value : '',
       jobQty: jq ? jq.value : '1',
-      mats: JSON.parse(JSON.stringify(mats))
+      mats: mats
     }));
   } catch(e) {}
 }
