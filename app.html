@@ -506,7 +506,8 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
     <button class="btn-hdr no-print" id="redo-btn" onclick="redo()" title="Redo (Ctrl+Y)" aria-label="Redo" disabled style="opacity:.4">↪</button>
     <button class="btn-hdr no-print" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode" aria-label="Toggle dark mode">☀︎</button>
     <button class="btn-hdr no-print" id="history-btn" onclick="openHistory()" title="Job history" aria-label="Job history">&#128336;</button>
-    <button class="btn-hdr no-print" onclick="openLib()" title="Stock library" aria-label="Stock library">&#128230;<span class="btn-hdr-label"> Library</span></button>
+    <button class="btn-hdr no-print" onclick="openOffcuts()" title="Offcut stock" aria-label="Offcut stock">&#9851;</button>
+      <button class="btn-hdr no-print" onclick="openLib()" title="Stock library" aria-label="Stock library">&#128230;<span class="btn-hdr-label"> Library</span></button>
     <button class="btn-hdr no-print" onclick="openSettings()" title="Settings" aria-label="Settings">&#9881;</button>
   </div>
 </header>
@@ -613,6 +614,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
           <button class="btn-exp" onclick="exportDXF()" title="Machine-ready DXF for CNC/laser/router">⬇ DXF</button>
           <button class="btn-exp pdf-btn" onclick="exportPDF()" title="Download print-quality PDF">⬇ PDF</button>
           <button class="btn-exp" onclick="shareJob()" title="Share this job">🔗 Share</button>
+          <button class="btn-exp" onclick="saveAllOffcuts()" title="Keep this job's reclaimable offcuts — they are offered back as a remnant on the next job in this material">♻ Save offcuts</button>
           <button class="btn-exp" onclick="exportCutSheets()" title="One page per sheet, drawn to scale, dimensioned, with the cut sequence — for the machine">📐 Cut sheets</button>
           <button class="btn-exp" onclick="doPrint()">🖨 Print</button>
         </div>
@@ -821,6 +823,21 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
       </div>
       <div style="text-align:center;margin-top:14px">
         <button onclick="setKerfChoice(null)" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;font-family:inherit">Not sure &mdash; use 4mm for now</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- OFFCUT STOCK MODAL -->
+<div class="overlay" id="offcut-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Offcut stock">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hdr"><div class="modal-title">&#9851; Offcut stock</div><button class="modal-x" onclick="closeOffcuts()" aria-label="Close">&#10005;</button></div>
+    <div class="modal-body">
+      <p class="modal-sub">Usable pieces you have kept off previous jobs. When you start a job in the same material, these are offered as a remnant so you cut them before buying a new sheet.</p>
+      <div id="offcut-list" style="margin-top:12px"></div>
+      <div style="display:flex;gap:8px;margin-top:14px;justify-content:space-between;align-items:center">
+        <button class="btn btn-out" onclick="clearAllOffcuts()" style="padding:8px 14px;font-size:12px">Clear all</button>
+        <button class="btn btn-teal" onclick="closeOffcuts()" style="padding:8px 20px">Done</button>
       </div>
     </div>
   </div>
@@ -2171,22 +2188,40 @@ function runMat(libMat, pieces, remnant, jobQty) {
       try { cand = packOpenBest(sz.w, sz.h, originalQueue, _arOpen, PACK_EFFORT); }
       catch (e) { cand = null; }
       if (!cand || !cand.length) continue;
+
       // Search the piece order for a better arrangement of this same size.
+      //
+      // IMPORTANT: improveNest minimises sheet count BEFORE consolidation, but
+      // the answer the user gets is the cost AFTER consolidation. Those two are
+      // not monotone with each other — an arrangement with one more sheet
+      // pre-consolidation can consolidate down to fewer. Measured case: a
+      // 350-part job came out 28 sheets / £1820 with the search off and
+      // 29 sheets / £1885 with it on, because the search "improved" the
+      // intermediate into something that consolidated worse.
+      //
+      // So the searched result does not REPLACE the unsearched one — both are
+      // consolidated and scored, and the better wins. The search can now only
+      // ever help.
+      const candidates = [cand];
       const _iters = _ilsIterations(originalQueue.length);
       if (_iters > 0) {
         try {
-          cand = improveNest(sz.w, sz.h, originalQueue, _arOpen, _iters,
-                             _jobSeed(originalQueue, sz.w, sz.h, KERF), cand);
+          const imp = improveNest(sz.w, sz.h, originalQueue, _arOpen, _iters,
+                                  _jobSeed(originalQueue, sz.w, sz.h, KERF), cand);
+          if (imp && imp.length) candidates.push(imp);
         } catch (e) { /* keep the unsearched candidate */ }
       }
-      let candC;
-      try { candC = consolidateSheets(cand, _arOpen, _cm); }
-      catch (e) { candC = cand; }
-      const sc = scoreOf(candC);
-      if (sc.a < bestScore.a - 1e-9 || (Math.abs(sc.a - bestScore.a) < 1e-9 && sc.b < bestScore.b)) {
-        bestArr = candC; bestScore = sc;
+
+      for (let ci = 0; ci < candidates.length; ci++) {
+        let candC;
+        try { candC = consolidateSheets(candidates[ci], _arOpen, _cm); }
+        catch (e) { candC = candidates[ci]; }
+        const sc = scoreOf(candC);
+        if (sc.a < bestScore.a - 1e-9 || (Math.abs(sc.a - bestScore.a) < 1e-9 && sc.b < bestScore.b)) {
+          bestArr = candC; bestScore = sc;
+        }
+        if (candC.length < fewestArr.length) fewestArr = candC;
       }
-      if (candC.length < fewestArr.length) fewestArr = candC;
     }
     if (havePricesForCmp && fewestArr.length < bestArr.length) {
       const cheapCost = sheetSetCost(bestArr, sizes);
@@ -2466,7 +2501,7 @@ function buildBlock(m, idx) {
              <span>Remnant: ${m.remnant.w}&times;${m.remnant.h}mm &mdash; used first</span>
              <button class="remnant-remove" onclick="removeRemnant('${m.id}')">&times;</button>
            </div>`
-        : `<button class="btn-add-remnant" onclick="openRemnantInput('${m.id}')">+ Got a leftover piece? Add remnant</button>`
+        : `<button class="btn-add-remnant" onclick="openRemnantInput('${m.id}')">+ Got a leftover piece? Add remnant</button>${offcutPickerHtml(m, libMat)}`
       }
       <div class="remnant-form" id="remnant-form-${m.id}" style="display:none">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">Leftover sheet dimensions</div>
@@ -2777,6 +2812,186 @@ function confirmPaste() {
   const cuts = res.rows.reduce(function (a, r) { return a + r.qty; }, 0);
   showToast('\u2713 Added ' + res.rows.length + ' row' + (res.rows.length !== 1 ? 's' : '') + ' \u00b7 ' + cuts + ' cuts');
   if (calcResult) { const sb = document.getElementById('stale-banner'); if (sb) sb.style.display = 'block'; }
+}
+
+
+// ── OFFCUT STOCK ──────────────────────────────────────────────
+// CutNest has always reported "Reclaim Offcuts: 2" and printed "KEEP OFFCUT"
+// on the cut sheet — then given the user nowhere to put it. The number was
+// unactionable. This is the missing half: save a usable offcut against its
+// material, and offer it back as the remnant on the next job in that material.
+const OFFCUT_KEY = 'cutnest-offcuts-v1';
+const OFFCUT_MAX = 200;
+
+function loadOffcuts() {
+  try {
+    const raw = localStorage.getItem(OFFCUT_KEY);
+    const a = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(a)) return [];
+    // Heal anything malformed rather than letting one bad row break the list.
+    return a.filter(function (o) {
+      return o && +o.w >= 10 && +o.h >= 10;
+    }).map(function (o) {
+      return {
+        id: o.id || ('oc-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7)),
+        matId: o.matId != null ? o.matId : null,
+        matName: String(o.matName || 'Unknown material').slice(0, 60),
+        w: Math.round(+o.w), h: Math.round(+o.h),
+        added: o.added || new Date().toISOString(),
+        jobRef: String(o.jobRef || '').slice(0, 40)
+      };
+    }).slice(0, OFFCUT_MAX);
+  } catch (e) { return []; }
+}
+
+function saveOffcuts(list) {
+  try { localStorage.setItem(OFFCUT_KEY, JSON.stringify((list || []).slice(0, OFFCUT_MAX))); }
+  catch (e) { /* quota: the job itself matters more than the offcut list */ }
+}
+
+function offcutsFor(matId) {
+  if (matId == null) return [];
+  return loadOffcuts().filter(function (o) { return o.matId == matId; });
+}
+
+// Add one offcut to stock. Returns false if an identical piece is already
+// there, so double-tapping Save does not create duplicates.
+function addOffcut(matId, matName, w, h, jobRef) {
+  w = Math.round(+w); h = Math.round(+h);
+  if (!(w >= 10 && h >= 10)) return false;
+  const list = loadOffcuts();
+  const dupe = list.some(function (o) {
+    return o.matId == matId && o.w === w && o.h === h;
+  });
+  if (dupe) return false;
+  list.unshift({
+    id: 'oc-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+    matId: matId, matName: matName, w: w, h: h,
+    added: new Date().toISOString(),
+    jobRef: jobRef || ''
+  });
+  saveOffcuts(list);
+  return true;
+}
+
+function removeOffcut(id) {
+  saveOffcuts(loadOffcuts().filter(function (o) { return o.id !== id; }));
+}
+
+// Save every usable offcut from the current result in one go.
+function saveAllOffcuts() {
+  if (!calcResult || !calcResult.results) return;
+  const jr = ((document.getElementById('job-ref') || {}).value || '').trim();
+  let added = 0, skipped = 0;
+  calcResult.results.forEach(function (r) {
+    const matId = r.libMat && r.libMat.id;
+    r.sheets.forEach(function (sh) {
+      // Only offcuts big enough to be worth keeping, and never off a remnant
+      // sheet — that piece is already in stock, re-adding it double-counts.
+      if (!sh.usableOffcut || !sh.offcut || sh.isRemnant) return;
+      if (addOffcut(matId, r.libMat.name, sh.offcut.w, sh.offcut.h, jr)) added++;
+      else skipped++;
+    });
+  });
+  renderAll();
+  if (added) showToast('\u2713 ' + added + ' offcut' + (added !== 1 ? 's' : '') + ' saved to stock' +
+                       (skipped ? ' (' + skipped + ' already there)' : ''));
+  else if (skipped) showToast('Those offcuts are already in your stock');
+  else showToast('No reclaimable offcuts on this job');
+}
+
+function useOffcut(matId, offcutId) {
+  const o = loadOffcuts().find(function (x) { return x.id === offcutId; });
+  const m = mats.find(function (x) { return x.id === matId; });
+  if (!o || !m) return;
+  pushUndo();
+  m.remnant = { w: o.w, h: o.h };
+  m.remnantFromStock = o.id;   // so it can be retired once it has been cut
+  renderAll(); saveState();
+  showToast('Using your ' + o.w + '\u00d7' + o.h + 'mm offcut');
+}
+
+// Called after a calculate that actually consumed a stock offcut.
+function retireUsedOffcut(matId) {
+  const m = mats.find(function (x) { return x.id === matId; });
+  if (!m || !m.remnantFromStock) return;
+  removeOffcut(m.remnantFromStock);
+  delete m.remnantFromStock;
+  m.remnant = null;
+  renderAll(); saveState();
+  showToast('\u2713 Offcut removed from stock \u2014 it has been cut');
+}
+
+function offcutPickerHtml(m, libMat) {
+  if (!libMat) return '';
+  const list = offcutsFor(libMat.id);
+  if (!list.length) return '';
+  return '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">' +
+    '<span style="font-size:11px;color:var(--muted);font-weight:600">From your offcut stock:</span>' +
+    list.slice(0, 8).map(function (o) {
+      return '<button class="btn-add-remnant" style="border-style:solid;border-color:#6ee7b7;color:#065f46"' +
+             ' onclick="useOffcut(\'' + m.id + '\',\'' + o.id + '\')">' +
+             o.w + '\u00d7' + o.h + 'mm</button>';
+    }).join('') +
+    (list.length > 8 ? '<span style="font-size:11px;color:var(--muted)">+' + (list.length - 8) + ' more</span>' : '') +
+    '</div>';
+}
+
+// ── OFFCUT STOCK MODAL ──
+function openOffcuts() {
+  renderOffcutList();
+  const el = document.getElementById('offcut-modal');
+  if (el) el.style.display = 'flex';
+}
+function closeOffcuts() {
+  const el = document.getElementById('offcut-modal');
+  if (el) el.style.display = 'none';
+  renderAll();
+}
+function deleteOffcut(id) { removeOffcut(id); renderOffcutList(); }
+function clearAllOffcuts() {
+  if (!confirm('Remove every offcut from your stock list?')) return;
+  saveOffcuts([]);
+  renderOffcutList();
+  showToast('Offcut stock cleared');
+}
+
+function renderOffcutList() {
+  const wrap = document.getElementById('offcut-list');
+  if (!wrap) return;
+  const list = loadOffcuts();
+  if (!list.length) {
+    wrap.innerHTML = '<p style="color:var(--muted);font-size:13px;line-height:1.6">' +
+      'No offcuts saved yet.<br><br>Run a job, then use <b>Save offcuts</b> on the results to keep the ' +
+      'reclaimable pieces. They will be offered back to you as a remnant on the next job in that material.</p>';
+    return;
+  }
+  // Group by material so a shop with several grades can find things.
+  const groups = {};
+  list.forEach(function (o) {
+    const k = o.matName || 'Unknown material';
+    (groups[k] = groups[k] || []).push(o);
+  });
+  wrap.innerHTML = Object.keys(groups).sort().map(function (name) {
+    const rows = groups[name].sort(function (a, b) { return (b.w * b.h) - (a.w * a.h); }).map(function (o) {
+      const d = new Date(o.added);
+      const ds = isNaN(d) ? '' : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+      return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--bdr)">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:13px;font-weight:700;color:var(--teal)">' + o.w + ' \u00d7 ' + o.h + 'mm</div>' +
+          '<div style="font-size:11px;color:var(--muted)">' +
+            (o.jobRef ? 'from ' + esc(o.jobRef) + ' \u00b7 ' : '') + ds +
+            ' \u00b7 ' + ((o.w * o.h) / 1e6).toFixed(2) + ' m\u00b2</div>' +
+        '</div>' +
+        '<button class="btn-del" onclick="deleteOffcut(\'' + o.id + '\')">\u2715</button>' +
+      '</div>';
+    }).join('');
+    const area = groups[name].reduce(function (a, o) { return a + o.w * o.h; }, 0) / 1e6;
+    return '<div style="margin-bottom:14px">' +
+      '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:3px">' +
+        esc(name) + ' \u2014 ' + groups[name].length + ' piece' + (groups[name].length !== 1 ? 's' : '') +
+        ' \u00b7 ' + area.toFixed(2) + ' m\u00b2</div>' + rows + '</div>';
+  }).join('');
 }
 
 // ── MAT MANAGEMENT ────────────────────────────
@@ -3654,6 +3869,16 @@ function renderOutput() {
         ${verdict ? (verdict.optimal
           ? `<div style="display:inline-flex;align-items:center;gap:5px;background:#d1fae5;border:1px solid #6ee7b7;color:#065f46;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:700;margin-bottom:7px" title="Checked against a mathematical lower bound: no arrangement of these parts can fit on fewer sheets.">✓ PROVABLY OPTIMAL — no nest can use fewer sheets</div>`
           : `<div style="display:inline-flex;align-items:center;gap:5px;background:var(--sky);border:1px solid var(--bdr2);color:var(--muted);border-radius:6px;padding:3px 9px;font-size:11px;font-weight:600;margin-bottom:7px" title="The theoretical floor is a mathematical bound. It is often not physically achievable — a gap of one sheet usually means the bound is loose, not that a better nest exists.">Best nest found · theoretical floor ${verdict.floor} sheet${verdict.floor!==1?'s':''}</div>`) : ''}
+        ${(function(){
+          // If this material used a remnant that came from stock, that piece has
+          // now been cut — offer to take it out so it is never offered twice.
+          const _m = mats.find(function(x){ return x.selectedMatId == libMat.id && x.remnantFromStock; });
+          if (!_m || !remnantSheets.length) return '';
+          return `<div style="background:#fffbeb;border:1px solid var(--amber);border-radius:7px;padding:7px 10px;margin-bottom:7px;font-size:11.5px;color:#92400e;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span>You cut a stock offcut on this job.</span>
+            <button class="btn-sm-gr" onclick="retireUsedOffcut('${_m.id}')">Remove it from stock</button>
+          </div>`;
+        })()}
         ${_r.altFewerSheets ? `<div style="background:var(--sky);border:1px dashed var(--bdr2);border-radius:7px;padding:7px 10px;margin-bottom:7px;font-size:11.5px;color:var(--text2);line-height:1.5">
           <b style="color:var(--teal)">Fewer sheets available:</b> ${_r.altFewerSheets.sheets} sheet${_r.altFewerSheets.sheets!==1?'s':''}
           (${Object.entries(_r.altFewerSheets.sizeMap).map(([d,c])=>`${c}\u00d7 ${d}mm`).join(', ')}) for \u00a3${_r.altFewerSheets.cost.toFixed(2)}
@@ -5348,7 +5573,7 @@ document.addEventListener('keydown', function(e) {
     // Settings saves on every keystroke, so Escape must roll back like Cancel
     // rather than leaving a half-typed kerf committed.
     if (sm && sm.style.display !== 'none') { cancelSettings(); return; }
-    ['lib-modal','history-modal','upgrade-modal','legal-modal','zoom-modal','paste-modal'].forEach(function(id) {
+    ['lib-modal','history-modal','upgrade-modal','legal-modal','zoom-modal','paste-modal','offcut-modal'].forEach(function(id) {
       const el = document.getElementById(id);
       if (el && el.style.display !== 'none') el.style.display = 'none';
     });
