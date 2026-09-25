@@ -5083,15 +5083,13 @@ const MASTER_LIBRARY = [
 let isPro=false,settings={kerf:4,companyName:''};
 
 // ════════════════════════════════════════════════════════════════
-// ⚠️ LICENCE PRODUCT BINDING — set this once for security.
-// Without it, a valid licence key from ANY Lemon Squeezy store would
-// unlock CutNest Pro. Fill in your product's numeric Store ID (and
-// optionally Variant ID) from the Lemon Squeezy dashboard. Leave as
-// null to skip the check (NOT recommended for production).
-// Find it: LS dashboard → the validate/activate response meta.store_id
-// (or Settings → Stores). Example: LS_STORE_ID = 123456;
+// LICENCE PRODUCT BINDING
+// Only licence keys issued by the CutNest store unlock Pro. Without this, a
+// key from ANY Lemon Squeezy store (anyone can open one) would work.
+// Store: cutnest.lemonsqueezy.com, ID from LS dashboard → Settings → Stores.
+// If you ever move to a new store, update this or every key will be refused.
 // ════════════════════════════════════════════════════════════════
-const LS_STORE_ID = null;     // e.g. 123456
+const LS_STORE_ID = 394602;
 const LS_VARIANT_ID = null;   // optional, e.g. 654321
 
 // One-time console warning so an unbound build can never ship unnoticed again.
@@ -5111,8 +5109,10 @@ function licenceMetaMatches(resp){
   if (LS_STORE_ID == null && LS_VARIANT_ID == null) { warnIfUnbound(); return true; }
   const meta = resp && resp.meta;
   if (!meta) return false;
-  if (LS_STORE_ID != null && meta.store_id !== LS_STORE_ID) return false;
-  if (LS_VARIANT_ID != null && meta.variant_id !== LS_VARIANT_ID) return false;
+  // Compare as strings so a number/string difference in the API response
+  // can never lock out a genuine customer.
+  if (LS_STORE_ID != null && String(meta.store_id) !== String(LS_STORE_ID)) return false;
+  if (LS_VARIANT_ID != null && String(meta.variant_id) !== String(LS_VARIANT_ID)) return false;
   return true;
 }
 
