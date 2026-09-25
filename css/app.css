@@ -195,7 +195,7 @@ tr:hover td{background:rgba(232,244,248,.5)}
 .sizes-edit{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .size-row{display:grid;grid-template-columns:18px 1fr 1fr 1fr 1fr 40px;gap:6px;align-items:end;margin-bottom:6px}
 .size-no{font-size:11px;font-weight:700;color:var(--muted);padding-bottom:10px;text-align:center}
-.cut-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.cut-opts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
 .cut-opt-box{background:#fff;border:1px solid var(--bdr);border-radius:8px;padding:10px}
 .cut-opt-box select{margin-top:4px}
 .grain-toggle{display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer;font-size:13px;color:var(--text2);user-select:none}

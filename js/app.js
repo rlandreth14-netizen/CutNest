@@ -165,6 +165,7 @@ function buildBlock(m, idx) {
     sizeHtml = `
       <div class="sz-info-row">
         ${sizeBadgesHtml(libMat)}
+        ${cleanTrim(libMat.trim) ? `<div class="sz-badge" title="Taken off every edge of each sheet before nesting"><span class="sl">Edge trim</span><span class="sv">${cleanTrim(libMat.trim)} mm</span></div>` : ''}
         <div class="sz-auto-note">The optimiser picks the best mix</div>
       </div>
       ${!isPro && (libMat.allowRotation === false || libMat.cuttingMethod === 'guillotine')
@@ -926,7 +927,19 @@ function buildCutSheetsHtml() {
     const libMat = r.libMat;
     const buy = boughtSheets(r.sheets).length;
     r.sheets.forEach(function (sh, si) {
-      const cuts = deriveGuillotineCuts(sh.placed, sh.sheetW, sh.sheetH, KERF);
+      // Edge trim on a saw job: the operator trims the sheet first, and from then
+      // on the only edges left to measure from are the trimmed ones. So the cut
+      // sequence is worked out on the trimmed sheet and every position on this
+      // page is measured from the trimmed corner (d = datum offset). On CNC
+      // (free placement) the sheet is loaded whole and the trim is just a
+      // border to keep clear of, so the sheet corner stays the datum.
+      const trimT = sh.trim || 0;
+      const sawTrim = trimT > 0 && libMat.cuttingMethod === 'guillotine';
+      const d = sawTrim ? trimT : 0;
+      const cuts = sawTrim
+        ? deriveGuillotineCuts(sh.placed.map(function (p) { return Object.assign({}, p, { x: p.x - trimT, y: p.y - trimT }); }),
+                               sh.sheetW - 2 * trimT, sh.sheetH - 2 * trimT, KERF)
+        : deriveGuillotineCuts(sh.placed, sh.sheetW, sh.sheetH, KERF);
 
       // Parts, sorted the way an operator works: top-left to bottom-right.
       const parts = sh.placed.slice().sort(function (a, b) {
@@ -971,8 +984,8 @@ function buildCutSheetsHtml() {
       const cutMarks = (cuts || []).map(function (c) {
         const mid = ((c.from + c.to) / 2) * scale;
         return c.axis === 'V'
-          ? `<div class="cut cut-v" style="left:${c.pos*scale}px;top:${c.from*scale}px;height:${(c.to-c.from)*scale}px"><span class="cut-no" style="top:${mid-(c.from*scale)-6}px">${c.no}</span></div>`
-          : `<div class="cut cut-h" style="top:${c.pos*scale}px;left:${c.from*scale}px;width:${(c.to-c.from)*scale}px"><span class="cut-no" style="left:${mid-(c.from*scale)-6}px">${c.no}</span></div>`;
+          ? `<div class="cut cut-v" style="left:${(c.pos+d)*scale}px;top:${(c.from+d)*scale}px;height:${(c.to-c.from)*scale}px"><span class="cut-no" style="top:${mid-(c.from*scale)-6}px">${c.no}</span></div>`
+          : `<div class="cut cut-h" style="top:${(c.pos+d)*scale}px;left:${(c.from+d)*scale}px;width:${(c.to-c.from)*scale}px"><span class="cut-no" style="left:${mid-(c.from*scale)-6}px">${c.no}</span></div>`;
       }).join('');
 
       let startIdx = 0;
@@ -981,7 +994,7 @@ function buildCutSheetsHtml() {
           startIdx++;
           return `<tr><td class="c">${startIdx}</td><td>${esc(p.label || '\u2014')}</td>
             <td class="c">${p.w}</td><td class="c">${p.h}</td>
-            <td class="c">${Math.round(p.x)}</td><td class="c">${Math.round(p.y)}</td>
+            <td class="c">${Math.round(p.x - d)}</td><td class="c">${Math.round(p.y - d)}</td>
             <td class="c">${p.rotated ? '&#8635;' : ''}</td></tr>`;
         }).join('');
         return `<table><thead><tr><th>#</th><th>Label</th><th>W</th><th>H</th><th>X</th><th>Y</th><th>Rot</th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -1020,14 +1033,14 @@ function buildCutSheetsHtml() {
           <!-- Y dimension down the left edge -->
           <div class="dim-y" style="height:${dh}px"><span>${sh.sheetH}mm</span></div>
           <div class="sheet" style="width:${dw}px;height:${dh}px">
-            ${rects}${cutMarks}
+            ${trimFrameHtml(sh, scale)}${rects}${cutMarks}
             ${(sh.offcut && sh.offcut.w > 0 && sh.offcut.h > 0) ? `<div class="offcut ${sh.usableOffcut ? 'keep' : ''}"
               style="left:${sh.offcut.x*scale}px;top:${sh.offcut.y*scale}px;width:${sh.offcut.w*scale}px;height:${sh.offcut.h*scale}px">
               ${(sh.offcut.w*scale > 90 && sh.offcut.h*scale > 18)
                 ? `<span>${sh.usableOffcut ? '\u2713 KEEP OFFCUT' : 'Offcut'} ${Math.round(sh.offcut.w)}&times;${Math.round(sh.offcut.h)}</span>` : ''}
             </div>` : ''}
-            <div class="datum"></div>
-            <div class="datum-lab">0,0 datum</div>
+            <div class="datum"${d ? ` style="left:${d * scale - 1}px;top:${d * scale - 1}px"` : ''}></div>
+            <div class="datum-lab"${d ? ` style="left:${d * scale + 18}px;top:${d * scale + 1}px"` : ''}>0,0 datum${d ? ' (trimmed corner)' : ''}</div>
             <div class="axis-x">X &rarr;</div>
             <div class="axis-y">Y &darr;</div>
           </div>
@@ -1044,10 +1057,12 @@ function buildCutSheetsHtml() {
           </div>
           <div class="tbl-col">
             <h3>Cut sequence${cuts && cuts.length ? ' \u2014 ' + cuts.length + ' cuts, in order' : ''}</h3>
+            ${sawTrim ? `<div class="trim-first">First: trim ${trimT}mm off all four edges. Every measurement on this page is from the trimmed edges.</div>` : ''}
             <div class="tbl-split">${cutTables}</div>
           </div>
         </div>
         <div class="note">X / Y = distance from the datum corner to each part's top-left corner, in mm.${
+          trimT && !sawTrim ? ` Keep clear of the ${trimT}mm edge trim (shaded).` : ''}${
           cuts && cuts.length ? ` Every cut runs edge to edge across the piece you are holding; measure "At" from the datum edge. The ${KERF}mm kerf is already allowed for.` : ''}</div>
         <footer class="ft">CutNest \u00b7 cutnest.co.uk &nbsp;\u00b7&nbsp; Verify against the physical sheet before cutting.</footer>
       </section>`;
@@ -1110,6 +1125,7 @@ function buildCutSheetsHtml() {
   td{padding:2px 5px;border-bottom:1px solid #e2ecef}
   td.c{text-align:center}
   .nocut{color:#7a5b1a;background:#fffbeb;padding:6px}
+  .trim-first{font-size:10px;font-weight:700;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;padding:4px 6px;margin-bottom:4px}
   .note{font-size:9px;color:#6a8a96;margin-top:4px;line-height:1.4}
   .ft{margin-top:8px;border-top:1px solid #e2ecef;padding-top:4px;font-size:9px;color:#9dbac4;text-align:center}
   @media print{ body{-webkit-print-color-adjust:exact;print-color-adjust:exact} }
@@ -1170,7 +1186,8 @@ function optimalityVerdict(res) {
     if (keys.length !== 1) return null;          // mixed sizes: bound not comparable
     const sheets = res.sheets;
     if (!sheets.length) return null;
-    const W = sheets[0].sheetW, H = sheets[0].sheetH;
+    const T = sheets[0].trim || 0;     // bound is on the usable, trimmed area
+    const W = sheets[0].sheetW - 2 * T, H = sheets[0].sheetH - 2 * T;
     const queue = [];
     sheets.forEach(function(sh){ sh.placed.forEach(function(p){ queue.push({w:p.w, h:p.h}); }); });
     if (!queue.length || queue.length > 400) return null;   // keep it cheap
@@ -1388,7 +1405,11 @@ async function _doCalculate() {
     if (!valid.length) { errors.push(`Material ${mats.indexOf(m)+1} (${esc(libMat.name)}): Please add at least one piece.`); continue; }
 
     // check pieces fit — only against sizes that have real positive dimensions
-    const sizes = stockSizes(libMat);   // already cut to the free plan's sizes when not Pro
+    const trimMm = cleanTrim(libMat.trim);
+    // Usable area of each size once the edge trim is taken off every side.
+    const sizes = stockSizes(libMat)    // already cut to the free plan's sizes when not Pro
+      .map(function(z){ return Object.assign({}, z, { w: z.w - 2 * trimMm, h: z.h - 2 * trimMm }); })
+      .filter(function(z){ return z.w > 0 && z.h > 0; });
 
     if (!sizes.length) {
       errors.push(`${esc(libMat.name)}: no valid sheet size set. Open Library → Edit ${esc(libMat.name)} and add a sheet size.`);
@@ -1418,9 +1439,9 @@ async function _doCalculate() {
       oversized.push({
         w: pw, h: ph, qty: (+p.qty||1), label: p.label || '',
         reason: fitsRotated ? 'grain-locked' : 'too-big',
-        minSheet: minSheetFor(pw, ph, allowRot)
+        minSheet: (function(){ const ms = minSheetFor(pw, ph, allowRot); return { w: ms.w + 2 * trimMm, h: ms.h + 2 * trimMm }; })()
       });
-      const sizeStr = sizes.map(function(s){return (+s.w)+'×'+(+s.h)+'mm';}).join(' or ');
+      const sizeStr = sizes.map(function(s){return (+s.w)+'×'+(+s.h)+'mm';}).join(' or ') + (trimMm ? ' usable after the ' + trimMm + 'mm edge trim' : '');
       errors.push(fitsRotated
         ? `${esc(libMat.name)}: "${esc(p.label||pw+'×'+ph)}" (${pw}×${ph}mm) only fits rotated, but grain is locked for this material.`
         : `${esc(libMat.name)}: "${esc(p.label||pw+'×'+ph)}" (${pw}×${ph}mm) is too big for the ${sizeStr} sheet.`);
@@ -1782,6 +1803,7 @@ function renderOutput() {
       + `<span class="mode-chip">${libMat.cuttingMethod==='guillotine'?'⊞ Guillotine':'⊡ Free placement'}</span>`
       + (libMat.allowRotation===false?'<span class="mode-chip grain-on">🔒 Grain locked</span>':'')
       + `<span class="mode-chip">Kerf ${KERF}mm</span>`
+      + (cleanTrim(libMat.trim) ? `<span class="mode-chip">Edge trim ${cleanTrim(libMat.trim)}mm</span>` : '')
       + `</span></div>`;
 
     sheets.forEach((sh, si) => {
@@ -1838,10 +1860,11 @@ function renderOutput() {
         <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
           <div style="flex-shrink:0">
             <div class="sheet-canvas" style="width:${cw}px;height:${ch}px;position:relative">
+              ${trimFrameHtml(sh, scale)}
               ${offcutRect}
               ${pieceRects}
             </div>
-            <div style="margin-top:5px;font-size:10px;color:var(--muted);text-align:center">${sh.sheetW}×${sh.sheetH}mm &nbsp;·&nbsp; scale 1:${Math.round(1/scale)}</div>
+            <div style="margin-top:5px;font-size:10px;color:var(--muted);text-align:center">${sh.sheetW}×${sh.sheetH}mm${sh.trim ? ' &nbsp;·&nbsp; ' + sh.trim + 'mm edge trim' : ''} &nbsp;·&nbsp; scale 1:${Math.round(1/scale)}</div>
           </div>
           <div style="flex:1;min-width:140px;max-width:280px">
             <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px">Pieces on this sheet</div>
@@ -1938,8 +1961,8 @@ function exportPDF() {
     sheets.forEach((sh,si) => {
       const scale = Math.min(480/sh.sheetW, 200/sh.sheetH, 0.32);
       const cw=Math.round(sh.sheetW*scale), ch=Math.round(sh.sheetH*scale);
-      body += `<div class="sh-block"><div class="sh-title">Sheet ${si+1} — ${sh.sheetW}×${sh.sheetH}mm${sh.isRemnant?' (YOUR REMNANT — not ordered)':''} · ${sh.placed.length} pieces · ${sh.utilPercent||0}% utilised${sh.usableOffcut?` · usable offcut ${Math.round(sh.usableOffcut.w)}×${Math.round(sh.usableOffcut.h)}mm`:''}</div>`;
-      body += `<div class="sh-canvas" style="width:${cw}px;height:${ch}px;position:relative">`;
+      body += `<div class="sh-block"><div class="sh-title">Sheet ${si+1} — ${sh.sheetW}×${sh.sheetH}mm${sh.isRemnant?' (YOUR REMNANT — not ordered)':''}${sh.trim?' · '+sh.trim+'mm edge trim':''} · ${sh.placed.length} pieces · ${sh.utilPercent||0}% utilised${sh.usableOffcut?` · usable offcut ${Math.round(sh.usableOffcut.w)}×${Math.round(sh.usableOffcut.h)}mm`:''}</div>`;
+      body += `<div class="sh-canvas" style="width:${cw}px;height:${ch}px;position:relative">` + trimFrameHtml(sh, scale);
       if (sh.usableOffcut) {
         const o = sh.usableOffcut;
         const ox=Math.round(o.x*scale), oy=Math.round(o.y*scale);
@@ -2035,6 +2058,7 @@ function shareJob() {
         cuttingMethod: libMat ? (libMat.cuttingMethod||'free') : 'free',
         allowRotation: libMat ? (libMat.allowRotation !== false) : true,
         sizes: libMat ? stockSizes(libMat) : [],
+        trim: libMat ? cleanTrim(libMat.trim) : 0,
         pieces: m.pieces.filter(function(p){return p.w>0 && p.h>0;})
       };
     }).filter(function(m){return m.pieces.length;});
@@ -2123,7 +2147,9 @@ function exportCSV() {
     })
   );
   const rows = [
-    [`CutNest — ${new Date().toLocaleDateString()}`],[`Job: ${(document.getElementById('job-ref')||{}).value||'Untitled'}`],[`Blade Kerf: ${KERF}mm`],[],
+    [`CutNest — ${new Date().toLocaleDateString()}`],[`Job: ${(document.getElementById('job-ref')||{}).value||'Untitled'}`],[`Blade Kerf: ${KERF}mm`],
+    ...calcResult.results.filter(r => cleanTrim(r.libMat.trim)).map(r => [`Edge trim: ${r.libMat.name} ${cleanTrim(r.libMat.trim)}mm per edge (X/Y are from the untrimmed sheet corner)`]),
+    [],
     ['SHEET USAGE SUMMARY'],['Material & Size','Cost'],
     ...summaryRows,
     ...(csvTotal > 0 ? [['TOTAL MATERIAL COST',`£${csvTotal.toFixed(2)}`]] : []),
@@ -2216,7 +2242,9 @@ function buildDXF(results) {
     (res.sheets||[]).forEach(function(sh, si){
       const SW = sh.sheetW, SH = sh.sheetH;
       rect(offsetX, 0, SW, SH, 'SHEET');
-      txt(offsetX, -40, 30, matName + ' - Sheet ' + (si+1) + ' (' + SW + 'x' + SH + 'mm)', 'TEXT');
+      // Usable area inside the edge trim, on its own layer.
+      if (sh.trim) rect(offsetX + sh.trim, sh.trim, SW - 2 * sh.trim, SH - 2 * sh.trim, 'TRIM');
+      txt(offsetX, -40, 30, matName + ' - Sheet ' + (si+1) + ' (' + SW + 'x' + SH + 'mm' + (sh.trim ? ', ' + sh.trim + 'mm edge trim' : '') + ')', 'TEXT');
       sh.placed.forEach(function(p){
         // DXF Y runs up, screen Y runs down — flip so the drawing is the right
         // way up in CAD rather than mirrored.
@@ -2264,8 +2292,8 @@ function buildDXF(results) {
        '0','LTYPE','2','CONTINUOUS','70','64','3','Solid line','72','65','73','0','40','0.0',
        '0','ENDTAB');
 
-  push('0','TABLE','2','LAYER','70','4');
-  [['0',7],['SHEET',5],['PARTS',3],['TEXT',7]].forEach(function(L){
+  push('0','TABLE','2','LAYER','70','5');
+  [['0',7],['SHEET',5],['TRIM',1],['PARTS',3],['TEXT',7]].forEach(function(L){
     push('0','LAYER','2',L[0],'70','0','62',String(L[1]),'6','CONTINUOUS');
   });
   push('0','ENDTAB');
@@ -2427,6 +2455,12 @@ function renderLibEntries() {
               <span>Lock grain — don't rotate pieces</span>
             </label>
           </div>
+          <div class="cut-opt-box">
+            <label class="lbl" for="trim-${esc(String(e.id))}">Edge trim (mm per edge)
+              <span class="kerf-tip-icon" tabindex="0" role="img" aria-label="Help: Cut off every edge of each sheet before parts are nested, for damaged or out-of-square edges. 0 = none." data-tip="Cut off every edge of each sheet before parts are nested, for damaged or out-of-square edges. 0 = none.">?</span>
+            </label>
+            <input type="number" id="trim-${esc(String(e.id))}" data-f="trim" min="0" max="200" step="0.5" value="${cleanTrim(e.trim) || ''}" placeholder="0" oninput="upd(${jid},'trim',this.value)" style="margin-top:4px"/>
+          </div>
         </div>
         ${isPro ? '' : `<div style="font-size:12px;color:#92400e;background:#fffbeb;border:1px solid var(--amber);border-radius:7px;padding:7px 10px;margin-top:8px">&#128274; Guillotine mode and grain lock are Pro features. <button onclick="showUpgradeModal('&#128274;','Grain lock &amp; guillotine mode','Pro keeps grain direction on brushed, veneered and patterned sheet, and nests for saws and shears with a numbered edge-to-edge cut sequence.')" style="background:none;border:none;color:var(--teal);font-weight:700;cursor:pointer;padding:0;font-size:12px;text-decoration:underline;font-family:inherit">Upgrade</button></div>`}
         <div style="text-align:right;margin-top:9px"><button class="btn-sm-gr" onclick="toggleEdit(${jid})">✓ Done</button></div>
@@ -2482,6 +2516,8 @@ function flushEditForms() {
   pending.forEach(e => {
     const ed = document.getElementById(`ee-${e.id}`);
     if (!ed || ed.style.display === 'none') return;
+    const trimEl = ed.querySelector('input[data-f="trim"]');
+    if (trimEl) e.trim = trimEl.value;
     ed.querySelectorAll('input[type=text][data-f]').forEach(function(inp){
       const f = inp.getAttribute('data-f'), v = inp.value.trim();
       if (f === 'name') e.name = v || e.name; else e[f] = v;
@@ -3095,6 +3131,7 @@ function normalizeLibEntry(e){
     cuttingMethod: (e.cuttingMethod === 'guillotine') ? 'guillotine' : 'free',
     allowRotation: e.allowRotation !== false,
     sizes: cleanSizes(Array.isArray(e.sizes) ? e.sizes : [e.size1, e.size2]),
+    trim: cleanTrim(e.trim),
     _transient: e._transient === true || undefined
   };
 }
@@ -3117,6 +3154,21 @@ function cleanSizes(raw) {
                max: max >= 1 ? Math.min(max, 9999) : null });
   });
   return out;
+}
+
+// Edge trim in mm per edge, 0-200, to 0.1mm. 0 means none.
+function cleanTrim(v) {
+  const t = parseFloat(v);
+  return isFinite(t) && t > 0 ? Math.min(200, Math.round(t * 10) / 10) : 0;
+}
+
+// A see-through band showing the edge trim on a drawn sheet. Everything
+// inside it is where parts can go.
+function trimFrameHtml(sh, scale) {
+  const t = +(sh && sh.trim) || 0;
+  if (!t) return '';
+  const px = Math.max(1, Math.round(t * scale));
+  return `<div title="Edge trim: ${t}mm off each edge" style="position:absolute;inset:0;border:${px}px solid rgba(220,38,38,.18);box-sizing:border-box;pointer-events:none;outline:1px dashed rgba(220,38,38,.55);outline-offset:-${px}px"></div>`;
 }
 
 // The size on a material with these exact dimensions, for pricing a sheet.
@@ -3388,7 +3440,7 @@ function openZoom(sheetData, title) {
   const cw = Math.round(sheetData.sheetW * scale);
   const ch = Math.round(sheetData.sheetH * scale);
 
-  let html = `<div style="position:relative;width:${cw}px;height:${ch}px;background:repeating-linear-gradient(-45deg,rgba(15,76,92,.04),rgba(15,76,92,.04) 1px,transparent 1px,transparent 8px);border:2px solid var(--bdr2);border-radius:3px;overflow:hidden;flex-shrink:0">`;
+  let html = `<div style="position:relative;width:${cw}px;height:${ch}px;background:repeating-linear-gradient(-45deg,rgba(15,76,92,.04),rgba(15,76,92,.04) 1px,transparent 1px,transparent 8px);border:2px solid var(--bdr2);border-radius:3px;overflow:hidden;flex-shrink:0">` + trimFrameHtml(sheetData, scale);
   if (sheetData.usableOffcut) {
     const o = sheetData.usableOffcut;
     const ox=Math.round(o.x*scale), oy=Math.round(o.y*scale);
@@ -3527,7 +3579,8 @@ document.addEventListener('DOMContentLoaded',function(){
           cuttingMethod: (sm.cuttingMethod === 'guillotine') ? 'guillotine' : 'free',
           allowRotation: sm.allowRotation !== false,
           // v3 links carry sizes[]; v1/v2 links carried size1/size2.
-          sizes: cleanSizes(Array.isArray(sm.sizes) ? sm.sizes.slice(0, MAX_SHEET_SIZES) : [cleanSize(sm.size1), cleanSize(sm.size2)])
+          sizes: cleanSizes(Array.isArray(sm.sizes) ? sm.sizes.slice(0, MAX_SHEET_SIZES) : [cleanSize(sm.size1), cleanSize(sm.size2)]),
+          trim: cleanTrim(sm.trim)
         });
         newMats.push({
           id: 'mat-' + Date.now() + '-' + i,

@@ -10,6 +10,7 @@
 //   - grain lock is never broken, and the "rotated" flag tells the truth
 //   - guillotine layouts can always be sawn (a cut sequence exists)
 //   - no more sheets of a size are used than its stock limit allows
+//   - with edge trim, no part comes within the trim of a sheet edge
 //   - big jobs of small parts finish in reasonable time
 
 'use strict';
@@ -48,8 +49,9 @@ function checkLayout(name, lib, pieces, res, kerf) {
     for (const p of s.placed) {
       const key = p.pieceIndex + '-' + p.instanceIndex;
       ok(!seen.has(key), name, 'piece placed twice: ' + key); seen.add(key);
-      ok(p.x >= -EPS && p.y >= -EPS && p.x + p.w <= s.sheetW + EPS && p.y + p.h <= s.sheetH + EPS,
-         name, `piece outside ${s.sheetW}x${s.sheetH} sheet at ${p.x},${p.y}`);
+      const t = s.isRemnant ? 0 : (+lib.trim || 0);
+      ok(p.x >= t - EPS && p.y >= t - EPS && p.x + p.w <= s.sheetW - t + EPS && p.y + p.h <= s.sheetH - t + EPS,
+         name, `piece outside ${s.sheetW}x${s.sheetH} sheet (trim ${t}) at ${p.x},${p.y}`);
       const o = pieces[p.pieceIndex];
       const same = p.w === o.w && p.h === o.h, swapped = p.w === o.h && p.h === o.w;
       ok(same || swapped, name, 'piece dimensions changed');
@@ -72,7 +74,10 @@ function checkLayout(name, lib, pieces, res, kerf) {
          `sheet ${s.sheetW}x${s.sheetH} is not one of the material's sizes`);
     }
     if (lib.cuttingMethod === 'guillotine' && s.placed.length > 1) {
-      ok(!!E.deriveGuillotineCuts(s.placed, s.sheetW, s.sheetH, kerf), name, 'guillotine sheet has no valid cut sequence');
+      // Cuts are worked out on the trimmed sheet, as the saw sees it.
+      const t = s.trim || 0;
+      const inner = s.placed.map(p => Object.assign({}, p, { x: p.x - t, y: p.y - t }));
+      ok(!!E.deriveGuillotineCuts(inner, s.sheetW - 2 * t, s.sheetH - 2 * t, kerf), name, 'guillotine sheet has no valid cut sequence');
     }
   }
 }
@@ -88,7 +93,7 @@ function checkStock(name, lib, res) {
 
 function run(name, lib, pieces, kerf) {
   ctx.setKerf(kerf);
-  const res = E.runMat(lib, pieces, null, 1);
+  const res = E.packJob(lib, pieces, null, 1);
   checkLayout(name, lib, pieces, res, kerf);
   checkStock(name, lib, res);
   return res;
@@ -151,6 +156,18 @@ console.log('Known cases');
   ok(cost === 80, 'cheapest of three sizes', 'expected £80, got £' + cost);
 }
 
+{
+  // Edge trim: 10mm off each edge of a 1000mm sheet leaves 980mm, which takes
+  // two 490mm parts side by side with no kerf. 11mm leaves 978mm: it does not.
+  const pieces = [{ w: 490, h: 490, qty: 4, label: 'Q' }];
+  let res = run('trim 10mm', material({ trim: 10, sizes: [{ w: 1000, h: 1000, price: 10 }] }), pieces, 0);
+  ok(res.sheets.length === 1, 'trim 10mm', `expected 1 sheet, got ${res.sheets.length}`);
+  ok(res.sheets[0].sheetW === 1000 && res.sheets[0].trim === 10, 'trim 10mm', 'sheet should be reported at full size');
+  ok(Object.keys(res.sizeMap)[0] === '1000\u00d71000', 'trim 10mm', 'order list should use the full sheet size: ' + JSON.stringify(res.sizeMap));
+  res = run('trim 11mm', material({ trim: 11, sizes: [{ w: 1000, h: 1000, price: 10 }] }), pieces, 0);
+  ok(res.sheets.length === 4, 'trim 11mm', `expected 4 sheets, got ${res.sheets.length}`);
+}
+
 // ── Seeded random jobs ────────────────────────────────────────────
 console.log('Random jobs');
 let seed = 20260925;
@@ -179,6 +196,7 @@ for (let t = 0; t < JOBS; t++) {
   }, sizeSpec));
   delete lib.size1; delete lib.size2;
   if (!lib.sizes) { lib.size1 = sizeSpec.size1; lib.size2 = sizeSpec.size2; }
+  if (rnd() < 0.3) lib.trim = [3, 5, 10, 25][ri(0, 3)];
   const small = rnd() < 0.15;
   const pieces = [];
   for (let i = 0, n = ri(1, 15); i < n; i++) {

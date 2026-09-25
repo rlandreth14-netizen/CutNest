@@ -331,6 +331,36 @@ const tests = {
     expect(linked.length === 1 && linked[0].w === 2450, 'v2 link sizes not read: ' + JSON.stringify(linked));
   },
 
+  async 'edge trim: set in the Library, used everywhere'() {
+    const page = await freshPage({ pro: true });
+    await page.goto(base + '/app.html');
+    await page.waitForFunction(() => isPro && library.length > 20);
+    await page.click('button[aria-label="Stock library"]');
+    const entry = page.locator('.lib-entry', { hasText: 'MDF 18mm' }).first();   // guillotine material
+    await entry.locator('text=Edit').click();
+    await entry.locator('input[data-f="trim"]').fill('10');
+    await page.click('text=Save Library');
+    const mdf = await page.evaluate(() => library.find(l => l.name === 'MDF 18mm'));
+    expect(mdf.trim === 10, 'trim not saved: ' + mdf.trim);
+    await page.selectOption('#mat-blocks select', String(mdf.id));
+    expect((await page.textContent('.sz-info-row')).includes('Edge trim'), 'job view should show the edge trim');
+    // 1210mm fits a 1220mm sheet, but not once 10mm comes off each edge.
+    await setPiece(page, 1, 2000, 1210, 1);
+    await calculateAndWait(page).catch(() => {});
+    expect((await page.textContent('#err-box')).includes('edge trim'), 'oversized message should mention the trim');
+    await setPiece(page, 1, 1100, 590, 4);
+    await calculateAndWait(page);
+    const sh = await page.evaluate(() => calcResult.results[0].sheets[0]);
+    expect(sh.trim === 10 && sh.placed.every(p => p.x >= 10 && p.y >= 10 && p.x + p.w <= sh.sheetW - 10 && p.y + p.h <= sh.sheetH - 10),
+      'parts must stay inside the trim');
+    expect(await page.$('.sheet-canvas [title^="Edge trim"]'), 'layout should draw the trimmed edge');
+    const cutSheets = await page.evaluate(() => buildCutSheetsHtml());
+    expect(cutSheets.includes('First: trim 10mm off all four edges'), 'saw cut sheet should say to trim first');
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.click('.res-acts >> text=DXF')]);
+    expect(fs.readFileSync(await dl.path(), 'utf8').includes('\r\nTRIM\r\n'), 'DXF should have a TRIM layer');
+    expect(!page.errors.length, 'page errors: ' + page.errors.join(' | '));
+  },
+
   async 'landing page, FAQ and legal pages'() {
     const page = await freshPage({ viewport: { width: 390, height: 800 } });
     await page.goto(base + '/');

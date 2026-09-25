@@ -1607,9 +1607,65 @@ function findEmptySpot(sheetW, sheetH, placed, pc, allowRotation) {
   return null;
 }
 
+// ── EDGE TRIM ─────────────────────────────────────────────────
+// Stock sheets often arrive with damaged or out-of-square edges, so a margin
+// is cut off all four sides before parts are nested. Rather than teach every
+// packer about it, the job is packed onto sheets that are already trimmed
+// (each size shrunk by 2 x trim) and the finished sheets are then put back
+// into full-sheet coordinates: parts and offcuts move in by `trim`, and the
+// sheet regains its real size so it is priced and reported as the sheet you
+// buy. Remnants are never trimmed; their edges are already cut.
+function trimAmount(libMat) {
+  const t = +(libMat && libMat.trim);
+  return isFinite(t) && t > 0 ? t : 0;
+}
+
+function untrimResult(res, t) {
+  const sizeKey = function(w, h){ return w + '\u00d7' + h; };
+  const grown = {};
+  (res.sheets || []).forEach(function(sh){
+    if (sh.isRemnant) return;
+    sh.placed.forEach(function(p){ p.x += t; p.y += t; });
+    // offcut and usableOffcut are the same object when usable: move it once.
+    if (sh.offcut) { sh.offcut.x += t; sh.offcut.y += t; }
+    if (sh.usableOffcut && sh.usableOffcut !== sh.offcut) { sh.usableOffcut.x += t; sh.usableOffcut.y += t; }
+    grown[sizeKey(sh.sheetW, sh.sheetH)] = sizeKey(sh.sheetW + 2 * t, sh.sheetH + 2 * t);
+    sh.sheetW += 2 * t; sh.sheetH += 2 * t;
+    sh.trim = t;
+    // Percentages are of the whole sheet: the trimmed strip is scrap.
+    const area = sh.sheetW * sh.sheetH;
+    const used = sh.placed.reduce(function(a, p){ return a + p.w * p.h; }, 0);
+    sh.utilPercent = Math.round(used / area * 100);
+    sh.usablePercent = sh.usableOffcut ? Math.round(sh.usableOffcut.area / area * 100) : 0;
+    sh.scrapPercent = Math.max(0, 100 - sh.utilPercent - sh.usablePercent);
+    if (sh.wastePercent != null) sh.wastePercent = (area - used) / area * 100;
+  });
+  const remap = function(map){
+    const out = {};
+    Object.keys(map || {}).forEach(function(k){ out[grown[k] || k] = (out[grown[k] || k] || 0) + map[k]; });
+    return out;
+  };
+  res.sizeMap = remap(res.sizeMap);
+  if (res.altFewerSheets) res.altFewerSheets.sizeMap = remap(res.altFewerSheets.sizeMap);
+  res.trim = t;
+  return res;
+}
+
 // ── ENTRY POINT ───────────────────────────────────────────────
 // The one function the page and the worker call. `safe` selects the plain
 // greedy packer, used only if the full optimiser throws.
 function packJob(libMat, pieces, remnant, jobQty, safe) {
-  return safe ? runMatSafe(libMat, pieces, jobQty, remnant) : runMat(libMat, pieces, remnant, jobQty);
+  const run = function(mat){
+    return safe ? runMatSafe(mat, pieces, jobQty, remnant) : runMat(mat, pieces, remnant, jobQty);
+  };
+  const t = trimAmount(libMat);
+  if (!t) return run(libMat);
+  const inner = Object.assign({}, libMat, {
+    sizes: stockSizes(libMat)
+      .map(function(z){ return Object.assign({}, z, { w: z.w - 2 * t, h: z.h - 2 * t }); })
+      .filter(function(z){ return z.w > 0 && z.h > 0; })
+  });
+  delete inner.size1; delete inner.size2;
+  const res = run(inner);
+  return res.noValidSize ? res : untrimResult(res, t);
 }
