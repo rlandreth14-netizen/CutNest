@@ -205,6 +205,7 @@ if(cnPrefersDark())document.documentElement.setAttribute('data-theme','dark');
           <button class="btn-exp" onclick="shareJob()" title="Share this job">🔗 Share</button>
           <button class="btn-exp" onclick="saveAllOffcuts()" title="Keep this job's reclaimable offcuts — they are offered back as a remnant on the next job in this material">♻ Save offcuts</button>
           <button class="btn-exp" onclick="exportCutSheets()" title="One page per sheet, drawn to scale, dimensioned, with the cut sequence — for the machine">📐 Cut sheets</button>
+          <button class="btn-exp" onclick="openLabels()" title="A label for every part, on standard label sheets">🏷 Labels</button>
           <button class="btn-exp" onclick="doPrint()">🖨 Print</button>
         </div>
       </div>
@@ -240,7 +241,7 @@ if(cnPrefersDark())document.documentElement.setAttribute('data-theme','dark');
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--teal);margin-bottom:9px">Placement Detail</div>
         <div style="overflow-x:auto">
           <table>
-            <thead><tr><th>Material</th><th>Sheet</th><th>Size</th><th>Part</th><th>W</th><th>H</th><th>X</th><th>Y</th><th>Rotated</th></tr></thead>
+            <thead><tr><th>Material</th><th>Sheet</th><th>Size</th><th>Part</th><th>W (<span class="u-len">mm</span>)</th><th>H (<span class="u-len">mm</span>)</th><th>X</th><th>Y</th><th>Rotated</th></tr></thead>
             <tbody id="placement-body"></tbody>
           </table>
         </div>
@@ -292,25 +293,35 @@ if(cnPrefersDark())document.documentElement.setAttribute('data-theme','dark');
         </div>
       </div>
       <div class="settings-section">
+        <div class="settings-title">&#128207; Units &amp; currency</div>
+        <div class="settings-desc">How lengths and material prices are shown and typed. Changing this never changes your saved sizes; they are converted for display.</div>
+        <div style="display:flex;gap:11px;flex-wrap:wrap">
+          <div style="width:170px"><label class="lbl" for="units-setting">Lengths</label>
+            <select id="units-setting" onchange="setUnits(this.value)"><option value="mm">Millimetres (mm)</option><option value="in">Inches (in)</option></select></div>
+          <div style="width:120px"><label class="lbl" for="currency-setting">Currency</label>
+            <select id="currency-setting" onchange="setCurrency(this.value)"><option value="&pound;">&pound; GBP</option><option value="$">$ USD</option><option value="&euro;">&euro; EUR</option></select></div>
+        </div>
+      </div>
+      <div class="settings-section">
         <div class="settings-title">&#127970; Company Name</div>
         <div class="settings-desc">Shown on CSV exports and print layouts.</div>
         <input type="text" id="company-name" placeholder="e.g. Acme Fabrications Ltd" oninput="saveSettings()"/>
       </div>
       <div class="settings-section">
         <div class="settings-title">&#10002; Blade Kerf</div>
-        <div class="settings-desc">Blade/cut gap between parts, in mm. Set this to your real kerf so sheet counts are accurate. Laser/saw/router ~3&ndash;4mm, plasma ~5mm, CNC turret punch ~15&ndash;20mm.</div>
+        <div class="settings-desc">Blade/cut gap between parts. Set this to your real kerf so sheet counts are accurate.</div>
         <div style="display:flex;gap:11px;align-items:flex-end">
-          <div style="width:100px"><label class="lbl">Kerf (mm)</label><input type="number" id="kerf-setting" value="4" min="0" max="100" step="0.1" oninput="saveSettings()"/></div>
-          <div style="font-size:12px;color:var(--muted);padding-bottom:8px">3&ndash;4mm laser/saw/router &middot; 5mm plasma &middot; 15&ndash;20mm punch</div>
+          <div style="width:110px"><label class="lbl" for="kerf-setting">Kerf (<span class="u-len">mm</span>)</label><input type="text" inputmode="decimal" id="kerf-setting" value="4" oninput="saveSettings()"/></div>
+          <div style="font-size:12px;color:var(--muted);padding-bottom:8px" id="kerf-hint">3&ndash;4mm laser/saw/router &middot; 5mm plasma &middot; 15&ndash;20mm punch</div>
         </div>
       </div>
       <div class="settings-section">
         <div class="settings-title">&#9851; Minimum Usable Offcut</div>
         <div class="settings-desc">The smallest leftover rectangle worth keeping as reclaimable stock. Anything smaller counts as scrap. Each sheet shows its largest usable offcut.</div>
         <div style="display:flex;gap:11px;align-items:flex-end;flex-wrap:wrap">
-          <div style="width:110px"><label class="lbl">Long side (mm)</label><input type="number" id="offcut-long" value="1000" min="0" max="6000" oninput="saveSettings()"/></div>
-          <div style="width:110px"><label class="lbl">Short side (mm)</label><input type="number" id="offcut-short" value="300" min="0" max="6000" oninput="saveSettings()"/></div>
-          <div style="font-size:12px;color:var(--muted);padding-bottom:8px">Default 1000 &times; 300mm</div>
+          <div style="width:110px"><label class="lbl" for="offcut-long">Long side (<span class="u-len">mm</span>)</label><input type="text" inputmode="decimal" id="offcut-long" value="1000" oninput="saveSettings()"/></div>
+          <div style="width:110px"><label class="lbl" for="offcut-short">Short side (<span class="u-len">mm</span>)</label><input type="text" inputmode="decimal" id="offcut-short" value="300" oninput="saveSettings()"/></div>
+          <div style="font-size:12px;color:var(--muted);padding-bottom:8px" id="offcut-hint">Default 1000 &times; 300mm</div>
         </div>
       </div>
       <div class="settings-section">
@@ -344,18 +355,26 @@ if(cnPrefersDark())document.documentElement.setAttribute('data-theme','dark');
           <div><label class="lbl">Thickness</label><input type="text" id="n-thk" placeholder="2mm"/></div>
         </div>
         <div class="af-row2">
-          <div><label class="lbl">Size 1 W *</label><input type="number" id="n-w1" placeholder="2450"/></div>
-          <div><label class="lbl">Size 1 H *</label><input type="number" id="n-h1" placeholder="1150"/></div>
-          <div><label class="lbl">Price &pound;</label><input type="number" id="n-pr1" placeholder="205"/></div>
-          <div><label class="lbl">Size 2 W</label><input type="number" id="n-w2" placeholder="opt"/></div>
-          <div><label class="lbl">Size 2 H</label><input type="number" id="n-h2" placeholder="opt"/></div>
-          <div><label class="lbl">Price &pound;</label><input type="number" id="n-pr2" placeholder="opt"/></div>
+          <div><label class="lbl" for="n-w1">Size 1 W (<span class="u-len">mm</span>) *</label><input type="text" inputmode="decimal" id="n-w1" placeholder="2450"/></div>
+          <div><label class="lbl" for="n-h1">Size 1 H (<span class="u-len">mm</span>) *</label><input type="text" inputmode="decimal" id="n-h1" placeholder="1150"/></div>
+          <div><label class="lbl" for="n-pr1">Price <span class="u-cur">&pound;</span></label><input type="number" id="n-pr1" placeholder="205"/></div>
+          <div><label class="lbl" for="n-w2">Size 2 W</label><input type="text" inputmode="decimal" id="n-w2" placeholder="opt"/></div>
+          <div><label class="lbl" for="n-h2">Size 2 H</label><input type="text" inputmode="decimal" id="n-h2" placeholder="opt"/></div>
+          <div><label class="lbl" for="n-pr2">Price <span class="u-cur">&pound;</span></label><input type="number" id="n-pr2" placeholder="opt"/></div>
           <div><button class="btn btn-teal" style="padding:7px 10px;margin-top:16px" onclick="addLibEntry()">+ Add</button></div>
         </div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
-        <button class="btn btn-out" onclick="closeLib()" style="padding:8px 14px">Cancel</button>
-        <button class="btn btn-teal" onclick="saveLibClose()" style="padding:8px 20px">&#128190; Save Library</button>
+      <div style="display:flex;gap:8px;margin-top:16px;justify-content:space-between;flex-wrap:wrap">
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-out" onclick="backupLibrary()" style="padding:8px 12px" title="Download your materials, prices, offcut stock and settings as a file">&#11015; Back up</button>
+          <label class="btn btn-out" style="padding:8px 12px;cursor:pointer;position:relative" title="Load a CutNest backup file">&#11014; Restore
+            <input type="file" accept=".json,application/json" onchange="restoreLibrary(this)" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden" aria-label="Restore a CutNest backup file"/>
+          </label>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-out" onclick="closeLib()" style="padding:8px 14px">Cancel</button>
+          <button class="btn btn-teal" onclick="saveLibClose()" style="padding:8px 20px">&#128190; Save Library</button>
+        </div>
       </div>
     </div>
   </div>
@@ -397,13 +416,11 @@ if(cnPrefersDark())document.documentElement.setAttribute('data-theme','dark');
     <div class="modal-body">
       <p class="modal-sub" style="margin-bottom:16px">What cuts your material? This sets the <b>kerf</b> &mdash; the strip of material each cut destroys. Get it wrong and your sheet count will be wrong on every job. You can change it any time in Settings.</p>
       <div style="display:flex;flex-direction:column;gap:9px">
-        <button onclick="setKerfChoice(4)" class="kerf-choice">Laser, saw or router <span>4mm kerf</span></button>
-        <button onclick="setKerfChoice(3)" class="kerf-choice">Fine blade / thin acrylic <span>3mm kerf</span></button>
-        <button onclick="setKerfChoice(5)" class="kerf-choice">Plasma <span>5mm kerf</span></button>
-        <button onclick="setKerfChoice(18)" class="kerf-choice">CNC turret punch <span>18mm kerf</span></button>
+        <!-- Filled by askKerf() in the user's units. -->
+        <div id="kerf-choices" style="display:contents"></div>
       </div>
       <div style="text-align:center;margin-top:14px">
-        <button onclick="setKerfChoice(null)" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;font-family:inherit">Not sure &mdash; use 4mm for now</button>
+        <button onclick="setKerfChoice(null)" id="kerf-notsure" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;font-family:inherit">Not sure &mdash; use 4mm for now</button>
       </div>
     </div>
   </div>
@@ -424,18 +441,44 @@ if(cnPrefersDark())document.documentElement.setAttribute('data-theme','dark');
   </div>
 </div>
 
+<!-- PART LABELS MODAL -->
+<div class="overlay" id="labels-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Print part labels">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-hdr"><div class="modal-title">&#127991; Part labels</div><button class="modal-x" onclick="document.getElementById('labels-modal').style.display='none'" aria-label="Close">&#10005;</button></div>
+    <div class="modal-body">
+      <p class="modal-sub">One label per part, numbered to match the cut sheets. Print at 100% (actual size), not "fit to page".</p>
+      <label class="lbl" for="label-layout">Label sheets</label>
+      <select id="label-layout" onchange="updateLabelsSummary()"></select>
+      <div style="display:flex;gap:10px;align-items:flex-end;margin-top:10px;flex-wrap:wrap">
+        <div style="width:150px"><label class="lbl" for="label-skip">Skip used labels</label><input type="number" id="label-skip" min="0" value="0" oninput="updateLabelsSummary()"/></div>
+        <div style="font-size:12px;color:var(--muted);padding-bottom:9px;flex:1">For a part-used sheet: how many labels are already gone.</div>
+      </div>
+      <div id="labels-summary" style="margin-top:10px;font-size:13px;font-weight:600;color:var(--teal)"></div>
+      <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+        <button class="btn btn-out" onclick="document.getElementById('labels-modal').style.display='none'" style="padding:8px 14px">Cancel</button>
+        <button class="btn btn-teal" onclick="printLabels()" style="padding:8px 20px">&#128424; Print labels</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- PASTE CUT LIST MODAL -->
 <div class="overlay" id="paste-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Paste a cut list">
   <div class="modal" style="max-width:620px">
     <div class="modal-hdr"><div class="modal-title">&#128203; Paste your cut list</div><button class="modal-x" onclick="closePaste()" aria-label="Close">&#10005;</button></div>
     <div class="modal-body">
-      <p class="modal-sub">Paste straight from an email, a spreadsheet or a text. One piece per line. Most formats work:</p>
-      <div style="background:var(--sky);border:1px solid var(--bdr);border-radius:8px;padding:9px 12px;margin-bottom:11px;font-family:monospace;font-size:12px;color:var(--text2);line-height:1.8">
+      <p class="modal-sub">Paste straight from an email, a spreadsheet or a text, or open a file. One piece per line. Most formats work:</p>
+      <div id="paste-examples" style="background:var(--sky);border:1px solid var(--bdr);border-radius:8px;padding:9px 12px;margin-bottom:11px;font-family:monospace;font-size:12px;color:var(--text2);line-height:1.8">
         600x400x4 &nbsp;&middot;&nbsp; 600 x 400 x 4 &nbsp;&middot;&nbsp; 600,400,4<br>
         Door Front,800,600,4 &nbsp;&middot;&nbsp; 4 off 600x400<br>
         600x400 qty 4 &nbsp;&middot;&nbsp; 600x400 <span style="color:var(--muted)">(qty 1)</span>
       </div>
-      <label class="lbl">Your list</label>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <label class="lbl" for="paste-input">Your list</label>
+        <label class="btn btn-out" style="padding:5px 12px;margin-bottom:4px;cursor:pointer;position:relative">&#128196; Open a file (CSV, Excel)
+          <input type="file" accept=".csv,.tsv,.txt,.xlsx,.xlsm,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="importCutListFile(this)" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden" aria-label="Open a cut list file"/>
+        </label>
+      </div>
       <textarea id="paste-input" rows="7" oninput="renderPastePreview()"
         placeholder="Door Front, 800, 600, 4&#10;Side Panel 450 380 6&#10;700x280x4"
         style="width:100%;background:var(--sky);border:1px solid var(--bdr);color:var(--text);border-radius:8px;padding:9px 11px;font-family:monospace;font-size:13px;outline:none;resize:vertical"></textarea>
@@ -480,6 +523,8 @@ if(cnPrefersDark())document.documentElement.setAttribute('data-theme','dark');
 </footer>
 
 <script src="/js/engine.js"></script>
+<script src="/js/units.js"></script>
+<script src="/js/import.js"></script>
 <script src="/js/app.js"></script>
 </body>
 </html>

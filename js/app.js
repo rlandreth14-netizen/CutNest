@@ -36,7 +36,27 @@ function loadStarterPack(type) {
       {id:Date.now()+3,allowRotation:true,cuttingMethod:'free',name:'Acrylic 3mm White',material:'Acrylic',thickness:'3mm',size1:{w:2440,h:1220,price:58},size2:{w:1220,h:610,price:32}}
     ]
   };
-  const pack = packs[type];
+  // US/imperial starter packs: standard 4x8, 4x10 and 5x10 ft sheets and
+  // common gauges/thicknesses, with rough example prices to overwrite.
+  const IN = function(x){ return x * MM_PER_IN; };
+  const imperialPacks = {
+    metal: [
+      {id:Date.now()+1,allowRotation:true,cuttingMethod:'free',name:'Mild Steel 14ga',material:'Mild Steel',thickness:'14ga',sizes:[{w:IN(96),h:IN(48),price:95},{w:IN(120),h:IN(48),price:118}]},
+      {id:Date.now()+2,allowRotation:false,cuttingMethod:'free',name:'Stainless 304 #4 16ga',material:'Stainless Steel',thickness:'16ga',sizes:[{w:IN(96),h:IN(48),price:260},{w:IN(120),h:IN(48),price:325}]},
+      {id:Date.now()+3,allowRotation:true,cuttingMethod:'free',name:'Galvanized 16ga',material:'Galvanised',thickness:'16ga',sizes:[{w:IN(96),h:IN(48),price:70},{w:IN(120),h:IN(48),price:88}]}
+    ],
+    timber: [
+      {id:Date.now()+1,allowRotation:true,cuttingMethod:'guillotine',name:'MDF 3/4"',material:'Timber',thickness:'3/4"',sizes:[{w:IN(96),h:IN(48),price:45},{w:IN(48),h:IN(24),price:15}]},
+      {id:Date.now()+2,allowRotation:false,cuttingMethod:'guillotine',name:'Birch Plywood 3/4"',material:'Timber',thickness:'3/4"',sizes:[{w:IN(96),h:IN(48),price:75}]},
+      {id:Date.now()+3,allowRotation:true,cuttingMethod:'guillotine',name:'MDF 1/2"',material:'Timber',thickness:'1/2"',sizes:[{w:IN(96),h:IN(48),price:35},{w:IN(48),h:IN(24),price:12}]}
+    ],
+    acrylic: [
+      {id:Date.now()+1,allowRotation:true,cuttingMethod:'free',name:'Acrylic 1/8" Clear',material:'Acrylic',thickness:'1/8"',sizes:[{w:IN(96),h:IN(48),price:150},{w:IN(48),h:IN(24),price:42}]},
+      {id:Date.now()+2,allowRotation:true,cuttingMethod:'free',name:'Acrylic 1/4" Clear',material:'Acrylic',thickness:'1/4"',sizes:[{w:IN(96),h:IN(48),price:260},{w:IN(48),h:IN(24),price:72}]},
+      {id:Date.now()+3,allowRotation:true,cuttingMethod:'free',name:'Acrylic 1/8" White',material:'Acrylic',thickness:'1/8"',sizes:[{w:IN(96),h:IN(48),price:160},{w:IN(48),h:IN(24),price:45}]}
+    ]
+  };
+  const pack = (isInch() ? imperialPacks : packs)[type];
   if (!pack) return;
   library = pack.map(normalizeLibEntry);
   // Set a sensible default blade gap for the chosen trade so first-run numbers
@@ -45,12 +65,13 @@ function loadStarterPack(type) {
   // Turret-punch users (rare default) can raise it in Settings — the copy there
   // tells them to. Only override if the user hasn't already chosen a kerf.
   if (!settings.kerfTouched) {
-    const kerfByTrade = { metal: 4, timber: 4, acrylic: 3 };
+    const kerfByTrade = isInch() ? { metal: 3.175, timber: 3.175, acrylic: 2.38125 }   // 1/8", 1/8", 3/32"
+                                 : { metal: 4, timber: 4, acrylic: 3 };
     const k = kerfByTrade[type];
     if (k != null) {
       settings.kerf = k; KERF = k;
       try { localStorage.setItem(SETT_KEY, JSON.stringify(settings)); } catch(e){}
-      const kd = document.getElementById('kerf-display'); if (kd) kd.textContent = KERF + 'mm';
+      const kd = document.getElementById('kerf-display'); if (kd) kd.textContent = len(KERF);
     }
     // ...then confirm it, because the trade default is only a guess. A punch
     // shop picking "Sheet Metal" would otherwise silently run at 4mm forever.
@@ -64,13 +85,27 @@ function loadStarterPack(type) {
   saveData(library).then(function() {
     renderAll();
     setSS('ok','Starter materials loaded');
+    showToast('Starter materials loaded \u2014 the prices are rough examples, set your supplier\u2019s in Library', 4200);
     if (_pendingKerfAsk) { _pendingKerfAsk = false; setTimeout(askKerf, 350); }
   });
 }
 
 let _pendingKerfAsk = false;
 
+// Kerf presets in the user's units: round numbers in mm, the usual
+// fractions in inches (values are stored in mm either way).
+function kerfPresets() {
+  return isInch()
+    ? [['Laser, saw or router', 3.175], ['Fine blade / thin acrylic', 2.38125], ['Plasma', 4.7625], ['CNC turret punch', 19.05]]
+    : [['Laser, saw or router', 4], ['Fine blade / thin acrylic', 3], ['Plasma', 5], ['CNC turret punch', 18]];
+}
 function askKerf() {
+  const box = document.getElementById('kerf-choices');
+  if (box) box.innerHTML = kerfPresets().map(function(k){
+    return '<button onclick="setKerfChoice(' + k[1] + ')" class="kerf-choice">' + esc(k[0]) + ' <span>' + esc(len(k[1])) + ' kerf</span></button>';
+  }).join('');
+  const ns = document.getElementById('kerf-notsure');
+  if (ns) ns.textContent = 'Not sure \u2014 use ' + len(KERF) + ' for now';
   const m = document.getElementById('kerf-modal');
   if (m) m.style.display = 'flex';
 }
@@ -84,9 +119,17 @@ function setKerfChoice(k) {
   }
   settings.kerfTouched = true;
   try { localStorage.setItem(SETT_KEY, JSON.stringify(settings)); } catch(e){}
-  const kd = document.getElementById('kerf-display'); if (kd) kd.textContent = KERF + 'mm';
+  const kd = document.getElementById('kerf-display'); if (kd) kd.textContent = len(KERF);
   const m = document.getElementById('kerf-modal'); if (m) m.style.display = 'none';
-  showToast('\u2713 Kerf set to ' + KERF + 'mm \u2014 change it any time in Settings');
+  showToast('\u2713 Kerf set to ' + len(KERF) + ' \u2014 change it any time in Settings');
+}
+
+// Units chosen on the welcome screen. Picking inches also switches prices to
+// dollars (the starter prices are US ones) unless a currency was chosen.
+function welcomeUnits(u) {
+  if (u === 'in' && !settings.currencyTouched) settings.currency = '$';
+  if (u === 'mm' && !settings.currencyTouched) settings.currency = '\u00a3';
+  setUnits(u);
 }
 
 function renderAll() {
@@ -98,7 +141,12 @@ function renderAll() {
         <svg width="30" height="30" viewBox="0 0 36 36" fill="none"><rect x="3" y="3" width="12" height="9" rx="2" fill="#f59e0b"/><rect x="18" y="3" width="15" height="15" rx="2" fill="white" opacity=".9"/><rect x="3" y="14" width="12" height="19" rx="2" fill="white" opacity=".9"/><rect x="18" y="20" width="15" height="13" rx="2" fill="#f59e0b" opacity=".85"/></svg>
       </div>
       <div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;color:var(--teal);margin-bottom:8px;letter-spacing:-.3px">Welcome to CutNest</div>
-      <p style="font-size:14px;color:var(--muted);margin-bottom:24px;line-height:1.7;max-width:420px;margin-left:auto;margin-right:auto">Pick your trade and we'll load the right sheet materials in seconds. You'll be running your first optimised cut list in under a minute.</p>
+      <p style="font-size:14px;color:var(--muted);margin-bottom:16px;line-height:1.7;max-width:420px;margin-left:auto;margin-right:auto">Pick your trade and we'll load the right sheet materials in seconds. You'll be running your first optimised cut list in under a minute.</p>
+      <div role="group" aria-label="Units" style="display:inline-flex;border:1.5px solid var(--bdr2);border-radius:9px;overflow:hidden;margin-bottom:18px">
+        <span style="padding:7px 12px;font-size:12px;color:var(--muted);font-weight:600">I measure in</span>
+        <button type="button" onclick="welcomeUnits('mm')" aria-pressed="${!isInch()}" class="cut-method-btn${!isInch() ? ' active' : ''}" style="flex:none;padding:7px 14px;border-left:1px solid var(--bdr2)">mm</button>
+        <button type="button" onclick="welcomeUnits('in')" aria-pressed="${isInch()}" class="cut-method-btn${isInch() ? ' active' : ''}" style="flex:none;padding:7px 14px;border-left:1px solid var(--bdr2)">inches</button>
+      </div>
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:20px">
         <button onclick="loadStarterPack('metal')" style="background:var(--teal);border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;padding:13px 26px;border-radius:10px;cursor:pointer;letter-spacing:.5px;transition:.2s;box-shadow:0 4px 14px rgba(15,76,92,.25)" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''">🔩 Sheet Metal</button>
         <button onclick="loadStarterPack('timber')" style="background:var(--teal);border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;padding:13px 26px;border-radius:10px;cursor:pointer;letter-spacing:.5px;transition:.2s;box-shadow:0 4px 14px rgba(15,76,92,.25)" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''">🪵 Timber &amp; Joinery</button>
@@ -165,7 +213,7 @@ function buildBlock(m, idx) {
     sizeHtml = `
       <div class="sz-info-row">
         ${sizeBadgesHtml(libMat)}
-        ${cleanTrim(libMat.trim) ? `<div class="sz-badge" title="Taken off every edge of each sheet before nesting"><span class="sl">Edge trim</span><span class="sv">${cleanTrim(libMat.trim)} mm</span></div>` : ''}
+        ${cleanTrim(libMat.trim) ? `<div class="sz-badge" title="Taken off every edge of each sheet before nesting"><span class="sl">Edge trim</span><span class="sv">${esc(len(cleanTrim(libMat.trim)))}</span></div>` : ''}
         <div class="sz-auto-note">The optimiser picks the best mix</div>
       </div>
       ${!isPro && (libMat.allowRotation === false || libMat.cuttingMethod === 'guillotine')
@@ -174,7 +222,7 @@ function buildBlock(m, idx) {
       ${m.remnant && m.remnant.w && m.remnant.h
         ? `<div class="remnant-active">
              <span>&#9000;</span>
-             <span>Remnant: ${m.remnant.w}&times;${m.remnant.h}mm &mdash; ${isPro ? 'used first' : 'Pro only, not used on the free plan'}</span>
+             <span>Remnant: ${esc(dims(m.remnant.w, m.remnant.h))} &mdash; ${isPro ? 'used first' : 'Pro only, not used on the free plan'}</span>
              <button class="remnant-remove" onclick="removeRemnant('${m.id}')">&times;</button>
            </div>`
         : `<button class="btn-add-remnant" onclick="openRemnantInput('${m.id}')">+ Got a leftover piece? Add remnant${isPro ? '' : ' &#128274;'}</button>${isPro ? offcutPickerHtml(m, libMat) : ''}`
@@ -182,8 +230,8 @@ function buildBlock(m, idx) {
       <div class="remnant-form" id="remnant-form-${m.id}" style="display:none">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">Leftover sheet dimensions</div>
         <div class="remnant-form-grid">
-          <div><label class="lbl">Width (mm)</label><input type="number" id="rem-w-${m.id}" placeholder="1200" min="10"/></div>
-          <div><label class="lbl">Height (mm)</label><input type="number" id="rem-h-${m.id}" placeholder="600" min="10"/></div>
+          <div><label class="lbl" for="rem-w-${m.id}">Width (${unitLabel()})</label><input type="text" inputmode="${isInch() ? 'text' : 'decimal'}" id="rem-w-${m.id}" placeholder="${lenNum(1200)}"/></div>
+          <div><label class="lbl" for="rem-h-${m.id}">Height (${unitLabel()})</label><input type="text" inputmode="${isInch() ? 'text' : 'decimal'}" id="rem-h-${m.id}" placeholder="${lenNum(600)}"/></div>
           <div>
             <button class="btn btn-teal" onclick="saveRemnant('${m.id}')" style="padding:7px 13px;margin-top:17px">Use it</button>
             <button class="btn btn-out" onclick="cancelRemnant('${m.id}')" style="padding:7px 10px;margin-top:17px;margin-left:4px">Cancel</button>
@@ -197,7 +245,7 @@ function buildBlock(m, idx) {
     <tr id="prow-${m.id}-${pi}">
       <td style="color:var(--muted);font-size:11px;text-align:center;width:26px" data-label="#">${pi+1}</td>
       <td data-label="Label">
-        <input type="text"
+        <input type="text" data-f="label"
           value="${esc(p.label||'')}"
           placeholder="Label (optional)"
           aria-label="Piece ${pi+1} label"
@@ -206,23 +254,23 @@ function buildBlock(m, idx) {
           onfocus="this.select()"
           onkeydown="handlePieceKey(event,'${m.id}',${pi},'label')"/>
       </td>
-      <td data-label="W (mm)">
-        <input type="number"
-          value="${p.w||''}"
+      <td data-label="W (${unitLabel()})">
+        <input type="text" inputmode="${isInch() ? 'text' : 'decimal'}" data-f="w"
+          value="${lenInput(p.w)}"
           placeholder="Width"
-          aria-label="Piece ${pi+1} width in mm"
-          style="width:78px;text-align:center"
-          oninput="updatePiece('${m.id}',${pi},'w',+this.value)"
+          aria-label="Piece ${pi+1} width in ${unitLabel()}"
+          style="width:${isInch() ? 92 : 78}px;text-align:center"
+          oninput="updatePiece('${m.id}',${pi},'w',parseLen(this.value))"
           onfocus="this.select()"
           onkeydown="handlePieceKey(event,'${m.id}',${pi},'w')"/>
       </td>
-      <td data-label="H (mm)">
-        <input type="number"
-          value="${p.h||''}"
+      <td data-label="H (${unitLabel()})">
+        <input type="text" inputmode="${isInch() ? 'text' : 'decimal'}" data-f="h"
+          value="${lenInput(p.h)}"
           placeholder="Height"
-          aria-label="Piece ${pi+1} height in mm"
-          style="width:78px;text-align:center"
-          oninput="updatePiece('${m.id}',${pi},'h',+this.value)"
+          aria-label="Piece ${pi+1} height in ${unitLabel()}"
+          style="width:${isInch() ? 92 : 78}px;text-align:center"
+          oninput="updatePiece('${m.id}',${pi},'h',parseLen(this.value))"
           onfocus="this.select()"
           onkeydown="handlePieceKey(event,'${m.id}',${pi},'h')"/>
       </td>
@@ -240,6 +288,7 @@ function buildBlock(m, idx) {
           <button class="qty-btn" onclick="stepQty('${m.id}',${pi},1)" type="button" aria-label="Increase piece ${pi+1} quantity">+</button>
         </div>
       </td>
+      <td data-label="Grain" style="width:74px">${grainButtonHtml(m, pi, libMat)}</td>
       <td style="white-space:nowrap;padding:4px 2px" data-label="Actions">
         <button onclick="duplicatePiece('${m.id}',${pi})" title="Duplicate piece" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:2px 5px" aria-label="Duplicate">⧉</button>
         <button class="btn-del" onclick="removePiece('${m.id}',${pi})" aria-label="Remove piece ${pi+1}">&#10005;</button>
@@ -286,7 +335,7 @@ function buildBlock(m, idx) {
         </div>
         <div class="pieces-table-wrap" style="overflow-x:auto">
           <table>
-            <thead><tr><th style="width:26px">#</th><th>Label</th><th>W (mm)</th><th>H (mm)</th><th style="width:90px">Qty</th><th style="width:52px"></th></tr></thead>
+            <thead><tr><th style="width:26px">#</th><th>Label</th><th>W (${unitLabel()})</th><th>H (${unitLabel()})</th><th style="width:90px">Qty</th><th style="width:74px">Grain</th><th style="width:52px"></th></tr></thead>
             <tbody id="ptbody-${m.id}">${pRows}</tbody>
           </table>
         </div>
@@ -302,6 +351,45 @@ function buildBlock(m, idx) {
 }
 
 
+// ── GRAIN PER PIECE (Pro) ────────────────────────────────────
+// Each piece either follows its material's grain setting ('auto'), is locked
+// to the orientation entered ('lock': brushed or veneered faces, a door that
+// must run with the grain), or may be turned even on a grain-locked material
+// ('free': a hidden back panel). Stored as piece.grain: undefined|'lock'|'free'.
+const GRAIN_STATES = [
+  { v: undefined, text: 'Auto',  icon: '',        tip: 'Follows the material setting' },
+  { v: 'lock',    text: 'Lock',  icon: '\u{1F512} ', tip: 'Never rotate this piece' },
+  { v: 'free',    text: 'Turn',  icon: '\u21BB ',  tip: 'This piece may be rotated, even if the material is grain-locked' }
+];
+function grainButtonHtml(m, pi, libMat) {
+  const g = m.pieces[pi].grain;
+  const st = GRAIN_STATES.find(function(x){ return x.v === g; }) || GRAIN_STATES[0];
+  const matLocked = libMat && libMat.allowRotation === false;
+  const tip = st.v === undefined ? st.tip + (libMat ? (matLocked ? ' (grain locked: no rotation)' : ' (may rotate)') : '') : st.tip;
+  const on = st.v !== undefined;
+  return `<button type="button" class="grain-btn${on ? ' on' : ''}" onclick="cycleGrain('${m.id}',${pi})" title="${esc(tip)}${isPro ? '' : ' \u2014 Pro'}" aria-label="Piece ${pi+1} grain: ${esc(st.text)}. ${esc(tip)}">${st.icon}${st.text}${isPro ? '' : ' &#128274;'}</button>`;
+}
+function cycleGrain(matId, pi) {
+  if (!isPro) {
+    showUpgradeModal('\u{1F512}', 'Grain per piece', 'Pro lets you lock the grain on individual pieces, or let a hidden piece turn on a grain-locked sheet, so every part runs the right way and the rest pack as tight as possible.');
+    return;
+  }
+  const m = mats.find(function(x){ return x.id === matId; });
+  if (!m || !m.pieces[pi]) return;
+  pushUndo();
+  const i = GRAIN_STATES.findIndex(function(x){ return x.v === m.pieces[pi].grain; });
+  const next = GRAIN_STATES[(i + 1) % GRAIN_STATES.length].v;
+  if (next === undefined) delete m.pieces[pi].grain; else m.pieces[pi].grain = next;
+  renderAll(); saveState();
+  if (calcResult) { const sb = document.getElementById('stale-banner'); if (sb) sb.style.display = 'block'; }
+}
+// Whether this piece may be turned 90°, given its material.
+function pieceMayRotate(p, libMat) {
+  if (p.grain === 'lock') return false;
+  if (p.grain === 'free') return true;
+  return libMat.allowRotation !== false;
+}
+
 // ── PASTE A CUT LIST ──────────────────────────────────────────
 // The only bulk tool was "+ Add 5 empty rows". Every fabricator already has the
 // sizes somewhere — an email, a drawing schedule, an Excel column, a text from
@@ -314,16 +402,36 @@ function buildBlock(m, idx) {
 // Anything it cannot read is reported line by line rather than silently dropped.
 function parsePastedPieces(text) {
   const rows = [], errors = [];
+  // A spreadsheet export with a header row (Part, Length, Width, Qty, Grain)
+  // is read by column, in whatever order the columns come.
+  const byHeader = parseByHeader(text);
+  if (byHeader) return byHeader;
   String(text || '').split(/\r?\n/).forEach(function (raw, i) {
     let line = String(raw || '').trim();
     if (!line) return;
     if (/^[#/]/.test(line)) return;                 // comment line
     if (!/\d/.test(line)) return;                   // header row / prose: no numbers at all
 
+    // Units: a line that says mm or inches is read that way; otherwise the
+    // user's setting decides. Numbers are converted to mm at the end.
+    const saysMm = /\d\s*mm\b/i.test(line);
+    const saysIn = /\d\s*("|\u2033|inches\b|inch\b|in\b)/i.test(line);
+    const lineInch = saysMm ? false : saysIn ? true : isInch();
+
     // Normalise: × -> x, drop unit suffixes and stray quotes.
     line = line.replace(/\u00d7/g, 'x')
+               .replace(/(\d)\s*(mm|inches|inch|in)\b/gi, '$1 ')
                .replace(/\bmm\b/gi, ' ')
-               .replace(/["']/g, ' ');
+               .replace(/["'\u2033\u2032]/g, ' ');
+
+    // Inch fractions: "23 5/8" or "23-5/8" -> 23.625, "5/8" -> 0.625.
+    if (lineInch) {
+      line = line.replace(/(\d+(?:\.\d+)?)[\s-]+(\d+)\s*\/\s*(\d+)/g, function (all, whole, n, d) {
+        return +d > 0 ? String(+whole + (+n) / (+d)) : all;
+      }).replace(/(\d+)\s*\/\s*(\d+)/g, function (all, n, d) {
+        return +d > 0 ? String((+n) / (+d)) : all;
+      });
+    }
 
     // THOUSANDS SEPARATORS. A comma is ambiguous: in "600,400,4" it separates
     // fields, but in "1,200 x 800 x 4" it is a thousands separator — and read
@@ -371,7 +479,8 @@ function parsePastedPieces(text) {
       return;
     }
 
-    const w = numeric[0], h = numeric[1];
+    const toMm = lineInch ? MM_PER_IN : 1;
+    const w = numeric[0] * toMm, h = numeric[1] * toMm;
     let qty = leadQty != null ? leadQty
             : kwQty  != null ? kwQty
             : (numeric.length >= 3 ? numeric[2] : 1);
@@ -381,7 +490,7 @@ function parsePastedPieces(text) {
       return;
     }
     if (w > 99999 || h > 99999) {
-      errors.push('Line ' + (i + 1) + ': dimension looks wrong (over 99999mm) \u2014 "' + raw.trim().slice(0, 40) + '"');
+      errors.push('Line ' + (i + 1) + ': dimension looks wrong (over ' + len(99999) + ') \u2014 "' + raw.trim().slice(0, 40) + '"');
       return;
     }
     qty = Math.max(1, Math.min(9999, Math.round(qty) || 1));
@@ -392,11 +501,64 @@ function parsePastedPieces(text) {
     // notation, flag anything that does not look like a real part so the user
     // sees it in the preview instead of finding out at the saw.
     let warn = null;
-    if (w < 5 || h < 5) warn = 'dimension under 5mm \u2014 check this line';
+    if (w < 5 || h < 5) warn = 'dimension under ' + len(5) + ' \u2014 check this line';
     else if (qty > 500) warn = 'quantity over 500 \u2014 check this line';
     rows.push({ w: w, h: h, qty: qty, label: label.slice(0, 40), warn: warn });
   });
   return { rows: rows, errors: errors };
+}
+
+// Header-row mode for parsePastedPieces. Returns null when the text has no
+// recognisable header, so the forgiving line-by-line parser takes over.
+function parseByHeader(text) {
+  const lines = String(text || '').split(/\r?\n/);
+  const first = lines.findIndex(function (l) { return l.trim(); });
+  if (first === -1) return null;
+  const delim = detectDelimiter(text);
+  if (!delim) return null;
+  const map = headerMap(splitDelimited(lines[first], delim));
+  if (!map) return null;
+  const rows = [], errors = [];
+  const num = function (c) { return String(c == null ? '' : c).replace(/(\d),(?=\d{3}(\D|$))/g, '$1').trim(); };
+  for (let i = first + 1; i < lines.length; i++) {
+    const raw = lines[i];
+    if (!raw.trim()) continue;
+    const cells = splitDelimited(raw, delim);
+    const wc = num(cells[map.w]), hc = num(cells[map.h]);
+    if (!wc && !hc) continue;                     // blank or totals row
+    const w = parseLen(wc), h = parseLen(hc);
+    const where = 'Line ' + (i + 1) + ': ';
+    const quote = ' \u2014 "' + raw.trim().slice(0, 40) + '"';
+    if (!(w > 0) || !(h > 0)) { errors.push(where + 'need a width and a height' + quote); continue; }
+    if (w > 99999 || h > 99999) { errors.push(where + 'dimension looks wrong (over ' + len(99999) + ')' + quote); continue; }
+    const qRaw = map.qty != null ? parseInt(num(cells[map.qty]), 10) : 1;
+    const qty = Math.max(1, Math.min(9999, qRaw || 1));
+    const label = map.label != null ? String(cells[map.label] || '').slice(0, 40) : '';
+    let warn = null;
+    if (w < 5 || h < 5) warn = 'dimension under ' + len(5) + ' \u2014 check this line';
+    else if (qty > 500) warn = 'quantity over 500 \u2014 check this line';
+    const row = { w: w, h: h, qty: qty, label: label, warn: warn };
+    const g = map.grain != null ? grainCell(cells[map.grain]) : undefined;
+    if (g) row.grain = g;
+    rows.push(row);
+  }
+  return { rows: rows, errors: errors, header: true };
+}
+
+// "Choose a file" in the paste window: read it into the text box so the
+// preview shows exactly what will be added.
+async function importCutListFile(input) {
+  const file = input && input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  const ta = document.getElementById('paste-input');
+  try {
+    ta.value = await fileToCutListText(file);
+    renderPastePreview();
+    showToast('Read ' + file.name + ' \u2014 check the preview, then add');
+  } catch (e) {
+    showToast(e.message || 'That file could not be read', 5200);
+  }
 }
 
 const PASTE_ROW_LIMIT = 500;   // same ceiling as the shared-link importer
@@ -404,6 +566,10 @@ let _pasteTargetMat = null;
 
 function openPaste(matId) {
   _pasteTargetMat = matId;
+  const ex = document.getElementById('paste-examples');
+  if (ex) ex.innerHTML = isInch()
+    ? '23 5/8 x 15 3/4 x 4 &nbsp;&middot;&nbsp; 23.625, 15.75, 4<br>Door Front, 24, 18, 4 &nbsp;&middot;&nbsp; 4 off 24 x 18<br>24" x 18" qty 4 &nbsp;&middot;&nbsp; 600mm x 400mm <span style="color:var(--muted)">(mm on the line wins)</span>'
+    : '600x400x4 &nbsp;&middot;&nbsp; 600 x 400 x 4 &nbsp;&middot;&nbsp; 600,400,4<br>Door Front,800,600,4 &nbsp;&middot;&nbsp; 4 off 600x400<br>600x400 qty 4 &nbsp;&middot;&nbsp; 24" x 18" <span style="color:var(--muted)">(inches on the line win)</span>';
   const ta = document.getElementById('paste-input');
   if (ta) ta.value = '';
   const rep = document.getElementById('paste-replace');
@@ -442,13 +608,14 @@ function renderPastePreview() {
             'Only the first ' + PASTE_ROW_LIMIT + ' rows will be added (' + res.rows.length + ' found).</div>';
   }
   if (res.rows.length) {
+    if (res.header) html += '<div style="font-size:11.5px;color:var(--muted);margin-bottom:4px">Read by column headings.</div>';
     html += '<div style="font-size:12px;color:var(--teal);font-weight:700;margin-bottom:6px">\u2713 ' + res.rows.length +
             ' row' + (res.rows.length !== 1 ? 's' : '') + ' \u00b7 ' + totalCuts + ' total cut' + (totalCuts !== 1 ? 's' : '') + '</div>';
     html += '<div style="max-height:180px;overflow:auto;border:1px solid var(--bdr);border-radius:8px"><table style="font-size:12px">' +
-            '<thead><tr><th>Label</th><th>W</th><th>H</th><th>Qty</th><th></th></tr></thead><tbody>' +
+            '<thead><tr><th>Label</th><th>W (' + unitLabel() + ')</th><th>H (' + unitLabel() + ')</th><th>Qty</th><th></th></tr></thead><tbody>' +
             res.rows.slice(0, 100).map(function (r) {
               const bad = r.warn ? ' style="background:#fff5f5;color:#b91c1c;font-weight:600"' : '';
-              return '<tr' + bad + '><td>' + esc(r.label || '\u2014') + '</td><td>' + r.w + '</td><td>' + r.h + '</td><td>' + r.qty +
+              return '<tr' + bad + '><td>' + esc(r.label || '\u2014') + '</td><td>' + esc(lenNum(r.w)) + '</td><td>' + esc(lenNum(r.h)) + '</td><td>' + r.qty +
                      '</td><td style="font-size:11px">' + (r.warn ? '\u26a0 ' + esc(r.warn) : '') + '</td></tr>';
             }).join('') + '</tbody></table></div>';
     if (res.rows.length > 100) html += '<div style="font-size:11px;color:var(--muted);margin-top:5px">(showing first 100)</div>';
@@ -483,7 +650,9 @@ function confirmPaste() {
   // rows and written to localStorage on every keystroke.
   const room = Math.max(0, PASTE_ROW_LIMIT - existing.length);
   m.pieces = existing.concat(res.rows.slice(0, room).map(function (r) {
-    return { w: r.w, h: r.h, qty: r.qty, label: r.label };   // drop the warn flag
+    const p = { w: r.w, h: r.h, qty: r.qty, label: r.label };   // drop the warn flag
+    if (r.grain) p.grain = r.grain;
+    return p;
   }));
   if (!m.pieces.length) m.pieces = [{ w: '', h: '', qty: 1, label: '' }];
   closePaste();
@@ -590,7 +759,7 @@ function useOffcut(matId, offcutId) {
   m.remnant = { w: o.w, h: o.h };
   m.remnantFromStock = o.id;   // so it can be retired once it has been cut
   renderAll(); saveState();
-  showToast('Using your ' + o.w + '\u00d7' + o.h + 'mm offcut');
+  showToast('Using your ' + dims(o.w, o.h) + ' offcut');
 }
 
 // Called after a calculate that actually consumed a stock offcut.
@@ -613,7 +782,7 @@ function offcutPickerHtml(m, libMat) {
     list.slice(0, 8).map(function (o) {
       return '<button class="btn-add-remnant" style="border-style:solid;border-color:#6ee7b7;color:#065f46"' +
              ' onclick="useOffcut(\'' + m.id + '\',\'' + o.id + '\')">' +
-             o.w + '\u00d7' + o.h + 'mm</button>';
+             esc(dims(o.w, o.h)) + '</button>';
     }).join('') +
     (list.length > 8 ? '<span style="font-size:11px;color:var(--muted)">+' + (list.length - 8) + ' more</span>' : '') +
     '</div>';
@@ -661,19 +830,19 @@ function renderOffcutList() {
       const ds = isNaN(d) ? '' : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
       return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--bdr)">' +
         '<div style="flex:1;min-width:0">' +
-          '<div style="font-size:13px;font-weight:700;color:var(--teal)">' + o.w + ' \u00d7 ' + o.h + 'mm</div>' +
+          '<div style="font-size:13px;font-weight:700;color:var(--teal)">' + esc(dims(o.w, o.h)) + '</div>' +
           '<div style="font-size:11px;color:var(--muted)">' +
             (o.jobRef ? 'from ' + esc(o.jobRef) + ' \u00b7 ' : '') + ds +
-            ' \u00b7 ' + ((o.w * o.h) / 1e6).toFixed(2) + ' m\u00b2</div>' +
+            ' \u00b7 ' + areaTxt(o.w * o.h) + '</div>' +
         '</div>' +
         '<button class="btn-del" onclick="deleteOffcut(\'' + o.id + '\')">\u2715</button>' +
       '</div>';
     }).join('');
-    const area = groups[name].reduce(function (a, o) { return a + o.w * o.h; }, 0) / 1e6;
+    const area = groups[name].reduce(function (a, o) { return a + o.w * o.h; }, 0);
     return '<div style="margin-bottom:14px">' +
       '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:3px">' +
         esc(name) + ' \u2014 ' + groups[name].length + ' piece' + (groups[name].length !== 1 ? 's' : '') +
-        ' \u00b7 ' + area.toFixed(2) + ' m\u00b2</div>' + rows + '</div>';
+        ' \u00b7 ' + areaTxt(area) + '</div>' + rows + '</div>';
   }).join('');
 }
 
@@ -746,8 +915,8 @@ function handlePieceKey(e, matId, pi, field) {
     if (m && m.pieces[pi]) {
       const raw = e.target.value;
       if (field === 'label') m.pieces[pi].label = raw;
-      else if (field === 'w') m.pieces[pi].w = +raw || '';
-      else if (field === 'h') m.pieces[pi].h = +raw || '';
+      else if (field === 'w') m.pieces[pi].w = parseLen(raw) || '';
+      else if (field === 'h') m.pieces[pi].h = parseLen(raw) || '';
       else if (field === 'qty') m.pieces[pi].qty = Math.max(1, +raw || 1);
     }
   }
@@ -813,13 +982,9 @@ function focusPieceField(matId, pi, field) {
   if (!row) return;
   let inp = null;
   if (field === 'label') {
-    inp = row.querySelector('input[type=text]');
-  } else if (field === 'w') {
-    const nums = row.querySelectorAll('input[type=number]:not(.qty-input-mobile)');
-    inp = nums[0] || null;
-  } else if (field === 'h') {
-    const nums = row.querySelectorAll('input[type=number]:not(.qty-input-mobile)');
-    inp = nums[1] || null;
+    inp = row.querySelector('input[data-f="label"]');
+  } else if (field === 'w' || field === 'h') {
+    inp = row.querySelector('input[data-f="' + field + '"]');
   } else if (field === 'qty') {
     inp = row.querySelector('.qty-input-mobile');
   }
@@ -974,7 +1139,7 @@ function buildCutSheetsHtml() {
         const showNum  = w > 18 && h > 16;
         return `<div class="pt" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px">
           ${showNum ? `<span class="pt-no">${i+1}</span>` : ''}
-          ${showDims ? `<span class="pt-dim">${p.w}&times;${p.h}</span>
+          ${showDims ? `<span class="pt-dim">${esc(dims(p.w, p.h))}</span>
                         ${p.label ? `<span class="pt-lab">${esc(String(p.label).slice(0,22))}</span>` : ''}
                         ${p.rotated ? '<span class="pt-rot">&#8635; rotated</span>' : ''}` : ''}
         </div>`;
@@ -993,8 +1158,8 @@ function buildCutSheetsHtml() {
         const rows = col.map(function (p) {
           startIdx++;
           return `<tr><td class="c">${startIdx}</td><td>${esc(p.label || '\u2014')}</td>
-            <td class="c">${p.w}</td><td class="c">${p.h}</td>
-            <td class="c">${Math.round(p.x - d)}</td><td class="c">${Math.round(p.y - d)}</td>
+            <td class="c">${esc(lenNum(p.w))}</td><td class="c">${esc(lenNum(p.h))}</td>
+            <td class="c">${esc(lenNum(p.x - d))}</td><td class="c">${esc(lenNum(p.y - d))}</td>
             <td class="c">${p.rotated ? '&#8635;' : ''}</td></tr>`;
         }).join('');
         return `<table><thead><tr><th>#</th><th>Label</th><th>W</th><th>H</th><th>X</th><th>Y</th><th>Rot</th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -1004,8 +1169,8 @@ function buildCutSheetsHtml() {
         ? cutCols.map(function (col) {
             const rows = col.map(function (c) {
               return `<tr><td class="c">${c.no}</td><td>${c.axis === 'V' ? 'Rip (down)' : 'Crosscut (across)'}</td>
-                <td class="c">${Math.round(c.pos)}mm</td>
-                <td class="c">${Math.round(c.from)}\u2013${Math.round(c.to)}mm</td></tr>`;
+                <td class="c">${esc(len(c.pos))}</td>
+                <td class="c">${esc(lenNum(c.from))}\u2013${esc(len(c.to))}</td></tr>`;
             }).join('');
             return `<table><thead><tr><th>#</th><th>Cut</th><th>At</th><th>Span</th></tr></thead><tbody>${rows}</tbody></table>`;
           }).join('')
@@ -1017,9 +1182,9 @@ function buildCutSheetsHtml() {
           <div>
             <div class="hd-t">${esc(libMat.name)}${libMat.thickness ? ' \u00b7 ' + esc(libMat.thickness) : ''}
               &mdash; Sheet ${si+1} of ${r.sheets.length}${sh.isRemnant ? ' (YOUR REMNANT)' : ''}</div>
-            <div class="hd-m">${sh.sheetW} &times; ${sh.sheetH}mm &nbsp;\u00b7&nbsp; ${sh.placed.length} parts
+            <div class="hd-m">${esc(dims(sh.sheetW, sh.sheetH))} &nbsp;\u00b7&nbsp; ${sh.placed.length} parts
               &nbsp;\u00b7&nbsp; ${sh.utilPercent || 0}% used
-              &nbsp;\u00b7&nbsp; <b>Kerf ${KERF}mm</b>
+              &nbsp;\u00b7&nbsp; <b>Kerf ${esc(len(KERF))}</b>
               &nbsp;\u00b7&nbsp; ${libMat.allowRotation === false ? '<b>GRAIN LOCKED \u2014 do not rotate</b>' : 'Rotation allowed'}</div>
           </div>
           <div class="hd-r">
@@ -1031,13 +1196,13 @@ function buildCutSheetsHtml() {
 
         <div class="drawwrap">
           <!-- Y dimension down the left edge -->
-          <div class="dim-y" style="height:${dh}px"><span>${sh.sheetH}mm</span></div>
+          <div class="dim-y" style="height:${dh}px"><span>${esc(len(sh.sheetH))}</span></div>
           <div class="sheet" style="width:${dw}px;height:${dh}px">
             ${trimFrameHtml(sh, scale)}${rects}${cutMarks}
             ${(sh.offcut && sh.offcut.w > 0 && sh.offcut.h > 0) ? `<div class="offcut ${sh.usableOffcut ? 'keep' : ''}"
               style="left:${sh.offcut.x*scale}px;top:${sh.offcut.y*scale}px;width:${sh.offcut.w*scale}px;height:${sh.offcut.h*scale}px">
               ${(sh.offcut.w*scale > 90 && sh.offcut.h*scale > 18)
-                ? `<span>${sh.usableOffcut ? '\u2713 KEEP OFFCUT' : 'Offcut'} ${Math.round(sh.offcut.w)}&times;${Math.round(sh.offcut.h)}</span>` : ''}
+                ? `<span>${sh.usableOffcut ? '\u2713 KEEP OFFCUT' : 'Offcut'} ${esc(dims(sh.offcut.w, sh.offcut.h))}</span>` : ''}
             </div>` : ''}
             <div class="datum"${d ? ` style="left:${d * scale - 1}px;top:${d * scale - 1}px"` : ''}></div>
             <div class="datum-lab"${d ? ` style="left:${d * scale + 18}px;top:${d * scale + 1}px"` : ''}>0,0 datum${d ? ' (trimmed corner)' : ''}</div>
@@ -1047,7 +1212,7 @@ function buildCutSheetsHtml() {
         </div>
         <!-- X dimension under the sheet -->
         <div class="dim-x" style="width:${dw}px">
-          <span>${sh.sheetW}mm</span>
+          <span>${esc(len(sh.sheetW))}</span>
         </div>
 
         <div class="tables">
@@ -1057,13 +1222,13 @@ function buildCutSheetsHtml() {
           </div>
           <div class="tbl-col">
             <h3>Cut sequence${cuts && cuts.length ? ' \u2014 ' + cuts.length + ' cuts, in order' : ''}</h3>
-            ${sawTrim ? `<div class="trim-first">First: trim ${trimT}mm off all four edges. Every measurement on this page is from the trimmed edges.</div>` : ''}
+            ${sawTrim ? `<div class="trim-first">First: trim ${esc(len(trimT))} off all four edges. Every measurement on this page is from the trimmed edges.</div>` : ''}
             <div class="tbl-split">${cutTables}</div>
           </div>
         </div>
-        <div class="note">X / Y = distance from the datum corner to each part's top-left corner, in mm.${
-          trimT && !sawTrim ? ` Keep clear of the ${trimT}mm edge trim (shaded).` : ''}${
-          cuts && cuts.length ? ` Every cut runs edge to edge across the piece you are holding; measure "At" from the datum edge. The ${KERF}mm kerf is already allowed for.` : ''}</div>
+        <div class="note">X / Y = distance from the datum corner to each part's top-left corner, in ${isInch() ? 'inches' : 'mm'}.${
+          trimT && !sawTrim ? ` Keep clear of the ${esc(len(trimT))} edge trim (shaded).` : ''}${
+          cuts && cuts.length ? ` Every cut runs edge to edge across the piece you are holding; measure "At" from the datum edge. The ${esc(len(KERF))} kerf is already allowed for.` : ''}</div>
         <footer class="ft">CutNest \u00b7 cutnest.co.uk &nbsp;\u00b7&nbsp; Verify against the physical sheet before cutting.</footer>
       </section>`;
     });
@@ -1136,15 +1301,20 @@ function exportCutSheets() {
   if (!calcResult) { showToast('Calculate a job first'); return; }
   const html = buildCutSheetsHtml();
   if (!html) { showToast('Nothing to print yet'); return; }
+  openPrintable(html, 'Cut sheets');
+}
+
+// Open a generated page in a new window and print it. If the popup is
+// blocked (common on phones), open it as a blob tab the user can print.
+function openPrintable(html, what) {
   const w = window.open('', '_blank');
   if (!w) {
-    // Popup blocked (common on mobile): fall back to a blob the user can open.
     try {
       const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
       const a = document.createElement('a');
       a.href = url; a.target = '_blank'; a.rel = 'noopener';
       a.click();
-      showToast('Cut sheets opened in a new tab \u2014 use your browser\u2019s Print / Save as PDF');
+      showToast(what + ' opened in a new tab \u2014 use your browser\u2019s Print / Save as PDF');
     } catch (e) {
       showToast('Your browser blocked the window \u2014 allow pop-ups for cutnest.co.uk');
     }
@@ -1153,6 +1323,119 @@ function exportCutSheets() {
   w.document.write(html);
   w.document.close();
   setTimeout(function () { w.print(); }, 700);
+}
+
+// ── PART LABELS (Pro) ─────────────────────────────────────────
+// One sticky label per part, printed on standard label sheets, so every
+// piece coming off the saw or laser can be identified. Each label carries the
+// same "Sheet N · Part M" numbers as the cut sheets (parts numbered top-left
+// to bottom-right on each sheet), so a label can be matched to its drawing.
+// Layouts are the manufacturers' published dimensions, in mm.
+const LABEL_LAYOUTS = {
+  L7160: { name: 'Avery L7160 / J8160 \u2014 21 per A4 (63.5 \u00d7 38.1mm)', page: 'A4', pw: 210, ph: 297, cols: 3, rows: 7, w: 63.5, h: 38.1, left: 7.2, top: 15.1, dx: 66.0, dy: 38.1 },
+  L7163: { name: 'Avery L7163 / J8163 \u2014 14 per A4 (99.1 \u00d7 38.1mm)', page: 'A4', pw: 210, ph: 297, cols: 2, rows: 7, w: 99.1, h: 38.1, left: 4.65, top: 15.1, dx: 101.6, dy: 38.1 },
+  L7159: { name: 'Avery L7159 \u2014 24 per A4 (63.5 \u00d7 33.9mm)', page: 'A4', pw: 210, ph: 297, cols: 3, rows: 8, w: 63.5, h: 33.9, left: 6.45, top: 12.9, dx: 66.0, dy: 33.9 },
+  A5160: { name: 'Avery 5160 \u2014 30 per US Letter (2 5/8 \u00d7 1")', page: 'letter', pw: 215.9, ph: 279.4, cols: 3, rows: 10, w: 66.675, h: 25.4, left: 4.7625, top: 12.7, dx: 69.85, dy: 25.4 },
+  A5163: { name: 'Avery 5163 \u2014 10 per US Letter (4 \u00d7 2")', page: 'letter', pw: 215.9, ph: 279.4, cols: 2, rows: 5, w: 101.6, h: 50.8, left: 3.96875, top: 12.7, dx: 106.3625, dy: 50.8 }
+};
+
+// Every placed part, in cut-sheet order, with what its label needs.
+function labelItems() {
+  const items = [];
+  const jr = (((document.getElementById('job-ref') || {}).value) || '').trim();
+  calcResult.results.forEach(function (r) {
+    const libMat = r.libMat;
+    const total = {}, seen = {};
+    r.sheets.forEach(function (sh) { sh.placed.forEach(function (p) { total[p.pieceIndex] = (total[p.pieceIndex] || 0) + 1; }); });
+    r.sheets.forEach(function (sh, si) {
+      sh.placed.slice().sort(function (a, b) { return (a.y - b.y) || (a.x - b.x); }).forEach(function (p, i) {
+        seen[p.pieceIndex] = (seen[p.pieceIndex] || 0) + 1;
+        const locked = p.rot === false || (p.rot === undefined && libMat.allowRotation === false);
+        items.push({
+          job: jr, material: libMat.name + (libMat.thickness && libMat.name.indexOf(libMat.thickness) === -1 ? ' ' + libMat.thickness : ''),
+          label: p.label || ('P' + (p.pieceIndex + 1)), w: p.w, h: p.h, rotated: p.rotated, locked: locked,
+          sheet: si + 1, sheets: r.sheets.length, part: i + 1, remnant: !!sh.isRemnant,
+          n: seen[p.pieceIndex], of: total[p.pieceIndex]
+        });
+      });
+    });
+  });
+  return items;
+}
+
+function buildLabelsHtml(layoutKey, skip) {
+  const L = LABEL_LAYOUTS[layoutKey] || LABEL_LAYOUTS.L7160;
+  const items = labelItems();
+  const perPage = L.cols * L.rows;
+  skip = Math.max(0, Math.min(perPage - 1, parseInt(skip, 10) || 0));
+  const co = (settings.companyName || '').trim();
+  const fs = L.h / 38.1;                         // font scale relative to a 38.1mm label
+  let pages = '', slot = skip, page = '';
+  const flush = function () { pages += '<section class="pg">' + page + '</section>'; page = ''; };
+  items.forEach(function (it) {
+    if (slot === perPage) { flush(); slot = 0; }
+    const col = slot % L.cols, row = Math.floor(slot / L.cols);
+    page += `<div class="lb" style="left:${L.left + col * L.dx}mm;top:${L.top + row * L.dy}mm">
+      <div class="top"><span>${esc(it.job || co || 'CutNest')}</span><span>${it.n} of ${it.of}</span></div>
+      <div class="name">${esc(it.label)}</div>
+      <div class="dim">${esc(dims(it.w, it.h))}${it.rotated ? ' <span class="rot">\u21bb</span>' : ''}</div>
+      <div class="mat">${esc(it.material)}</div>
+      <div class="bot"><span class="id">${it.remnant ? 'Remnant' : 'Sheet ' + it.sheet} \u00b7 Part ${it.part}</span>${it.locked ? '<span class="grain">GRAIN LOCKED</span>' : ''}</div>
+    </div>`;
+    slot++;
+  });
+  if (page) flush();
+  const title = 'Labels' + (items.length && items[0].job ? ' \u2014 ' + items[0].job : '');
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${esc(title)}</title><style>
+  @page { size: ${L.page === 'letter' ? '8.5in 11in' : 'A4'}; margin: 0; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#10202a;background:#fff}
+  .pg{position:relative;width:${L.pw}mm;height:${L.ph}mm;page-break-after:always;break-after:page;overflow:hidden}
+  .pg:last-child{page-break-after:auto;break-after:auto}
+  .lb{position:absolute;width:${L.w}mm;height:${L.h}mm;padding:${(2.2 * fs).toFixed(2)}mm ${(3 * fs).toFixed(2)}mm;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
+  .top,.bot{display:flex;justify-content:space-between;gap:4px;font-size:${(6.5 * fs).toFixed(1)}pt;color:#4a6a76;white-space:nowrap}
+  .top span:first-child{overflow:hidden;text-overflow:ellipsis}
+  .name{font-size:${(10.5 * fs).toFixed(1)}pt;font-weight:800;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dim{font-size:${(12 * fs).toFixed(1)}pt;font-weight:800;color:#0f4c5c;line-height:1.1}
+  .rot{font-size:.8em;color:#b45309}
+  .mat{font-size:${(7 * fs).toFixed(1)}pt;color:#4a6a76;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .id{font-weight:700;color:#10202a}
+  .grain{font-weight:800;color:#b45309}
+  @media screen{ body{background:#e5e7eb} .pg{background:#fff;margin:10px auto;box-shadow:0 2px 10px rgba(0,0,0,.15)} .lb{outline:1px dashed #cbd5e1} }
+  </style></head><body>${pages}</body></html>`;
+}
+
+function openLabels() {
+  if (!isPro) {
+    showUpgradeModal('\u{1F3F7}', 'Part labels', 'Pro prints a label for every part on standard label sheets (Avery A4 and US Letter): part name, size, material and the same sheet and part number as the cut sheet, so every piece can be identified off the machine.');
+    return;
+  }
+  if (!calcResult) { showToast('Calculate a job first'); return; }
+  const sel = document.getElementById('label-layout');
+  if (sel && !sel.dataset.filled) {
+    sel.innerHTML = Object.keys(LABEL_LAYOUTS).map(function (k) { return '<option value="' + k + '">' + esc(LABEL_LAYOUTS[k].name) + '</option>'; }).join('');
+    sel.dataset.filled = '1';
+    let saved = null; try { saved = localStorage.getItem('cutnest-label-layout'); } catch (e) {}
+    sel.value = LABEL_LAYOUTS[saved] ? saved : (isInch() ? 'A5160' : 'L7160');
+  }
+  updateLabelsSummary();
+  const m = document.getElementById('labels-modal'); if (m) m.style.display = 'flex';
+}
+function updateLabelsSummary() {
+  const sel = document.getElementById('label-layout'), sk = document.getElementById('label-skip'), out = document.getElementById('labels-summary');
+  if (!sel || !out || !calcResult) return;
+  const L = LABEL_LAYOUTS[sel.value], per = L.cols * L.rows;
+  const skip = Math.max(0, Math.min(per - 1, parseInt(sk && sk.value, 10) || 0));
+  const n = labelItems().length;
+  const sheets = Math.ceil((n + skip) / per);
+  out.textContent = n + ' label' + (n !== 1 ? 's' : '') + ' on ' + sheets + ' sheet' + (sheets !== 1 ? 's' : '') + ' of ' + per + (skip ? ', starting at label ' + (skip + 1) : '') + '.';
+}
+function printLabels() {
+  const sel = document.getElementById('label-layout'), sk = document.getElementById('label-skip');
+  try { localStorage.setItem('cutnest-label-layout', sel.value); } catch (e) {}
+  const html = buildLabelsHtml(sel.value, sk ? sk.value : 0);
+  const m = document.getElementById('labels-modal'); if (m) m.style.display = 'none';
+  openPrintable(html, 'Labels');
 }
 
 
@@ -1219,6 +1502,7 @@ function gatedFeatures(libMat, m) {
   if (libMat.allowRotation === false) out.push('grain lock');
   if (libMat.cuttingMethod === 'guillotine') out.push('guillotine mode');
   if (m && m.remnant && m.remnant.w && m.remnant.h) out.push('your remnant');
+  if (m && m.pieces && m.pieces.some(function(p){ return p.grain; })) out.push('grain per piece');
   const sizes = stockSizes(libMat);
   if (sizes.length > FREE_SHEET_SIZES) out.push('sheet sizes after the first ' + FREE_SHEET_SIZES);
   if (sizes.some(function(z){ return z.max != null; })) out.push('stock limits');
@@ -1401,7 +1685,9 @@ async function _doCalculate() {
     // upgrade); the free calculation just runs without them and says so.
     const libMat = isPro ? storedMat : freeTierMat(storedMat);
     const gated = isPro ? [] : gatedFeatures(storedMat, m);
-    const valid = m.pieces.filter(p=>p.w>0&&p.h>0&&p.qty>0);
+    // Grain per piece is Pro: on the free plan every piece follows the material.
+    const valid = m.pieces.filter(p=>p.w>0&&p.h>0&&p.qty>0)
+      .map(function(p){ if (isPro || !p.grain) return p; const c = Object.assign({}, p); delete c.grain; return c; });
     if (!valid.length) { errors.push(`Material ${mats.indexOf(m)+1} (${esc(libMat.name)}): Please add at least one piece.`); continue; }
 
     // check pieces fit — only against sizes that have real positive dimensions
@@ -1422,10 +1708,10 @@ async function _doCalculate() {
     // banner that is easy to scroll past. Now the pieces that DO fit are packed
     // and reported as normal, and the offenders are carried through as
     // `oversized` so every surface can show a per-material "not placed" block.
-    const allowRot = libMat.allowRotation !== false;
     const fitting = [], oversized = [];
     for (const p of valid) {
       const pw = +p.w, ph = +p.h;
+      const allowRot = pieceMayRotate(p, libMat);     // this piece, not just the material
       const fits = sizes.some(function(sz){
         const sw = +sz.w, sh = +sz.h;
         // Only count the rotated orientation if this material actually permits
@@ -1441,10 +1727,10 @@ async function _doCalculate() {
         reason: fitsRotated ? 'grain-locked' : 'too-big',
         minSheet: (function(){ const ms = minSheetFor(pw, ph, allowRot); return { w: ms.w + 2 * trimMm, h: ms.h + 2 * trimMm }; })()
       });
-      const sizeStr = sizes.map(function(s){return (+s.w)+'×'+(+s.h)+'mm';}).join(' or ') + (trimMm ? ' usable after the ' + trimMm + 'mm edge trim' : '');
+      const sizeStr = sizes.map(function(s){ return dims(+s.w, +s.h); }).join(' or ') + (trimMm ? ' usable after the ' + len(trimMm) + ' edge trim' : '');
       errors.push(fitsRotated
-        ? `${esc(libMat.name)}: "${esc(p.label||pw+'×'+ph)}" (${pw}×${ph}mm) only fits rotated, but grain is locked for this material.`
-        : `${esc(libMat.name)}: "${esc(p.label||pw+'×'+ph)}" (${pw}×${ph}mm) is too big for the ${sizeStr} sheet.`);
+        ? `${esc(libMat.name)}: "${esc(p.label||dims(pw, ph))}" (${esc(dims(pw, ph))}) only fits rotated, but grain is locked for ${p.grain === 'lock' ? 'this piece' : 'this material'}.`
+        : `${esc(libMat.name)}: "${esc(p.label||dims(pw, ph))}" (${esc(dims(pw, ph))}) is too big for the ${esc(sizeStr)} sheet.`);
     }
 
     // Nothing fits at all: still emit a result so the material keeps its card
@@ -1513,7 +1799,7 @@ function showErr(msg) {
   if (!b) return;
   let hint = '';
   if (msg.indexOf('larger than') > -1 || msg.indexOf('exceed') > -1 || msg.indexOf('too big') > -1) {
-    hint = '<div style="margin-top:7px;font-size:12px;color:var(--text2)">Tip: check piece dimensions are in mm and sheet sizes are correct in Library.</div>';
+    hint = '<div style="margin-top:7px;font-size:12px;color:var(--text2)">Tip: check piece dimensions are in ' + (isInch() ? 'inches' : 'mm') + ' and sheet sizes are correct in Library.</div>';
   } else if (msg.indexOf('library') > -1 || msg.indexOf('material') > -1) {
     hint = '<div style="margin-top:7px;font-size:12px;color:var(--text2)">Tip: open Library and add at least one material with sheet sizes and prices before calculating.</div>';
   } else if (msg.indexOf('pieces') > -1 || msg.indexOf('empty') > -1) {
@@ -1548,19 +1834,19 @@ function notPlacedLines(libMat, unplaced, oversized, stockShort){
   (oversized||[]).forEach(function(o){
     const ms = o.minSheet || minSheetFor(o.w, o.h, allowRot);
     out.push({
-      label: o.label || (o.w+'\u00d7'+o.h),
+      label: o.label || dims(o.w, o.h),
       w:o.w, h:o.h, qty:o.qty,
       why: o.reason === 'grain-locked'
         ? 'Only fits rotated, but grain is locked for this material'
         : 'Larger than every stock sheet size',
       fix: o.reason === 'grain-locked'
-        ? ('Unlock grain in Library, or order a sheet at least ' + ms.w + '\u00d7' + ms.h + 'mm')
-        : ('Order a sheet at least ' + ms.w + '\u00d7' + ms.h + 'mm')
+        ? ('Unlock grain in Library, or order a sheet at least ' + dims(ms.w, ms.h))
+        : ('Order a sheet at least ' + dims(ms.w, ms.h))
     });
   });
   groupUnplaced(unplaced).forEach(function(u){
     out.push({
-      label: u.label || (u.w+'\u00d7'+u.h),
+      label: u.label || dims(u.w, u.h),
       w:u.w, h:u.h, qty:u.qty,
       why: stockShort ? 'Not enough sheets in stock' : 'Packer ran out of sheets for this job',
       fix: stockShort ? 'Raise or clear "Max sheets" on a size in Library, or add another size'
@@ -1587,7 +1873,7 @@ function notPlacedHtml(libMat, unplaced, oversized, stockShort){
     <div style="padding:11px 13px">
       ${rows.map(function(r){
         return `<div style="padding:7px 0;border-bottom:1px solid #fbdcdc">
-          <div style="font-size:13px;font-weight:700;color:var(--red)">${esc(r.label)} — ${r.w}×${r.h}mm ×${r.qty}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--red)">${esc(r.label)} — ${esc(dims(r.w, r.h))} ×${r.qty}</div>
           <div style="font-size:12px;color:var(--text2);margin-top:2px">${esc(r.why)}</div>
           <div style="font-size:12px;color:var(--teal);font-weight:600;margin-top:2px">→ ${esc(r.fix)}</div>
         </div>`;
@@ -1624,8 +1910,8 @@ function renderOutput() {
       const matchedSize = sizeByDims(libMat, sw, sh);
       const unitPrice = matchedSize && matchedSize.price > 0 ? matchedSize.price : 0;
       const lineTotal = unitPrice * cnt;
-      quoteLines.push(`${libMat.name}: ${cnt} sheet${cnt>1?'s':''} — ${dim}mm${unitPrice ? ' @ £'+unitPrice+' each' : ''}`);
-      return `<div class="pres-size-chip"><b>${cnt}</b> × ${dim}mm${unitPrice ? `<span style="color:var(--green);margin-left:5px">£${lineTotal.toFixed(0)}</span>` : ''}</div>`;
+      quoteLines.push(`${libMat.name}: ${cnt} sheet${cnt>1?'s':''} — ${dimKey(dim)}${unitPrice ? ' @ '+money(unitPrice)+' each' : ''}`);
+      return `<div class="pres-size-chip"><b>${cnt}</b> × ${esc(dimKey(dim))}${unitPrice ? `<span style="color:var(--green);margin-left:5px">${money(lineTotal, 0)}</span>` : ''}</div>`;
     }).join('');
 
     // Per-material utilisation: how much of the stock this material consumed,
@@ -1656,10 +1942,10 @@ function renderOutput() {
         })()}
         ${_r.altFewerSheets ? `<div style="background:var(--sky);border:1px dashed var(--bdr2);border-radius:7px;padding:7px 10px;margin-bottom:7px;font-size:11.5px;color:var(--text2);line-height:1.5">
           <b style="color:var(--teal)">Fewer sheets available:</b> ${_r.altFewerSheets.sheets} sheet${_r.altFewerSheets.sheets!==1?'s':''}
-          (${Object.entries(_r.altFewerSheets.sizeMap).map(([d,c])=>`${c}\u00d7 ${d}mm`).join(', ')}) for \u00a3${_r.altFewerSheets.cost.toFixed(2)}
-          \u2014 \u00a3${_r.altFewerSheets.extraCost.toFixed(2)} more, but ${_r.altFewerSheets.savedSheets} less sheet${_r.altFewerSheets.savedSheets!==1?'s':''} to handle and set up.
+          (${Object.entries(_r.altFewerSheets.sizeMap).map(([d,c])=>`${c}\u00d7 ${esc(dimKey(d))}`).join(', ')}) for ${money(_r.altFewerSheets.cost)}
+          \u2014 ${money(_r.altFewerSheets.extraCost)} more, but ${_r.altFewerSheets.savedSheets} less sheet${_r.altFewerSheets.savedSheets!==1?'s':''} to handle and set up.
         </div>` : ''}
-        <div class="pres-sizes">${chips || '<span style="color:var(--red);font-size:13px">No pieces placed</span>'}${remnantSheets.map(r=>`<div class="pres-size-chip" style="background:#d1fae5;border-color:#6ee7b7;color:#065f46">＋ your remnant ${r.sheetW}×${r.sheetH}mm <b>£0</b></div>`).join('')}</div>
+        <div class="pres-sizes">${chips || '<span style="color:var(--red);font-size:13px">No pieces placed</span>'}${remnantSheets.map(r=>`<div class="pres-size-chip" style="background:#d1fae5;border-color:#6ee7b7;color:#065f46">＋ your remnant ${esc(dims(r.sheetW, r.sheetH))} <b>${money(0, 0)}</b></div>`).join('')}</div>
         ${notPlacedCount(unplaced, oversized) ? `<div class="pres-warn" style="background:var(--red);color:#fff;font-weight:700;border-radius:5px;padding:3px 8px;display:inline-block;margin-top:5px">⚠ ${notPlacedCount(unplaced, oversized)} piece(s) NOT placed — see below</div>` : ''}
       </div>
       <div class="pres-right">
@@ -1691,10 +1977,10 @@ function renderOutput() {
   const tcVal = document.getElementById('total-cost-val');
   const hintBar = document.getElementById('price-hint-bar');
   if (tcBar && tcVal && grandTotal > 0) {
-    tcVal.innerHTML = '£' + grandTotal.toFixed(2) + (allPriced ? '' : '*')
+    tcVal.innerHTML = money(grandTotal) + (allPriced ? '' : '*')
       + (jobQtyForCost > 1
-          ? '<div style="font-size:12px;font-weight:400;color:rgba(255,255,255,.75);margin-top:2px">£'
-            + (grandTotal / jobQtyForCost).toFixed(2) + ' per unit × ' + jobQtyForCost + '</div>'
+          ? '<div style="font-size:12px;font-weight:400;color:rgba(255,255,255,.75);margin-top:2px">'
+            + money(grandTotal / jobQtyForCost) + ' per unit × ' + jobQtyForCost + '</div>'
           : '');
     tcBar.style.display = 'flex';
     // Some sheets unpriced → show the hint as a "partial total" note too.
@@ -1722,20 +2008,22 @@ function renderOutput() {
     const parts = [];
     results.forEach(function(r){
       Object.entries(r.sizeMap).forEach(function(e){
-        parts.push(e[1] + ' × ' + e[0] + 'mm ' + r.libMat.name + (r.libMat.thickness ? ' ' + r.libMat.thickness : ''));
+        // Add the thickness unless the name already says it ("MDF 18mm").
+        const thk = r.libMat.thickness && r.libMat.name.indexOf(r.libMat.thickness) === -1 ? ' ' + r.libMat.thickness : '';
+        parts.push(e[1] + ' × ' + dimKey(e[0]) + ' ' + r.libMat.name + thk);
       });
     });
     if (parts.length) { orderTxt.textContent = parts.join('  ·  '); orderEl.style.display = 'block'; }
     else { orderEl.style.display = 'none'; }
   }
 
-  window._quoteText = ['CutNest Cut List', 'Job: ' + ((document.getElementById('job-ref')||{}).value||'Untitled'), 'Date: ' + new Date().toLocaleDateString('en-GB'), ''].concat(quoteLines).concat(grandTotal > 0 ? ['', 'Total Material Cost: £' + grandTotal.toFixed(2)] : []).join('\n');
+  window._quoteText = ['CutNest Cut List', 'Job: ' + ((document.getElementById('job-ref')||{}).value||'Untitled'), 'Date: ' + new Date().toLocaleDateString('en-GB'), ''].concat(quoteLines).concat(grandTotal > 0 ? ['', 'Total Material Cost: ' + money(grandTotal)] : []).join('\n');
 
   // Stats
   // Kerf is hidden in the header on mobile, so the single most cost-affecting
   // assumption was invisible on a phone. State it on the results themselves.
   const ra = document.getElementById('results-assumptions');
-  if (ra) ra.textContent = 'Calculated with a ' + KERF + 'mm blade kerf'
+  if (ra) ra.textContent = 'Calculated with a ' + len(KERF) + ' blade kerf'
     + (results.some(r=>r.libMat.allowRotation===false) ? ' \u00b7 grain locked on some materials' : '');
 
   const totalSheets = results.reduce((s,r)=>s+boughtSheets(r.sheets).length,0);
@@ -1802,8 +2090,8 @@ function renderOutput() {
       + `<span style="margin-left:auto;display:flex;gap:5px;flex-wrap:wrap">`
       + `<span class="mode-chip">${libMat.cuttingMethod==='guillotine'?'⊞ Guillotine':'⊡ Free placement'}</span>`
       + (libMat.allowRotation===false?'<span class="mode-chip grain-on">🔒 Grain locked</span>':'')
-      + `<span class="mode-chip">Kerf ${KERF}mm</span>`
-      + (cleanTrim(libMat.trim) ? `<span class="mode-chip">Edge trim ${cleanTrim(libMat.trim)}mm</span>` : '')
+      + `<span class="mode-chip">Kerf ${esc(len(KERF))}</span>`
+      + (cleanTrim(libMat.trim) ? `<span class="mode-chip">Edge trim ${esc(len(cleanTrim(libMat.trim)))}</span>` : '')
       + `</span></div>`;
 
     sheets.forEach((sh, si) => {
@@ -1817,8 +2105,8 @@ function renderOutput() {
         const show=p.w*scale>28&&p.h*scale>16;
         const px=Math.round(p.x*scale), py=Math.round(p.y*scale);
         const pw=Math.max(2,Math.round(p.w*scale)-1), ph=Math.max(2,Math.round(p.h*scale)-1);
-        return `<div class="piece-rect" title="${esc(p.label||'P'+(p.pieceIndex+1))}: ${p.w}×${p.h}mm${p.rotated?' (rotated)':''}" style="left:${px}px;top:${py}px;width:${pw}px;height:${ph}px;background:${col}d0;border:1.5px solid ${col};position:absolute;border-radius:2px">
-          ${show?`<div class="plbl" style="font-size:${Math.min(11,pw/7)}px;line-height:1.2;padding:2px 3px">${esc(p.label||'P'+(p.pieceIndex+1))}${p.rotated?'<span style="font-size:.75em">↻</span>':''}<br><span style="font-weight:400;font-size:.8em;opacity:.8">${p.w}×${p.h}</span></div>`:''}
+        return `<div class="piece-rect" title="${esc(p.label||'P'+(p.pieceIndex+1))}: ${esc(dims(p.w, p.h))}${p.rotated?' (rotated)':''}" style="left:${px}px;top:${py}px;width:${pw}px;height:${ph}px;background:${col}d0;border:1.5px solid ${col};position:absolute;border-radius:2px">
+          ${show?`<div class="plbl" style="font-size:${Math.min(11,pw/7)}px;line-height:1.2;padding:2px 3px">${esc(p.label||'P'+(p.pieceIndex+1))}${p.rotated?'<span style="font-size:.75em">↻</span>':''}<br><span style="font-weight:400;font-size:.8em;opacity:.8">${esc(dims(p.w, p.h))}</span></div>`:''}
         </div>`;
       }).join('');
 
@@ -1829,8 +2117,8 @@ function renderOutput() {
         const ox=Math.round(o.x*scale), oy=Math.round(o.y*scale);
         const ow=Math.max(2,Math.round(o.w*scale)-1), oh=Math.max(2,Math.round(o.h*scale)-1);
         const oShow = ow>40 && oh>24;
-        offcutRect = `<div title="Usable offcut: ${Math.round(o.w)}×${Math.round(o.h)}mm" style="position:absolute;left:${ox}px;top:${oy}px;width:${ow}px;height:${oh}px;background:repeating-linear-gradient(45deg,rgba(5,150,105,.18),rgba(5,150,105,.18) 5px,rgba(5,150,105,.30) 5px,rgba(5,150,105,.30) 10px);border:1.5px dashed var(--green);border-radius:2px;display:flex;align-items:center;justify-content:center;text-align:center">
-          ${oShow?`<div style="font-size:${Math.min(11,ow/9)}px;font-weight:700;color:#065f46;line-height:1.2">USABLE OFFCUT<br><span style="font-weight:600;font-size:.85em">${Math.round(o.w)}×${Math.round(o.h)}</span></div>`:''}
+        offcutRect = `<div title="Usable offcut: ${esc(dims(o.w, o.h))}" style="position:absolute;left:${ox}px;top:${oy}px;width:${ow}px;height:${oh}px;background:repeating-linear-gradient(45deg,rgba(5,150,105,.18),rgba(5,150,105,.18) 5px,rgba(5,150,105,.30) 5px,rgba(5,150,105,.30) 10px);border:1.5px dashed var(--green);border-radius:2px;display:flex;align-items:center;justify-content:center;text-align:center">
+          ${oShow?`<div style="font-size:${Math.min(11,ow/9)}px;font-weight:700;color:#065f46;line-height:1.2">USABLE OFFCUT<br><span style="font-weight:600;font-size:.85em">${esc(dims(o.w, o.h))}</span></div>`:''}
         </div>`;
       }
 
@@ -1841,7 +2129,7 @@ function renderOutput() {
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <span>Sheet ${si+1}</span>
             <span style="color:var(--muted)">·</span>
-            <span>${sh.sheetW}×${sh.sheetH}mm${sh.isRemnant?' <span style="color:var(--green);font-size:10px;background:#d1fae5;padding:1px 6px;border-radius:4px">REMNANT</span>':''}</span>
+            <span>${esc(dims(sh.sheetW, sh.sheetH))}${sh.isRemnant?' <span style="color:var(--green);font-size:10px;background:#d1fae5;padding:1px 6px;border-radius:4px">REMNANT</span>':''}</span>
             <span style="color:var(--muted)">·</span>
             <span>${sh.placed.length} piece${sh.placed.length!==1?'s':''}</span>
           </div>
@@ -1854,7 +2142,7 @@ function renderOutput() {
         </div>
         <div class="util-key">
           <span class="util-k"><i style="background:var(--teal)"></i>Parts used <b style="color:${utilColor}">${sh.utilPercent}%</b></span>
-          <span class="util-k"><i style="background:repeating-linear-gradient(45deg,#059669,#059669 3px,#10b981 3px,#10b981 6px)"></i>Usable offcut <b style="color:var(--green)">${sh.usablePercent}%</b>${sh.usableOffcut?` <span style="color:var(--muted);font-weight:400">(${Math.round(sh.usableOffcut.w)}×${Math.round(sh.usableOffcut.h)})</span>`:''}</span>
+          <span class="util-k"><i style="background:repeating-linear-gradient(45deg,#059669,#059669 3px,#10b981 3px,#10b981 6px)"></i>Usable offcut <b style="color:var(--green)">${sh.usablePercent}%</b>${sh.usableOffcut?` <span style="color:var(--muted);font-weight:400">(${esc(dims(sh.usableOffcut.w, sh.usableOffcut.h))})</span>`:''}</span>
           <span class="util-k"><i style="background:#e2e8f0"></i>Scrap <b style="color:var(--text2)">${sh.scrapPercent}%</b></span>
         </div>
         <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
@@ -1864,7 +2152,7 @@ function renderOutput() {
               ${offcutRect}
               ${pieceRects}
             </div>
-            <div style="margin-top:5px;font-size:10px;color:var(--muted);text-align:center">${sh.sheetW}×${sh.sheetH}mm${sh.trim ? ' &nbsp;·&nbsp; ' + sh.trim + 'mm edge trim' : ''} &nbsp;·&nbsp; scale 1:${Math.round(1/scale)}</div>
+            <div style="margin-top:5px;font-size:10px;color:var(--muted);text-align:center">${esc(dims(sh.sheetW, sh.sheetH))}${sh.trim ? ' &nbsp;·&nbsp; ' + esc(len(sh.trim)) + ' edge trim' : ''} &nbsp;·&nbsp; scale 1:${Math.round(1/scale)}</div>
           </div>
           <div style="flex:1;min-width:140px;max-width:280px">
             <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px">Pieces on this sheet</div>
@@ -1879,10 +2167,10 @@ function renderOutput() {
               });
               return Object.keys(g).map(function(k){
                 const e = g[k], p = e.p;
-                return `<div class="legend-item"><div class="ldot" style="background:${COLORS[p.pieceIndex%COLORS.length]}"></div><span style="font-size:12px">${e.n>1?`<b>${e.n}×</b> `:''}${esc(p.label||'P'+(p.pieceIndex+1))}</span><span style="color:var(--muted);font-size:11px;margin-left:auto">${p.w}×${p.h}mm${p.rotated?' ↻':''}</span></div>`;
+                return `<div class="legend-item"><div class="ldot" style="background:${COLORS[p.pieceIndex%COLORS.length]}"></div><span style="font-size:12px">${e.n>1?`<b>${e.n}×</b> `:''}${esc(p.label||'P'+(p.pieceIndex+1))}</span><span style="color:var(--muted);font-size:11px;margin-left:auto">${esc(dims(p.w, p.h))}${p.rotated?' ↻':''}</span></div>`;
               }).join('');
             })()}
-            ${sh.usableOffcut?`<div class="legend-item" style="margin-top:6px;border-top:1px dashed var(--bdr);padding-top:6px"><div class="ldot" style="background:repeating-linear-gradient(45deg,#059669,#059669 3px,#10b981 3px,#10b981 6px)"></div><span style="font-size:12px;color:#065f46;font-weight:600">Reclaim offcut</span><span style="color:var(--muted);font-size:11px;margin-left:auto">${Math.round(sh.usableOffcut.w)}×${Math.round(sh.usableOffcut.h)}mm</span></div>`:''}
+            ${sh.usableOffcut?`<div class="legend-item" style="margin-top:6px;border-top:1px dashed var(--bdr);padding-top:6px"><div class="ldot" style="background:repeating-linear-gradient(45deg,#059669,#059669 3px,#10b981 3px,#10b981 6px)"></div><span style="font-size:12px;color:#065f46;font-weight:600">Reclaim offcut</span><span style="color:var(--muted);font-size:11px;margin-left:auto">${esc(dims(sh.usableOffcut.w, sh.usableOffcut.h))}</span></div>`:''}
           </div>
         </div>
       </div>`;
@@ -1901,10 +2189,10 @@ function renderOutput() {
         rows+=`<tr>
           <td style="font-weight:600;color:var(--navy);font-size:12px">${esc(libMat.name)}</td>
           <td style="color:var(--muted)">${si+1}</td>
-          <td style="color:var(--muted);font-size:12px">${sh.sheetW}×${sh.sheetH}</td>
+          <td style="color:var(--muted);font-size:12px">${esc(dims(sh.sheetW, sh.sheetH))}</td>
           <td><div style="display:flex;align-items:center;gap:5px"><div style="width:9px;height:9px;border-radius:2px;background:${COLORS[p.pieceIndex%COLORS.length]};flex-shrink:0"></div>${esc(p.label||'P'+(p.pieceIndex+1))}</div></td>
-          <td style="color:var(--muted)">${p.w}</td><td style="color:var(--muted)">${p.h}</td>
-          <td style="color:var(--muted)">${fmtMm(p.x)}</td><td style="color:var(--muted)">${fmtMm(p.y)}</td>
+          <td style="color:var(--muted)">${esc(lenNum(p.w))}</td><td style="color:var(--muted)">${esc(lenNum(p.h))}</td>
+          <td style="color:var(--muted)">${esc(lenNum(p.x))}</td><td style="color:var(--muted)">${esc(lenNum(p.y))}</td>
           <td style="color:${p.rotated?'var(--ora)':'var(--muted)'}">${p.rotated?'Yes ↻':'No'}</td>
         </tr>`;
       });
@@ -1934,7 +2222,7 @@ function exportPDF() {
   const dt = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
   const co = (settings && settings.companyName) ? settings.companyName + '  ·  ' : '';
 
-  let body = `<div class="hdr"><div class="hdr-logo">CutNest</div><div class="hdr-meta">${esc(co)}Job: ${esc(jr)}  ·  ${dt}  ·  Kerf: ${KERF}mm</div></div>`;
+  let body = `<div class="hdr"><div class="hdr-logo">CutNest</div><div class="hdr-meta">${esc(co)}Job: ${esc(jr)}  ·  ${dt}  ·  Kerf: ${esc(len(KERF))}</div></div>`;
 
   // Summary table
   body += `<table class="sum-tbl"><thead><tr><th>Material</th><th>Sheets</th><th>Size</th><th>Cost</th></tr></thead><tbody>`;
@@ -1945,10 +2233,10 @@ function exportPDF() {
       const sz = sizeByDims(libMat, sw, sh);
       const lineTotal = sz && sz.price > 0 ? sz.price * cnt : 0;
       grandTotal += lineTotal;
-      body += `<tr><td>${esc(libMat.name)} ${esc(libMat.thickness||'')}</td><td>${cnt}</td><td>${dim}mm</td><td>${lineTotal>0?'£'+lineTotal.toFixed(2):'—'}</td></tr>`;
+      body += `<tr><td>${esc(libMat.name)} ${esc(libMat.thickness||'')}</td><td>${cnt}</td><td>${esc(dimKey(dim))}</td><td>${lineTotal>0?money(lineTotal):'—'}</td></tr>`;
     });
   });
-  if (grandTotal > 0) body += `<tr class="total-row"><td colspan="3">Total Material Cost</td><td>£${grandTotal.toFixed(2)}</td></tr>`;
+  if (grandTotal > 0) body += `<tr class="total-row"><td colspan="3">Total Material Cost</td><td>${money(grandTotal)}</td></tr>`;
   body += `</tbody></table>`;
 
   // Sheet visuals per material
@@ -1961,20 +2249,20 @@ function exportPDF() {
     sheets.forEach((sh,si) => {
       const scale = Math.min(480/sh.sheetW, 200/sh.sheetH, 0.32);
       const cw=Math.round(sh.sheetW*scale), ch=Math.round(sh.sheetH*scale);
-      body += `<div class="sh-block"><div class="sh-title">Sheet ${si+1} — ${sh.sheetW}×${sh.sheetH}mm${sh.isRemnant?' (YOUR REMNANT — not ordered)':''}${sh.trim?' · '+sh.trim+'mm edge trim':''} · ${sh.placed.length} pieces · ${sh.utilPercent||0}% utilised${sh.usableOffcut?` · usable offcut ${Math.round(sh.usableOffcut.w)}×${Math.round(sh.usableOffcut.h)}mm`:''}</div>`;
+      body += `<div class="sh-block"><div class="sh-title">Sheet ${si+1} — ${esc(dims(sh.sheetW, sh.sheetH))}${sh.isRemnant?' (YOUR REMNANT — not ordered)':''}${sh.trim?' · '+esc(len(sh.trim))+' edge trim':''} · ${sh.placed.length} pieces · ${sh.utilPercent||0}% utilised${sh.usableOffcut?` · usable offcut ${esc(dims(sh.usableOffcut.w, sh.usableOffcut.h))}`:''}</div>`;
       body += `<div class="sh-canvas" style="width:${cw}px;height:${ch}px;position:relative">` + trimFrameHtml(sh, scale);
       if (sh.usableOffcut) {
         const o = sh.usableOffcut;
         const ox=Math.round(o.x*scale), oy=Math.round(o.y*scale);
         const ow=Math.max(2,Math.round(o.w*scale)-1), oh=Math.max(2,Math.round(o.h*scale)-1);
-        body += `<div style="position:absolute;left:${ox}px;top:${oy}px;width:${ow}px;height:${oh}px;background:repeating-linear-gradient(45deg,#d1fae5,#d1fae5 4px,#a7f3d0 4px,#a7f3d0 8px);border:1.5px dashed #059669;box-sizing:border-box;display:flex;align-items:center;justify-content:center;text-align:center">${ow>40&&oh>22?`<div style="font-size:${Math.min(9,ow/10)}px;font-weight:700;color:#065f46;line-height:1.2">OFFCUT<br><span style="font-weight:600;font-size:.85em">${Math.round(o.w)}×${Math.round(o.h)}</span></div>`:''}</div>`;
+        body += `<div style="position:absolute;left:${ox}px;top:${oy}px;width:${ow}px;height:${oh}px;background:repeating-linear-gradient(45deg,#d1fae5,#d1fae5 4px,#a7f3d0 4px,#a7f3d0 8px);border:1.5px dashed #059669;box-sizing:border-box;display:flex;align-items:center;justify-content:center;text-align:center">${ow>40&&oh>22?`<div style="font-size:${Math.min(9,ow/10)}px;font-weight:700;color:#065f46;line-height:1.2">OFFCUT<br><span style="font-weight:600;font-size:.85em">${esc(dims(o.w, o.h))}</span></div>`:''}</div>`;
       }
       sh.placed.forEach(p => {
         const col = COLORS[p.pieceIndex%COLORS.length];
         const px=Math.round(p.x*scale),py=Math.round(p.y*scale),pw=Math.max(2,Math.round(p.w*scale)-1),ph=Math.max(2,Math.round(p.h*scale)-1);
         const show = pw>24&&ph>14;
         body += `<div style="position:absolute;left:${px}px;top:${py}px;width:${pw}px;height:${ph}px;background:${col}cc;border:1.5px solid ${col};border-radius:2px;overflow:hidden;box-sizing:border-box">`;
-        if (show) body += `<div style="font-size:${Math.min(10,pw/7)}px;font-weight:700;color:#fff;padding:2px 3px;line-height:1.2;text-shadow:0 1px 2px rgba(0,0,0,.4)">${esc(p.label||'P'+(p.pieceIndex+1))}${p.rotated?'↻':''}<br><span style="font-weight:400;font-size:.8em;opacity:.85">${p.w}×${p.h}</span></div>`;
+        if (show) body += `<div style="font-size:${Math.min(10,pw/7)}px;font-weight:700;color:#fff;padding:2px 3px;line-height:1.2;text-shadow:0 1px 2px rgba(0,0,0,.4)">${esc(p.label||'P'+(p.pieceIndex+1))}${p.rotated?'↻':''}<br><span style="font-weight:400;font-size:.8em;opacity:.85">${esc(dims(p.w, p.h))}</span></div>`;
         body += `</div>`;
       });
       body += `</div></div>`;
@@ -1985,7 +2273,7 @@ function exportPDF() {
       body += `<div class="np-box"><div class="np-hdr">⚠ ${notPlacedCount(unplaced, oversized)} piece(s) NOT placed — not included in the sheets or cost above</div>`;
       body += `<table class="sum-tbl" style="margin-bottom:0"><thead><tr><th>Part</th><th>Size</th><th>Qty</th><th>Why</th><th>What to do</th></tr></thead><tbody>`;
       npRows.forEach(function(r){
-        body += `<tr><td>${esc(r.label)}</td><td>${r.w}×${r.h}mm</td><td>${r.qty}</td><td>${esc(r.why)}</td><td>${esc(r.fix)}</td></tr>`;
+        body += `<tr><td>${esc(r.label)}</td><td>${esc(dims(r.w, r.h))}</td><td>${r.qty}</td><td>${esc(r.why)}</td><td>${esc(r.fix)}</td></tr>`;
       });
       body += `</tbody></table></div>`;
     }
@@ -1993,11 +2281,11 @@ function exportPDF() {
   });
 
   // Placement detail table
-  body += `<div class="mat-sec"><div class="mat-hdr">Placement Detail</div><table class="sum-tbl"><thead><tr><th>Material</th><th>Sheet</th><th>Part</th><th>W</th><th>H</th><th>X</th><th>Y</th><th>Rotated</th></tr></thead><tbody>`;
+  body += `<div class="mat-sec"><div class="mat-hdr">Placement Detail</div><table class="sum-tbl"><thead><tr><th>Material</th><th>Sheet</th><th>Part</th><th>W (${unitLabel()})</th><th>H (${unitLabel()})</th><th>X</th><th>Y</th><th>Rotated</th></tr></thead><tbody>`;
   calcResult.results.forEach(({libMat,sheets}) => {
     sheets.forEach((sh,si) => {
       sh.placed.forEach(p => {
-        body += `<tr><td>${esc(libMat.name)}</td><td>${si+1}</td><td>${esc(p.label||'P'+(p.pieceIndex+1))}</td><td>${p.w}</td><td>${p.h}</td><td>${fmtMm(p.x)}</td><td>${fmtMm(p.y)}</td><td>${p.rotated?'Yes':''}</td></tr>`;
+        body += `<tr><td>${esc(libMat.name)}</td><td>${si+1}</td><td>${esc(p.label||'P'+(p.pieceIndex+1))}</td><td>${esc(lenNum(p.w))}</td><td>${esc(lenNum(p.h))}</td><td>${esc(lenNum(p.x))}</td><td>${esc(lenNum(p.y))}</td><td>${p.rotated?'Yes':''}</td></tr>`;
       });
     });
   });
@@ -2143,28 +2431,28 @@ function exportCSV() {
       const sz = sizeByDims(libMat, sw, sh);
       const lineTotal = sz && sz.price > 0 ? sz.price * c : 0;
       csvTotal += lineTotal;
-      return [`${c}x ${libMat.name} ${dim}mm`, lineTotal > 0 ? `£${lineTotal.toFixed(2)}` : ''];
+      return [`${c}x ${libMat.name} ${dimKey(dim)}`, lineTotal > 0 ? money(lineTotal) : ''];
     })
   );
   const rows = [
-    [`CutNest — ${new Date().toLocaleDateString()}`],[`Job: ${(document.getElementById('job-ref')||{}).value||'Untitled'}`],[`Blade Kerf: ${KERF}mm`],
-    ...calcResult.results.filter(r => cleanTrim(r.libMat.trim)).map(r => [`Edge trim: ${r.libMat.name} ${cleanTrim(r.libMat.trim)}mm per edge (X/Y are from the untrimmed sheet corner)`]),
+    [`CutNest — ${new Date().toLocaleDateString()}`],[`Job: ${(document.getElementById('job-ref')||{}).value||'Untitled'}`],[`Blade Kerf: ${len(KERF)}`],[`Units: ${isInch() ? 'inches' : 'mm'}`],
+    ...calcResult.results.filter(r => cleanTrim(r.libMat.trim)).map(r => [`Edge trim: ${r.libMat.name} ${len(cleanTrim(r.libMat.trim))} per edge (X/Y are from the untrimmed sheet corner)`]),
     [],
     ['SHEET USAGE SUMMARY'],['Material & Size','Cost'],
     ...summaryRows,
-    ...(csvTotal > 0 ? [['TOTAL MATERIAL COST',`£${csvTotal.toFixed(2)}`]] : []),
+    ...(csvTotal > 0 ? [['TOTAL MATERIAL COST', money(csvTotal)]] : []),
     [],['PLACEMENT DETAIL'],
-    ['Material','Sheet #','Sheet Size','Label','W','H','X','Y','Rotated'],
-    ...calcResult.results.flatMap(({libMat,sheets})=>sheets.flatMap((sh,si)=>sh.placed.map(p=>[libMat.name,si+1,`${sh.sheetW}x${sh.sheetH}`+(sh.isRemnant?' (remnant)':''),p.label||`P${p.pieceIndex+1}`,p.w,p.h,fmtMm(p.x),fmtMm(p.y),p.rotated?'Yes':'No']))),
+    ['Material','Sheet #','Sheet Size','Label','W ('+unitLabel()+')','H ('+unitLabel()+')','X ('+unitLabel()+')','Y ('+unitLabel()+')','Rotated'],
+    ...calcResult.results.flatMap(({libMat,sheets})=>sheets.flatMap((sh,si)=>sh.placed.map(p=>[libMat.name,si+1,`${lenCsv(sh.sheetW)}x${lenCsv(sh.sheetH)}`+(sh.isRemnant?' (remnant)':''),p.label||`P${p.pieceIndex+1}`,lenCsv(p.w),lenCsv(p.h),lenCsv(p.x),lenCsv(p.y),p.rotated?'Yes':'No']))),
   ];
   // Every not-placed piece — oversized AND unplaced — with the reason and the
   // minimum sheet that would take it. An export must never hide a dropped piece.
   const npAll = calcResult.results.flatMap(({libMat,unplaced,oversized,stockShort}) =>
     notPlacedLines(libMat, unplaced, oversized, stockShort).map(r =>
-      [libMat.name, r.label, r.w, r.h, r.qty, r.why, r.fix]));
+      [libMat.name, r.label, lenCsv(r.w), lenCsv(r.h), r.qty, r.why, r.fix]));
   if(npAll.length){
     rows.push([],['*** PIECES NOT PLACED — NOT INCLUDED IN THE SHEETS OR COST ABOVE ***'],
-      ['Material','Label','W','H','Qty','Why','What to do'],...npAll);
+      ['Material','Label','W ('+unitLabel()+')','H ('+unitLabel()+')','Qty','Why','What to do'],...npAll);
   }
   const jr = (document.getElementById('job-ref')||{}).value||'cutlist';
   const safe = jr.replace(/[^a-z0-9]/gi,'-').toLowerCase();
@@ -2201,7 +2489,10 @@ function buildDXF(results) {
   // R12 is the lowest common denominator every CAD package, CAM post, laser
   // controller and viewer on earth reads, and closed rectangles plus text lose
   // absolutely nothing by being expressed in it.
-  const n = function(v){ return (Math.round(v*1000)/1000).toString(); };
+  // Drawing units follow the user's setting: millimetres, or inches for an
+  // imperial shop (every coordinate and text height scaled on the way out).
+  const scaleOut = isInch() ? 1 / MM_PER_IN : 1;
+  const n = function(v){ return (Math.round(v * scaleOut * 1000) / 1000).toString(); };
   const out = [];
   const push = function(){ for (let i=0;i<arguments.length;i++) out.push(arguments[i]); };
 
@@ -2244,13 +2535,13 @@ function buildDXF(results) {
       rect(offsetX, 0, SW, SH, 'SHEET');
       // Usable area inside the edge trim, on its own layer.
       if (sh.trim) rect(offsetX + sh.trim, sh.trim, SW - 2 * sh.trim, SH - 2 * sh.trim, 'TRIM');
-      txt(offsetX, -40, 30, matName + ' - Sheet ' + (si+1) + ' (' + SW + 'x' + SH + 'mm' + (sh.trim ? ', ' + sh.trim + 'mm edge trim' : '') + ')', 'TEXT');
+      txt(offsetX, -40, 30, matName + ' - Sheet ' + (si+1) + ' (' + dims(SW, SH) + (sh.trim ? ', ' + len(sh.trim) + ' edge trim' : '') + ')', 'TEXT');
       sh.placed.forEach(function(p){
         // DXF Y runs up, screen Y runs down — flip so the drawing is the right
         // way up in CAD rather than mirrored.
         const dy = SH - p.y - p.h;
         rect(offsetX + p.x, dy, p.w, p.h, 'PARTS');
-        const lbl = (p.label || (p.w+'x'+p.h)) + (p.rotated ? ' (R)' : '');
+        const lbl = (p.label || dims(p.w, p.h)) + (p.rotated ? ' (R)' : '');
         const th = Math.max(8, Math.min(p.w, p.h) / 8);
         txt(offsetX + p.x + 5, dy + 5, th, lbl, 'TEXT');
       });
@@ -2267,7 +2558,7 @@ function buildDXF(results) {
        '9','$EXTMAX','10',n(maxX),'20',n(maxY),'30','0.0',
        '9','$LIMMIN','10',n(minX),'20',n(minY),
        '9','$LIMMAX','10',n(maxX),'20',n(maxY),
-       '9','$MEASUREMENT','70','1',     // 1 = metric
+       '9','$MEASUREMENT','70', isInch() ? '0' : '1',     // 1 = metric, 0 = imperial
        '0','ENDSEC');
 
   // ── TABLES ──
@@ -2335,8 +2626,96 @@ function exportDXF() {
   setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
 }
 
+// ── BACKUP & RESTORE ──────────────────────────
+// Everything CutNest keeps lives in this browser, so clearing site data or
+// changing computer used to lose a library built up over months. A backup is
+// one JSON file: materials and prices (including edited Pro grades), which Pro
+// grades were hidden, offcut stock and settings. Never the licence key.
+const BACKUP_KIND = 'cutnest-backup';
+const BACKUP_SETTINGS = ['kerf', 'kerfTouched', 'companyName', 'minOffcutLong', 'minOffcutShort', 'units', 'currency', 'currencyTouched'];
+
+function backupLibrary() {
+  flushEditForms();
+  // What the Library shows right now, plus (on the free plan) any edited Pro
+  // grades that are stored but hidden, exactly as saveData keeps them.
+  const lib = pending.map(normalizeLibEntry).filter(function (e) { return e && !e._transient; });
+  if (!isPro) {
+    try {
+      const have = {}; lib.forEach(function (e) { have[e.id] = 1; });
+      JSON.parse(localStorage.getItem(STOR_KEY) || '[]').forEach(function (e) {
+        if (e && isMasterId(e.id) && !have[e.id]) lib.push(normalizeLibEntry(e));
+      });
+    } catch (e) {}
+  }
+  const st = {};
+  BACKUP_SETTINGS.forEach(function (k) { if (settings[k] !== undefined) st[k] = settings[k]; });
+  const data = { kind: BACKUP_KIND, version: 1, exported: new Date().toISOString(),
+                 library: lib, deletedMasters: getDeletedMasterIds(), offcuts: loadOffcuts(), settings: st };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = 'cutnest-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+  a.style.display = 'none'; document.body.appendChild(a); a.click();
+  setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+  showToast('\u2713 Backup saved: ' + lib.length + ' material' + (lib.length !== 1 ? 's' : '') + ', ' + data.offcuts.length + ' offcut' + (data.offcuts.length !== 1 ? 's' : ''));
+}
+
+async function restoreLibrary(input) {
+  const file = input && input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  let data;
+  try {
+    if (file.size > 5 * 1024 * 1024) throw new Error('size');
+    data = JSON.parse(await file.text());
+  } catch (e) { showToast('That is not a CutNest backup file', 4200); return; }
+  if (!data || data.kind !== BACKUP_KIND || !Array.isArray(data.library)) {
+    showToast('That is not a CutNest backup file', 4200); return;
+  }
+  let entries = data.library.slice(0, 500).map(normalizeLibEntry).filter(Boolean);
+  entries.forEach(function (e) { delete e._transient; });
+  // The free plan keeps up to FREE_LIB_LIMIT of its own materials; stored Pro
+  // grades are kept (hidden) so they return on upgrade.
+  let dropped = 0;
+  if (!isPro) {
+    let own = 0;
+    entries = entries.filter(function (e) {
+      if (isMasterId(e.id)) return true;
+      own++;
+      if (own > FREE_LIB_LIMIT) { dropped++; return false; }
+      return true;
+    });
+  }
+  const offcuts = Array.isArray(data.offcuts) ? data.offcuts : [];
+  const when = isNaN(Date.parse(data.exported)) ? 'an earlier date' : new Date(data.exported).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  if (!confirm('Restore ' + entries.length + ' material' + (entries.length !== 1 ? 's' : '') + ', ' + offcuts.length +
+               ' offcut' + (offcuts.length !== 1 ? 's' : '') + ' and your settings from the backup made on ' + when +
+               '?\n\nThis replaces the library, offcut stock and settings in this browser.')) return;
+  pushUndo();
+  try {
+    localStorage.setItem(STOR_KEY, JSON.stringify(entries));
+    setDeletedMasterIds(Array.isArray(data.deletedMasters) ? data.deletedMasters.filter(function (id) { return isMasterId(id); }) : []);
+    localStorage.setItem(OFFCUT_KEY, JSON.stringify(offcuts));
+    saveOffcuts(loadOffcuts());                       // heal anything malformed
+    const st = data.settings && typeof data.settings === 'object' ? data.settings : {};
+    if (st.kerf != null) settings.kerf = parseKerf(st.kerf);
+    if (st.kerfTouched) settings.kerfTouched = true;
+    if (typeof st.companyName === 'string') settings.companyName = st.companyName.slice(0, 80);
+    if (st.minOffcutLong != null) settings.minOffcutLong = Math.max(0, Math.min(6000, +st.minOffcutLong || 0));
+    if (st.minOffcutShort != null) settings.minOffcutShort = Math.max(0, Math.min(6000, +st.minOffcutShort || 0));
+    if (st.units === 'in' || st.units === 'mm') settings.units = st.units;
+    if (CURRENCIES.indexOf(st.currency) !== -1) { settings.currency = st.currency; settings.currencyTouched = !!st.currencyTouched; }
+    localStorage.setItem(SETT_KEY, JSON.stringify(settings));
+  } catch (e) { showToast('Could not restore: browser storage is full or blocked', 5200); return; }
+  loadSettings();
+  refreshUnitLabels();
+  await loadLib();
+  openLib();
+  showToast('\u2713 Restored from backup' + (dropped ? ' \u2014 free plan keeps ' + FREE_LIB_LIMIT + ' of your own materials, ' + dropped + ' left out' : ''), 5200);
+}
+
 // ── LIBRARY MODAL ─────────────────────────────
 function openLib() {
+  refreshUnitLabels();
   pending=library.map(e=>({...e,sizes:(e.sizes||[]).map(z=>({...z}))}));
   _libOpen.clear();
   renderLibEntries();
@@ -2456,10 +2835,10 @@ function renderLibEntries() {
             </label>
           </div>
           <div class="cut-opt-box">
-            <label class="lbl" for="trim-${esc(String(e.id))}">Edge trim (mm per edge)
+            <label class="lbl" for="trim-${esc(String(e.id))}">Edge trim (${unitLabel()} per edge)
               <span class="kerf-tip-icon" tabindex="0" role="img" aria-label="Help: Cut off every edge of each sheet before parts are nested, for damaged or out-of-square edges. 0 = none." data-tip="Cut off every edge of each sheet before parts are nested, for damaged or out-of-square edges. 0 = none.">?</span>
             </label>
-            <input type="number" id="trim-${esc(String(e.id))}" data-f="trim" min="0" max="200" step="0.5" value="${cleanTrim(e.trim) || ''}" placeholder="0" oninput="upd(${jid},'trim',this.value)" style="margin-top:4px"/>
+            <input type="text" inputmode="${isInch() ? 'text' : 'decimal'}" id="trim-${esc(String(e.id))}" data-f="trim" value="${lenInput(cleanTrim(e.trim))}" placeholder="0" oninput="upd(${jid},'trim',parseLen(this.value) || 0)" style="margin-top:4px"/>
           </div>
         </div>
         ${isPro ? '' : `<div style="font-size:12px;color:#92400e;background:#fffbeb;border:1px solid var(--amber);border-radius:7px;padding:7px 10px;margin-top:8px">&#128274; Guillotine mode and grain lock are Pro features. <button onclick="showUpgradeModal('&#128274;','Grain lock &amp; guillotine mode','Pro keeps grain direction on brushed, veneered and patterned sheet, and nests for saws and shears with a numbered edge-to-edge cut sequence.')" style="background:none;border:none;color:var(--teal);font-weight:700;cursor:pointer;padding:0;font-size:12px;text-decoration:underline;font-family:inherit">Upgrade</button></div>`}
@@ -2478,11 +2857,11 @@ function sizeBadgesHtml(libMat) {
   return sizes.map(function(z, i){
     const locked = !isPro && i >= FREE_SHEET_SIZES;
     const extra = [];
-    if (+z.price > 0) extra.push('£' + (+z.price));
+    if (+z.price > 0) extra.push(currency() + (+z.price));
     if (z.max != null && z.max !== '') extra.push(isPro ? 'max ' + z.max : 'max ' + z.max + ' (Pro)');
     return '<div class="sz-badge"' + (locked ? ' style="opacity:.5" title="Pro: the free plan uses the first ' + FREE_SHEET_SIZES + ' sizes"' : '') + '>' +
       '<span class="sl">Size ' + (i + 1) + (extra.length ? ' · ' + esc(extra.join(' · ')) : '') + (locked ? ' · Pro' : '') + '</span>' +
-      '<span class="sv">' + (+z.w) + ' × ' + (+z.h) + ' mm</span></div>';
+      '<span class="sv">' + esc(dims(+z.w, +z.h)) + '</span></div>';
   }).join('');
 }
 
@@ -2493,9 +2872,9 @@ function sizeEditorHtml(e, jid) {
     const locked = !isPro && i >= FREE_SHEET_SIZES;
     return `<div class="size-row" data-sz="${i}"${locked ? ' style="opacity:.55"' : ''}>
       <div class="size-no">${i + 1}</div>
-      <div><label class="lbl">W (mm)</label><input type="number" data-f="w" value="${+z.w > 0 ? +z.w : ''}" min="1" aria-label="Size ${i + 1} width in mm" oninput="updSz(${jid},${i},'w',this.value)"/></div>
-      <div><label class="lbl">H (mm)</label><input type="number" data-f="h" value="${+z.h > 0 ? +z.h : ''}" min="1" aria-label="Size ${i + 1} height in mm" oninput="updSz(${jid},${i},'h',this.value)"/></div>
-      <div><label class="lbl">Price £</label><input type="number" data-f="price" value="${+z.price > 0 ? +z.price : ''}" min="0" step="0.01" placeholder="0" aria-label="Size ${i + 1} price" oninput="updSz(${jid},${i},'price',this.value)"/></div>
+      <div><label class="lbl">W (${unitLabel()})</label><input type="text" inputmode="${isInch() ? 'text' : 'decimal'}" data-f="w" value="${lenInput(z.w)}" aria-label="Size ${i + 1} width in ${unitLabel()}" oninput="updSz(${jid},${i},'w',this.value)"/></div>
+      <div><label class="lbl">H (${unitLabel()})</label><input type="text" inputmode="${isInch() ? 'text' : 'decimal'}" data-f="h" value="${lenInput(z.h)}" aria-label="Size ${i + 1} height in ${unitLabel()}" oninput="updSz(${jid},${i},'h',this.value)"/></div>
+      <div><label class="lbl">Price ${currency()}</label><input type="number" data-f="price" value="${+z.price > 0 ? +z.price : ''}" min="0" step="0.01" placeholder="0" aria-label="Size ${i + 1} price" oninput="updSz(${jid},${i},'price',this.value)"/></div>
       <div><label class="lbl" title="How many sheets of this size you can use (what you have in stock, or what your supplier can send). Leave blank for no limit.">Max sheets</label><input type="number" data-f="max" value="${z.max != null && z.max !== '' ? z.max : ''}" min="1" placeholder="${isPro ? 'no limit' : 'Pro'}" aria-label="Size ${i + 1} maximum sheets available" oninput="updSz(${jid},${i},'max',this.value)"${isPro ? '' : ' disabled'}/></div>
       <button type="button" class="btn-del" onclick="removeSizeRow(${jid},${i})" aria-label="Remove size ${i + 1}"${sizes.length > 1 ? '' : ' disabled style="visibility:hidden"'}>✕</button>
     </div>`;
@@ -2517,7 +2896,7 @@ function flushEditForms() {
     const ed = document.getElementById(`ee-${e.id}`);
     if (!ed || ed.style.display === 'none') return;
     const trimEl = ed.querySelector('input[data-f="trim"]');
-    if (trimEl) e.trim = trimEl.value;
+    if (trimEl) e.trim = parseLen(trimEl.value) || 0;
     ed.querySelectorAll('input[type=text][data-f]').forEach(function(inp){
       const f = inp.getAttribute('data-f'), v = inp.value.trim();
       if (f === 'name') e.name = v || e.name; else e[f] = v;
@@ -2526,7 +2905,10 @@ function flushEditForms() {
       const i = +row.getAttribute('data-sz');
       if (!e.sizes) e.sizes = [];
       if (!e.sizes[i]) e.sizes[i] = { w: '', h: '', price: 0, max: null };
-      row.querySelectorAll('input[data-f]').forEach(function(inp){ e.sizes[i][inp.getAttribute('data-f')] = inp.value; });
+      row.querySelectorAll('input[data-f]').forEach(function(inp){
+        const f = inp.getAttribute('data-f');
+        e.sizes[i][f] = (f === 'w' || f === 'h') ? (parseLen(inp.value) || '') : inp.value;
+      });
     });
   });
 }
@@ -2542,7 +2924,8 @@ function updSz(id, i, f, v) {
   if (!e) return;
   if (!e.sizes) e.sizes = [];
   if (!e.sizes[i]) e.sizes[i] = { w: '', h: '', price: 0, max: null };
-  e.sizes[i][f] = v;
+  // Lengths are typed in the user's units and stored in mm.
+  e.sizes[i][f] = (f === 'w' || f === 'h') ? (parseLen(v) || '') : v;
 }
 function addSizeRow(id) {
   const e = pending.find(x => x.id === id);
@@ -2571,7 +2954,7 @@ function removeSizeRow(id, i) {
 function delPending(id){pending=pending.filter(x=>x.id!==id);renderLibEntries();}
 function addLibEntry(){
   const name=document.getElementById('n-name').value.trim();
-  const w1=+document.getElementById('n-w1').value, h1=+document.getElementById('n-h1').value;
+  const w1=parseLen(document.getElementById('n-w1').value), h1=parseLen(document.getElementById('n-h1').value);
   if(!name||!w1||!h1){alert('Name, Size 1 Width and Height are required.');return;}
   const pr1=+document.getElementById('n-pr1').value||0;
   const pr2=+document.getElementById('n-pr2').value||0;
@@ -2584,7 +2967,7 @@ function addLibEntry(){
     allowRotation:true,
     sizes: cleanSizes([
       { w: w1, h: h1, price: pr1 },
-      { w: +document.getElementById('n-w2').value || '', h: +document.getElementById('n-h2').value || '', price: pr2 }
+      { w: parseLen(document.getElementById('n-w2').value) || '', h: parseLen(document.getElementById('n-h2').value) || '', price: pr2 }
     ])
   });
   ['n-name','n-mat','n-thk','n-w1','n-h1','n-pr1','n-w2','n-h2','n-pr2'].forEach(id=>document.getElementById(id).value='');
@@ -3014,19 +3397,64 @@ function cnInitCookieBar(){
   if (b) setTimeout(function(){ b.style.display = 'flex'; }, 1200);
 }
 
-// Kerf in mm, 0-100, to 0.1mm. parseInt(v)||4 used to turn a deliberate 0
+// Kerf in mm, 0-100, to 0.0001mm (so 1/8" stays exactly 3.175mm). parseInt(v)||4 used to turn a deliberate 0
 // (and any laser kerf under 1mm, e.g. 0.3) back into 4mm on the next load,
 // while Settings still showed the value the user typed.
 function parseKerf(v){
   const n = parseFloat(v);
-  return isFinite(n) ? Math.max(0, Math.min(100, Math.round(n * 10) / 10)) : 4;
+  return isFinite(n) ? Math.max(0, Math.min(100, Math.round(n * 10000) / 10000)) : 4;
 }
+// Units and currency only change what is shown and how typing is read;
+// every stored value stays in mm, so switching is instant and lossless.
+function setUnits(u) {
+  settings.units = u === 'in' ? 'in' : 'mm';
+  try { localStorage.setItem(SETT_KEY, JSON.stringify(settings)); } catch(e){}
+  refreshUnitLabels();
+  fillSettingsFields();
+  renderAll();
+  if (document.getElementById('lib-modal').style.display === 'flex') renderLibEntries();
+  if (calcResult) renderOutput();
+}
+function setCurrency(c) {
+  settings.currency = CURRENCIES.indexOf(c) !== -1 ? c : '\u00a3';
+  settings.currencyTouched = true;
+  try { localStorage.setItem(SETT_KEY, JSON.stringify(settings)); } catch(e){}
+  refreshUnitLabels();
+  renderAll();
+  if (document.getElementById('lib-modal').style.display === 'flex') renderLibEntries();
+  if (calcResult) renderOutput();
+}
+// Static labels in app.html that name a unit or currency.
+function refreshUnitLabels() {
+  document.querySelectorAll('.u-len').forEach(function(el){ el.textContent = unitLabel(); });
+  document.querySelectorAll('.u-cur').forEach(function(el){ el.textContent = currency(); });
+  const kd = document.getElementById('kerf-display'); if (kd) kd.textContent = len(KERF);
+  const kh = document.getElementById('kerf-hint');
+  if (kh) kh.textContent = isInch() ? '1/8" laser/saw/router \u00b7 3/16" plasma \u00b7 3/4" punch'
+                                    : '3\u20134mm laser/saw/router \u00b7 5mm plasma \u00b7 15\u201320mm punch';
+  const oh = document.getElementById('offcut-hint'); if (oh) oh.textContent = 'Default ' + dims(1000, 300);
+  ['n-w1','n-h1','n-w2','n-h2'].forEach(function(id){
+    const el = document.getElementById(id);
+    if (el) { el.type = 'text'; el.inputMode = 'decimal'; }
+  });
+  const ph = { 'n-w1': 2450, 'n-h1': 1150 };
+  Object.keys(ph).forEach(function(id){ const el = document.getElementById(id); if (el) el.placeholder = lenNum(ph[id]); });
+}
+// Put the stored (mm) settings into the Settings form in the user's units.
+function fillSettingsFields() {
+  const kf = document.getElementById('kerf-setting'); if (kf) kf.value = lenNum(settings.kerf != null ? settings.kerf : 4);
+  const ol = document.getElementById('offcut-long');  if (ol) ol.value = lenNum(settings.minOffcutLong != null ? settings.minOffcutLong : 1000);
+  const os = document.getElementById('offcut-short'); if (os) os.value = lenNum(settings.minOffcutShort != null ? settings.minOffcutShort : 300);
+  const us = document.getElementById('units-setting'); if (us) us.value = isInch() ? 'in' : 'mm';
+  const cs = document.getElementById('currency-setting'); if (cs) cs.value = currency();
+}
+
 function loadSettings(){
   try{const r=localStorage.getItem(SETT_KEY);if(r)settings=Object.assign({kerf:4,companyName:'',minOffcutLong:1000,minOffcutShort:300},JSON.parse(r));}catch(e){}
   if(settings.minOffcutLong==null)settings.minOffcutLong=1000;
   if(settings.minOffcutShort==null)settings.minOffcutShort=300;
   KERF=parseKerf(settings.kerf);
-  const kd=document.getElementById('kerf-display');if(kd)kd.textContent=KERF+'mm';
+  const kd=document.getElementById('kerf-display');if(kd)kd.textContent=len(KERF);
 }
 // Snapshot taken when Settings opens so Cancel has something to restore. Every
 // field in the modal saves on `oninput`, and closeSettings() itself wrote to
@@ -3037,12 +3465,11 @@ let _settingsSnapshot = null;
 function openSettings(){
   loadSettings();
   try { _settingsSnapshot = JSON.parse(JSON.stringify(settings)); } catch(e) { _settingsSnapshot = null; }
-  const kf=document.getElementById('kerf-setting'),cn=document.getElementById('company-name');
+  const cn=document.getElementById('company-name');
   const ki=document.getElementById('licence-key-input'),ks=document.getElementById('key-status');
-  if(kf)kf.value=(settings.kerf!=null?settings.kerf:4);if(cn)cn.value=settings.companyName||'';
-  const ol=document.getElementById('offcut-long'),os=document.getElementById('offcut-short');
-  if(ol)ol.value=settings.minOffcutLong||1000;
-  if(os)os.value=settings.minOffcutShort||300;
+  if(cn)cn.value=settings.companyName||'';
+  fillSettingsFields();
+  refreshUnitLabels();
   if(ki&&ks){
     const s=localStorage.getItem(KEY_STORE);
     if(s){
@@ -3063,7 +3490,7 @@ function cancelSettings(){
     settings = JSON.parse(JSON.stringify(_settingsSnapshot));
     KERF = parseKerf(settings.kerf);
     try{ localStorage.setItem(SETT_KEY, JSON.stringify(settings)); }catch(e){}
-    const kd=document.getElementById('kerf-display'); if(kd) kd.textContent = KERF + 'mm';
+    const kd=document.getElementById('kerf-display'); if(kd) kd.textContent = len(KERF);
   }
   const sm=document.getElementById('settings-modal'); if(sm) sm.style.display='none';
 }
@@ -3078,13 +3505,13 @@ function saveSettings() {
   const cn = document.getElementById('company-name');
   const ol = document.getElementById('offcut-long');
   const os = document.getElementById('offcut-short');
-  if (kf) { settings.kerf = parseKerf(kf.value); settings.kerfTouched = true; KERF = settings.kerf; }
+  if (kf) { settings.kerf = parseKerf(parseLen(kf.value)); settings.kerfTouched = true; KERF = settings.kerf; }
   if (cn) settings.companyName = cn.value ? cn.value.trim() : '';
-  if (ol) settings.minOffcutLong = Math.max(0, Math.min(6000, parseInt(ol.value) || 0));
-  if (os) settings.minOffcutShort = Math.max(0, Math.min(6000, parseInt(os.value) || 0));
+  if (ol) settings.minOffcutLong = Math.max(0, Math.min(6000, Math.round(parseLen(ol.value) || 0)));
+  if (os) settings.minOffcutShort = Math.max(0, Math.min(6000, Math.round(parseLen(os.value) || 0)));
   localStorage.setItem(SETT_KEY, JSON.stringify(settings));
   const kd = document.getElementById('kerf-display');
-  if (kd) kd.textContent = KERF + 'mm';
+  if (kd) kd.textContent = len(KERF);
 }
 function saveSettingsAndClose() {
   saveSettings();
@@ -3156,10 +3583,10 @@ function cleanSizes(raw) {
   return out;
 }
 
-// Edge trim in mm per edge, 0-200, to 0.1mm. 0 means none.
+// Edge trim in mm per edge, 0-200, to 0.0001mm (1/16" stays exact). 0 means none.
 function cleanTrim(v) {
   const t = parseFloat(v);
-  return isFinite(t) && t > 0 ? Math.min(200, Math.round(t * 10) / 10) : 0;
+  return isFinite(t) && t > 0 ? Math.min(200, Math.round(t * 10000) / 10000) : 0;
 }
 
 // A see-through band showing the edge trim on a drawn sheet. Everything
@@ -3168,7 +3595,7 @@ function trimFrameHtml(sh, scale) {
   const t = +(sh && sh.trim) || 0;
   if (!t) return '';
   const px = Math.max(1, Math.round(t * scale));
-  return `<div title="Edge trim: ${t}mm off each edge" style="position:absolute;inset:0;border:${px}px solid rgba(220,38,38,.18);box-sizing:border-box;pointer-events:none;outline:1px dashed rgba(220,38,38,.55);outline-offset:-${px}px"></div>`;
+  return `<div title="Edge trim: ${esc(len(t))} off each edge" style="position:absolute;inset:0;border:${px}px solid rgba(220,38,38,.18);box-sizing:border-box;pointer-events:none;outline:1px dashed rgba(220,38,38,.55);outline-offset:-${px}px"></div>`;
 }
 
 // The size on a material with these exact dimensions, for pricing a sheet.
@@ -3254,7 +3681,7 @@ function saveToHistory(){
     const jr=(document.getElementById('job-ref')||{}).value||'Untitled';
     const ts=calcResult.results.reduce(function(s,r){return s+boughtSheets(r.sheets).length;},0);
     const sm=calcResult.results.map(function(r){
-      return r.libMat.name+': '+Object.entries(r.sizeMap).map(function(e){return e[1]+'x '+e[0]+'mm';}).join(', ');
+      return r.libMat.name+': '+Object.entries(r.sizeMap).map(function(e){return e[1]+'x '+dimKey(e[0]);}).join(', ');
     }).join(' | ');
     const entry={id:Date.now(),jobRef:jr,totalSheets:ts,summary:sm,
       date:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}),
@@ -3411,7 +3838,7 @@ document.addEventListener('keydown', function(e) {
     // Settings saves on every keystroke, so Escape must roll back like Cancel
     // rather than leaving a half-typed kerf committed.
     if (sm && sm.style.display !== 'none') { cancelSettings(); return; }
-    ['lib-modal','history-modal','upgrade-modal','zoom-modal','paste-modal','offcut-modal'].forEach(function(id) {
+    ['lib-modal','history-modal','upgrade-modal','zoom-modal','paste-modal','offcut-modal','labels-modal'].forEach(function(id) {
       const el = document.getElementById(id);
       if (el && el.style.display !== 'none') el.style.display = 'none';
     });
@@ -3423,7 +3850,7 @@ function openZoomByIndex(idx, sheetNo) {
   const arr = window._zoomSheets || [];
   const sh = arr[idx];
   if (!sh) return;
-  openZoom(sh, 'Sheet ' + sheetNo + ' — ' + sh.sheetW + '×' + sh.sheetH + 'mm');
+  openZoom(sh, 'Sheet ' + sheetNo + ' — ' + dims(sh.sheetW, sh.sheetH));
 }
 
 function openZoom(sheetData, title) {
@@ -3445,15 +3872,15 @@ function openZoom(sheetData, title) {
     const o = sheetData.usableOffcut;
     const ox=Math.round(o.x*scale), oy=Math.round(o.y*scale);
     const ow=Math.max(2,Math.round(o.w*scale)-1), oh=Math.max(2,Math.round(o.h*scale)-1);
-    html += `<div title="Usable offcut: ${Math.round(o.w)}×${Math.round(o.h)}mm" style="position:absolute;left:${ox}px;top:${oy}px;width:${ow}px;height:${oh}px;background:repeating-linear-gradient(45deg,rgba(5,150,105,.18),rgba(5,150,105,.18) 6px,rgba(5,150,105,.32) 6px,rgba(5,150,105,.32) 12px);border:2px dashed var(--green);box-sizing:border-box;display:flex;align-items:center;justify-content:center;text-align:center">${ow>60&&oh>30?`<div style="font-size:${Math.min(15,ow/8)}px;font-weight:700;color:#065f46;line-height:1.3">USABLE OFFCUT<br><span style="font-weight:600;font-size:.85em">${Math.round(o.w)}×${Math.round(o.h)}mm</span></div>`:''}</div>`;
+    html += `<div title="Usable offcut: ${esc(dims(o.w, o.h))}" style="position:absolute;left:${ox}px;top:${oy}px;width:${ow}px;height:${oh}px;background:repeating-linear-gradient(45deg,rgba(5,150,105,.18),rgba(5,150,105,.18) 6px,rgba(5,150,105,.32) 6px,rgba(5,150,105,.32) 12px);border:2px dashed var(--green);box-sizing:border-box;display:flex;align-items:center;justify-content:center;text-align:center">${ow>60&&oh>30?`<div style="font-size:${Math.min(15,ow/8)}px;font-weight:700;color:#065f46;line-height:1.3">USABLE OFFCUT<br><span style="font-weight:600;font-size:.85em">${esc(dims(o.w, o.h))}</span></div>`:''}</div>`;
   }
   sheetData.placed.forEach(p => {
     const col = COLORS[p.pieceIndex % COLORS.length];
     const px = Math.round(p.x * scale), py = Math.round(p.y * scale);
     const pw = Math.max(2, Math.round(p.w * scale) - 1), ph = Math.max(2, Math.round(p.h * scale) - 1);
     const show = pw > 32 && ph > 18;
-    html += `<div title="${esc(p.label||'P'+(p.pieceIndex+1))}: ${p.w}×${p.h}mm" style="position:absolute;left:${px}px;top:${py}px;width:${pw}px;height:${ph}px;background:${col}d0;border:1.5px solid ${col};border-radius:2px;overflow:hidden;box-sizing:border-box">`;
-    if (show) html += `<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:${Math.min(13, pw / 5)}px;text-shadow:0 1px 3px rgba(0,0,0,.5);text-align:center;padding:3px;line-height:1.2">${esc(p.label || 'P' + (p.pieceIndex + 1))}${p.rotated ? '<span style="font-size:.75em">↻</span>' : ''}<br><span style="font-weight:400;font-size:.8em;opacity:.85">${p.w}×${p.h}</span></div>`;
+    html += `<div title="${esc(p.label||'P'+(p.pieceIndex+1))}: ${esc(dims(p.w, p.h))}" style="position:absolute;left:${px}px;top:${py}px;width:${pw}px;height:${ph}px;background:${col}d0;border:1.5px solid ${col};border-radius:2px;overflow:hidden;box-sizing:border-box">`;
+    if (show) html += `<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:${Math.min(13, pw / 5)}px;text-shadow:0 1px 3px rgba(0,0,0,.5);text-align:center;padding:3px;line-height:1.2">${esc(p.label || 'P' + (p.pieceIndex + 1))}${p.rotated ? '<span style="font-size:.75em">↻</span>' : ''}<br><span style="font-weight:400;font-size:.8em;opacity:.85">${esc(dims(p.w, p.h))}</span></div>`;
     html += `</div>`;
   });
   html += `</div>`;
@@ -3461,7 +3888,7 @@ function openZoom(sheetData, title) {
 
   legend.innerHTML = sheetData.placed.map(p => {
     const col = COLORS[p.pieceIndex % COLORS.length];
-    return `<div style="display:inline-flex;align-items:center;gap:5px;background:var(--sky);border:1px solid var(--bdr);border-radius:6px;padding:3px 9px;font-size:12px"><div style="width:10px;height:10px;border-radius:2px;background:${col};flex-shrink:0"></div>${esc(p.label || 'P' + (p.pieceIndex + 1))} <span style="color:var(--muted)">${p.w}×${p.h}${p.rotated ? ' ↻' : ''}</span></div>`;
+    return `<div style="display:inline-flex;align-items:center;gap:5px;background:var(--sky);border:1px solid var(--bdr);border-radius:6px;padding:3px 9px;font-size:12px"><div style="width:10px;height:10px;border-radius:2px;background:${col};flex-shrink:0"></div>${esc(p.label || 'P' + (p.pieceIndex + 1))} <span style="color:var(--muted)">${esc(dims(p.w, p.h))}${p.rotated ? ' ↻' : ''}</span></div>`;
   }).join('');
 
   modal.style.display = 'flex';
@@ -3494,10 +3921,10 @@ function cancelRemnant(matId) {
   if (rh) rh.value = '';
 }
 function saveRemnant(matId) {
-  const rw = parseInt((document.getElementById('rem-w-' + matId)||{}).value)||0;
-  const rh = parseInt((document.getElementById('rem-h-' + matId)||{}).value)||0;
+  const rw = parseLen((document.getElementById('rem-w-' + matId)||{}).value)||0;
+  const rh = parseLen((document.getElementById('rem-h-' + matId)||{}).value)||0;
   if (!rw || !rh || rw < 10 || rh < 10) {
-    alert('Please enter valid remnant dimensions (minimum 10mm).');
+    alert('Please enter valid remnant dimensions (minimum ' + len(10) + ').');
     return;
   }
   const m = mats.find(function(x){return x.id===matId;});
@@ -3510,6 +3937,7 @@ function removeRemnant(matId) {
 document.addEventListener('DOMContentLoaded',function(){
   checkLicence();
   loadSettings();
+  refreshUnitLabels();
   cnInitCookieBar();
   // Compile the engine in the worker while the user is still typing, so the
   // first Calculate doesn't pay the start-up cost.
@@ -3557,7 +3985,8 @@ document.addEventListener('DOMContentLoaded',function(){
             w: clampNum(p && p.w, 0, 100000) || '',
             h: clampNum(p && p.h, 0, 100000) || '',
             qty: clampNum(p && p.qty, 1, 9999) || 1,
-            label: clampStr(p && p.label, 40)
+            label: clampStr(p && p.label, 40),
+            grain: (p && (p.grain === 'lock' || p.grain === 'free')) ? p.grain : undefined
           };
         });
         return out.length ? out : [{w:'',h:'',qty:1,label:''}];

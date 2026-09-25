@@ -361,6 +361,166 @@ const tests = {
     expect(!page.errors.length, 'page errors: ' + page.errors.join(' | '));
   },
 
+  async 'grain per piece: Pro sets it, free is told'() {
+    const page = await freshPage({ pro: true });
+    await page.goto(base + '/app.html');
+    await page.waitForFunction(() => isPro && library.length > 20);
+    await page.selectOption('#mat-blocks select', '102');              // mild steel: may rotate
+    await setPiece(page, 1, 1100, 400, 6);
+    await page.click('[aria-label^="Piece 1 grain"]');                  // Auto -> Lock
+    expect(await page.evaluate(() => mats[0].pieces[0].grain) === 'lock', 'first click should lock the grain');
+    await calculateAndWait(page);
+    const rotated = await page.evaluate(() => calcResult.results[0].sheets.some(s => s.placed.some(p => p.rotated)));
+    expect(!rotated, 'a grain-locked piece was rotated');
+    await page.reload();
+    await page.waitForFunction(() => isPro && library.length > 20);
+    expect(await page.evaluate(() => mats[0].pieces[0].grain) === 'lock', 'grain setting lost on reload');
+
+    const free = await freshPage();
+    await startWithMetal(free);
+    await free.click('[aria-label^="Piece 1 grain"]');
+    expect(await free.isVisible('#upgrade-modal'), 'free plan: grain button should open the upgrade prompt');
+  },
+
+  async 'inches: welcome choice, fractions, exact fits, exports'() {
+    const page = await freshPage({ pro: true });
+    await page.addInitScript(() => {
+      if (sessionStorage.getItem('cn-units-init')) return;
+      sessionStorage.setItem('cn-units-init', '1');
+      localStorage.setItem('cutnest-settings-v1', JSON.stringify({ kerf: 0, kerfTouched: true, units: 'in', currency: '$' }));
+    });
+    await page.goto(base + '/app.html');
+    await page.waitForFunction(() => isPro && library.length > 20);
+    // A custom 96 x 48" sheet at $60, entered in inches.
+    await page.click('button[aria-label="Stock library"]');
+    await page.fill('#n-name', 'Ply 4x8');
+    await page.fill('#n-w1', '96');
+    await page.fill('#n-h1', '48');
+    await page.fill('#n-pr1', '60');
+    await page.click('#add-form-wrap >> text=+ Add');
+    await page.click('text=Save Library');
+    const ply = await page.evaluate(() => library.find(l => l.name === 'Ply 4x8'));
+    expect(Math.abs(ply.sizes[0].w - 2438.4) < 1e-9, 'sheet width should be stored in mm');
+    await page.selectOption('#mat-blocks select', String(ply.id));
+    expect((await page.textContent('.sz-info-row')).includes('96 \u00d7 48"'), 'size badge should read 96 x 48"');
+    // Four 48 x 24" parts fill a 96 x 48" sheet exactly (kerf 0): one sheet.
+    await page.fill('[aria-label="Piece 1 width in in"]', '48');
+    await page.fill('[aria-label="Piece 1 height in in"]', '24');
+    await page.fill('[aria-label="Piece 1 quantity"]', '4');
+    await calculateAndWait(page);
+    expect(await page.textContent('#s-sheets') === '1', 'four 48x24" parts should fit one 96x48" sheet exactly');
+    expect((await page.textContent('#total-cost-val')).startsWith('$60.00'), 'cost should be in dollars');
+    // Fractions.
+    await page.fill('[aria-label="Piece 1 width in in"]', '23 5/8');
+    await page.fill('[aria-label="Piece 1 height in in"]', '15-3/4');
+    const w = await page.evaluate(() => mats[0].pieces[0].w);
+    expect(Math.abs(w - 600.075) < 1e-9, '23 5/8" should store as 600.075mm, got ' + w);
+    await calculateAndWait(page);
+    const vis = await page.textContent('#mat-visuals');
+    // The part may be placed either way round.
+    expect(vis.includes('23 5/8 \u00d7 15 3/4"') || vis.includes('15 3/4 \u00d7 23 5/8"'),
+      'results should show fractions: ' + vis.replace(/\s+/g, ' ').slice(0, 600));
+    // Paste: inches by default, but a line that says mm is read in mm.
+    await page.click('text=Paste list');
+    await page.fill('#paste-input', 'Door, 24 1/2, 18, 2\nSide 600mm x 400mm x 1');
+    await page.click('#paste-confirm');
+    const pasted = await page.evaluate(() => mats[0].pieces.slice(-2).map(p => [+p.w.toFixed(3), +p.h.toFixed(3), p.qty]));
+    expect(JSON.stringify(pasted) === JSON.stringify([[622.3, 457.2, 2], [600, 400, 1]]), 'paste units wrong: ' + JSON.stringify(pasted));
+    // Exports carry the units.
+    await calculateAndWait(page);
+    const [csvDl] = await Promise.all([page.waitForEvent('download'), page.click('.res-acts >> text=CSV')]);
+    const csv = fs.readFileSync(await csvDl.path(), 'utf8');
+    expect(csv.includes('W (in)') && csv.includes('Units: inches'), 'CSV should be in inches');
+    const [dxfDl] = await Promise.all([page.waitForEvent('download'), page.click('.res-acts >> text=DXF')]);
+    expect(fs.readFileSync(await dxfDl.path(), 'utf8').includes('$MEASUREMENT\r\n70\r\n0\r\n'), 'DXF should be imperial');
+    // Switching back to mm changes only the display.
+    await page.click('button[aria-label="Settings"]');
+    await page.selectOption('#units-setting', 'mm');
+    expect(await page.inputValue('[aria-label="Piece 1 width in mm"]') === '600.1', 'switching to mm should show 600.1');
+    expect(!page.errors.length, 'page errors: ' + page.errors.join(' | '));
+  },
+
+  async 'open a cut list file: CSV with headers, and Excel'() {
+    const page = await freshPage({ pro: true });
+    await page.goto(base + '/app.html');
+    await page.waitForFunction(() => isPro && library.length > 20);
+    await page.selectOption('#mat-blocks select', '102');
+    await page.click('text=Paste list');
+    // Columns in an unusual order, a quoted label with a comma, a thousands separator.
+    await page.setInputFiles('#paste-modal input[type=file]', { name: 'cuts.csv', mimeType: 'text/csv',
+      buffer: Buffer.from('Qty,Width,Length,Description,Grain\n2,600,"1,200","Door, left",lock\n5,300,450,Shelf,\n') });
+    await page.waitForFunction(() => /Add 2 rows/.test(document.getElementById('paste-confirm').textContent));
+    await page.click('#paste-confirm');
+    const csvPieces = await page.evaluate(() => mats[0].pieces.map(p => [p.label, p.w, p.h, p.qty, p.grain || '']));
+    expect(JSON.stringify(csvPieces) === JSON.stringify([['Door, left', 1200, 600, 2, 'lock'], ['Shelf', 450, 300, 5, '']]),
+      'CSV import wrong: ' + JSON.stringify(csvPieces));
+    // Excel (.xlsx built by tests/import.test.js).
+    await page.click('text=Paste list');
+    await page.check('#paste-replace');
+    await page.setInputFiles('#paste-modal input[type=file]', path.join(__dirname, 'fixtures', 'cutlist.xlsx'));
+    await page.waitForFunction(() => /Add 3 rows/.test(document.getElementById('paste-confirm').textContent));
+    await page.click('#paste-confirm');
+    const xl = await page.evaluate(() => mats[0].pieces.map(p => [p.label, p.w, p.h, p.qty, p.grain || '']));
+    expect(JSON.stringify(xl) === JSON.stringify([['Door & Frame', 800, 600, 4, 'lock'], ['Shelf', 450.5, 380, 6, ''], ['', 700, 280, 1, '']]),
+      'Excel import wrong: ' + JSON.stringify(xl));
+    expect(!page.errors.length, 'page errors: ' + page.errors.join(' | '));
+  },
+
+  async 'library backup and restore'() {
+    const page = await freshPage();
+    await startWithMetal(page);
+    await page.evaluate(() => { settings.companyName = 'Backup Test Ltd'; localStorage.setItem(SETT_KEY, JSON.stringify(settings)); });
+    await page.click('button[aria-label="Stock library"]');
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.click('text=Back up')]);
+    const file = await dl.path();
+    const backup = JSON.parse(fs.readFileSync(file, 'utf8'));
+    expect(backup.kind === 'cutnest-backup' && backup.library.length === 3, 'backup should hold the 3 starter materials');
+    expect(!JSON.stringify(backup).includes('licence'), 'backup must not contain the licence key');
+    // A fresh browser: restore it.
+    const other = await freshPage();
+    await other.goto(base + '/app.html');
+    await other.click('button[aria-label="Stock library"]');
+    other.once('dialog', d => d.accept());
+    await other.setInputFiles('#lib-modal input[type=file]', file);
+    await other.waitForFunction(() => library.length === 3, null, { timeout: 5000 });
+    expect(await other.evaluate(() => settings.companyName) === 'Backup Test Ltd', 'settings not restored');
+    expect(await other.evaluate(() => library.map(l => l.name).join()) === await page.evaluate(() => library.map(l => l.name).join()),
+      'restored library differs');
+    expect(!other.errors.length, 'page errors: ' + other.errors.join(' | '));
+  },
+
+  async 'part labels: Pro prints, free is offered the upgrade'() {
+    const free = await freshPage();
+    await startWithMetal(free);
+    await setPiece(free, 1, 800, 600, 2);
+    await calculateAndWait(free);
+    await free.click('.res-acts >> text=Labels');
+    expect(await free.isVisible('#upgrade-modal'), 'free plan should see the upgrade window for labels');
+    expect(!(await free.isVisible('#labels-modal')), 'free plan should not get the labels window');
+
+    const page = await freshPage({ pro: true });
+    await page.goto(base + '/app.html');
+    await page.waitForFunction(() => isPro && library.length > 20);
+    await page.selectOption('#mat-blocks select', '205');
+    await page.fill('#job-ref', 'JOB-047');
+    await page.evaluate(() => { mats[0].pieces = [{ w: 800, h: 600, qty: 2, label: 'Door Front' }, { w: 450, h: 380, qty: 4, label: 'Side <Panel>' }]; renderAll(); });
+    await calculateAndWait(page);
+    await page.click('.res-acts >> text=Labels');
+    expect(await page.isVisible('#labels-modal'), 'labels window should open for Pro');
+    expect(/^6 labels on 1 sheet of 21\./.test(await page.textContent('#labels-summary')), 'summary wrong: ' + await page.textContent('#labels-summary'));
+    await page.fill('#label-skip', '19');
+    await page.dispatchEvent('#label-skip', 'input');
+    expect(/6 labels on 2 sheets of 21, starting at label 20/.test(await page.textContent('#labels-summary')), 'skip not counted: ' + await page.textContent('#labels-summary'));
+    const html = await page.evaluate(() => buildLabelsHtml('L7160', 0));
+    expect((html.match(/class="lb"/g) || []).length === 6, 'expected 6 labels in the output');
+    expect(html.includes('Sheet 1 \u00b7 Part 1') || html.includes('Sheet 1 &middot; Part 1') || html.includes('Sheet 1 · Part 1'), 'labels should carry the cut-sheet numbers');
+    expect(html.includes('JOB-047') && html.includes('Side &lt;Panel&gt;'), 'labels should show the job and escape part names');
+    expect(html.includes('size: A4'), 'Avery L7160 should print on A4');
+    await page.keyboard.press('Escape');
+    expect(!(await page.isVisible('#labels-modal')), 'Escape should close the labels window');
+    expect(!page.errors.length && !free.errors.length, 'page errors: ' + page.errors.concat(free.errors).join(' | '));
+  },
+
   async 'landing page, FAQ and legal pages'() {
     const page = await freshPage({ viewport: { width: 390, height: 800 } });
     await page.goto(base + '/');
@@ -386,6 +546,16 @@ const tests = {
       return { active: !!reg.active, entries: (await c.keys()).length };
     });
     expect(ok.active, 'service worker did not activate (a precached file is probably missing)');
+    // Every script and stylesheet app.html loads must be available offline.
+    const missing = await page.evaluate(async () => {
+      const html = await (await fetch('/app.html')).text();
+      const refs = [...html.matchAll(/(?:src|href)="(\/(?:js|css|fonts)\/[^"]+)"/g)].map(m => m[1]);
+      const c = await caches.open((await caches.keys())[0]);
+      const out = [];
+      for (const r of refs) if (!(await c.match(r))) out.push(r);
+      return out;
+    });
+    expect(!missing.length, 'not in the offline cache: ' + missing.join(', '));
     expect(ok.entries > 10, 'expected the precache to be filled, got ' + ok.entries);
   }
 };
@@ -404,7 +574,7 @@ const tests = {
       console.log(`  ok   ${name} (${Date.now() - t0}ms)`);
     } catch (e) {
       results.push([false, name]);
-      console.log(`  FAIL ${name}\n       ${String(e.message).split('\n')[0]}`);
+      console.log(`  FAIL ${name}\n       ${String(e.message).split("\n")[0]}`); if (process.env.DEBUG) console.log(e.stack);
     }
     for (const ctx of browser.contexts()) await ctx.close();
   }

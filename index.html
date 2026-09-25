@@ -77,6 +77,30 @@
   },
   {
    "@type": "Question",
+   "name": "Can I import my cut list from Excel?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Yes, on every plan. Click Paste list, then Open a file, and choose a CSV or Excel (.xlsx) file. If the first row has headings like Name, Length, Width, Qty and Grain, CutNest uses them to find the right columns; otherwise it reads each row as name, width, height, quantity. You see a preview before anything is added. The file never leaves your computer."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Does it work in inches?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Yes. Choose inches in Settings (or on first start) and every size is typed and shown in inches, with fractions: 23 5/8, 3/32 kerf, 8′ 6. Layouts, cut sheets, CSV and DXF exports all come out in inches, and you can switch back to millimetres at any time. Prices can be in pounds, dollars or euros."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Can it label the parts after cutting?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "With Pro, yes. The Labels button prints one label per part on standard Avery sheets (L7160, L7163, L7159 on A4, or 5160 and 5163 on US Letter). Each label shows the job, part name, size, material and the same sheet and part number as the cut sheet, and flags parts whose grain is locked. You can skip labels already used on a part-used sheet."
+   }
+  },
+  {
+   "@type": "Question",
    "name": "My sheets have rough or damaged edges. Can CutNest allow for that?",
    "acceptedAnswer": {
     "@type": "Answer",
@@ -88,7 +112,7 @@
    "name": "What if my material has a grain direction and can’t be rotated?",
    "acceptedAnswer": {
     "@type": "Answer",
-    "text": "With Pro, tick “Lock grain” on that material in your library. Works for brushed stainless, veneered MDF, wood grain, patterned glass — any material where rotation matters. CutNest will never flip pieces against the grain."
+    "text": "With Pro, tick “Lock grain” on that material in your library, or set it per part with the grain button on each row — so doors stay with the grain while shelves and backs are free to turn and fill the gaps. Works for brushed stainless, veneered MDF, wood grain, patterned glass — any material where rotation matters. CutNest will never flip a locked piece against the grain."
    }
   },
   {
@@ -638,7 +662,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
       <div class="step">
         <div class="step-num">1</div>
         <div class="step-title">Add your pieces</div>
-        <div class="step-desc">Enter the width, height and quantity of each piece you need to cut. Works for steel, timber, MDF, acrylic, glass &mdash; any sheet material.</div>
+        <div class="step-desc">Type them in, paste from an email, or open your CSV or Excel cut list. Millimetres or inches and fractions. Works for steel, timber, MDF, acrylic, glass &mdash; any sheet material.</div>
       </div>
       <div class="step">
         <div class="step-num">2</div>
@@ -666,7 +690,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
         <div class="feat-icon-wrap" style="background:var(--teal2)"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="16" x2="16" y2="2" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="2" y1="10" x2="10" y2="2" stroke="white" stroke-width="2" stroke-linecap="round" opacity=".5"/><line x1="8" y1="16" x2="16" y2="8" stroke="white" stroke-width="2" stroke-linecap="round" opacity=".5"/></svg></div>
         <div class="feat-title">Grain direction lock</div>
       </div>
-      <div class="feat-desc">Brushed stainless, veneered MDF, patterned glass, wood grain &mdash; some materials can&rsquo;t be rotated. Tick &ldquo;Lock grain&rdquo; on any material and CutNest will never flip pieces against the grain direction.</div>
+      <div class="feat-desc">Brushed stainless, veneered MDF, patterned glass, wood grain &mdash; some materials can&rsquo;t be rotated. Lock the grain on a whole material, or set it part by part: lock the doors, let the shelves turn. CutNest never flips a locked piece against the grain.</div>
       <div class="feat-tag">Pro</div>
     </div>
     <div class="feat-card">
@@ -720,7 +744,25 @@ footer{background:var(--teal2);padding:44px 5% 32px}
         <div class="feat-icon-wrap" style="background:var(--teal2)"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="2" width="9" height="12" rx="1.5" stroke="white" stroke-width="1.5"/><path d="M10 2l5 5h-4a1 1 0 01-1-1V2z" fill="white"/><path d="M12 12l2 2-2 2" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="8" y1="14" x2="14" y2="14" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div>
         <div class="feat-title">Quote-ready output</div>
       </div>
-      <div class="feat-desc">Visual layout showing exactly where every piece lands. Total sheets, total cost, waste percentage. Export to CSV or print direct to PDF. Everything you need to quote with confidence.</div>
+      <div class="feat-desc">Visual layout showing exactly where every piece lands. Total sheets, total cost, waste percentage. Export to CSV, PDF or DXF, print dimensioned cut sheets for the machine, and (Pro) print a numbered label for every part so nothing gets mixed up on the bench.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-card-accent"></div>
+      <div class="feat-heading">
+        <div class="feat-icon-wrap" style="background:var(--teal2)"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="3" width="14" height="12" rx="1.5" stroke="white" stroke-width="1.5"/><line x1="2" y1="7" x2="16" y2="7" stroke="white" stroke-width="1.5"/><line x1="7" y1="7" x2="7" y2="15" stroke="white" stroke-width="1.5"/></svg></div>
+        <div class="feat-title">Bring your cut list</div>
+      </div>
+      <div class="feat-desc">Open a CSV or Excel file straight from your drawing office or estimating sheet &mdash; CutNest reads the header row and finds the name, sizes, quantity and grain columns itself. Or paste from an email. Nothing is uploaded; the file is read in your browser.</div>
+      <div class="feat-tag blue">All plans</div>
+    </div>
+    <div class="feat-card teal">
+      <div class="feat-card-accent"></div>
+      <div class="feat-heading">
+        <div class="feat-icon-wrap" style="background:var(--teal2)"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1.5" y="6" width="15" height="6" rx="1" stroke="white" stroke-width="1.5"/><line x1="5" y1="6" x2="5" y2="9" stroke="white" stroke-width="1.3"/><line x1="8" y1="6" x2="8" y2="8" stroke="white" stroke-width="1.3"/><line x1="11" y1="6" x2="11" y2="9" stroke="white" stroke-width="1.3"/><line x1="14" y1="6" x2="14" y2="8" stroke="white" stroke-width="1.3"/></svg></div>
+        <div class="feat-title">Millimetres or inches</div>
+      </div>
+      <div class="feat-desc">Work in mm, or in inches with the fractions your tape measure uses &mdash; type 23 5/8 or 8&prime; 6 and it just works. Pounds, dollars or euros. Every layout, cut sheet and export comes out in your units.</div>
+      <div class="feat-tag blue">All plans</div>
     </div>
   </div>
 </section>
@@ -745,11 +787,14 @@ footer{background:var(--teal2);padding:44px 5% 32px}
         <tr><td>Up to 5 materials in one job, costed together</td><td>&#10003;</td></tr>
         <tr><td>Up to 12 sheet sizes per material, with stock limits</td><td>&#10003;</td></tr>
         <tr><td>Edge trim for rough or damaged sheet edges</td><td>&#10003;</td></tr>
-        <tr><td>Grain-direction lock per material</td><td>&#10003;</td></tr>
+        <tr><td>Grain-direction lock per material or per part</td><td>&#10003;</td></tr>
         <tr><td>Cost-aware optimisation (minimise spend, not just sheets)</td><td>&#10003;</td></tr>
         <tr><td>Pre-built UK material library</td><td>23 grades included</td></tr>
         <tr><td>DXF export &mdash; straight to CNC, laser &amp; router</td><td>&#10003;</td></tr>
+        <tr><td>Printable part labels (Avery A4 &amp; US Letter sheets)</td><td>&#10003;</td></tr>
         <tr><td>CSV export for spreadsheets &amp; quotes</td><td>&#10003;</td></tr>
+        <tr><td>Open cut lists from CSV &amp; Excel files</td><td>&#10003;</td></tr>
+        <tr><td>Millimetres or inches &amp; fractions; &pound;, $ or &euro;</td><td>&#10003;</td></tr>
         <tr><td>Works offline &mdash; install it like an app</td><td>&#10003;</td></tr>
         <tr><td>Your data stays in your browser &mdash; no account needed</td><td>&#10003;</td></tr>
         <tr><td>Price</td><td style="color:var(--amber);font-weight:800">&pound;12/month</td></tr>
@@ -778,12 +823,15 @@ footer{background:var(--teal2);padding:44px 5% 32px}
         <li><span class="fi">&#10003;</span>Your own stock library (5 materials)</li>
         <li><span class="fi">&#10003;</span>Visual cut layouts</li>
         <li><span class="fi">&#10003;</span>CSV export</li>
+        <li><span class="fi">&#10003;</span>Open CSV &amp; Excel cut lists</li>
+        <li><span class="fi">&#10003;</span>Millimetres or inches &amp; fractions</li>
+        <li><span class="fi">&#10003;</span>Back up &amp; restore your library</li>
         <li><span class="fi locked">&#128274;</span><span class="locked">Multiple materials per job</span></li>
         <li><span class="fi locked">&#128274;</span><span class="locked">More sheet sizes &amp; stock limits</span></li>
         <li><span class="fi locked">&#128274;</span><span class="locked">Grain lock &amp; guillotine mode</span></li>
         <li><span class="fi locked">&#128274;</span><span class="locked">Remnants &amp; offcut stock</span></li>
         <li><span class="fi locked">&#128274;</span><span class="locked">Pre-built UK material library</span></li>
-        <li><span class="fi locked">&#128274;</span><span class="locked">DXF export</span></li>
+        <li><span class="fi locked">&#128274;</span><span class="locked">DXF export &amp; part labels</span></li>
         <li><span class="fi locked">&#128274;</span><span class="locked">Job history</span></li>
       </ul>
       <a href="app.html" class="btn-free">Start Free &rarr;</a>
@@ -819,7 +867,8 @@ footer{background:var(--teal2);padding:44px 5% 32px}
         <li><span class="fi">&#10003;</span>DXF export &mdash; machine-ready for CNC, laser &amp; router</li>
         <li><span class="fi">&#10003;</span>Job history (last 50 jobs)</li>
         <li><span class="fi">&#10003;</span>Unit quantity multiplier</li>
-        <li><span class="fi">&#10003;</span>Grain direction lock</li>
+        <li><span class="fi">&#10003;</span>Grain direction lock &mdash; per material or per part</li>
+        <li><span class="fi">&#10003;</span>Printable part labels on standard Avery sheets</li>
         <li><span class="fi">&#10003;</span>Guillotine mode for saws &amp; shears</li>
         <li><span class="fi">&#10003;</span>Remnant &amp; offcut support</li>
         <li><span class="fi">&#10003;</span>Cost-aware optimisation</li>
@@ -848,12 +897,24 @@ footer{background:var(--teal2);padding:44px 5% 32px}
     <div class="faq-a">Yes &mdash; that&rsquo;s the whole point. Go to Library, enter your sheet sizes and prices. Steel, MDF, ply, acrylic, glass &mdash; whatever you work with. CutNest uses your actual numbers. Free handles 2 sizes per material; Pro handles up to 12, picks the cheapest mix, and can be told how many of each size you actually have. Pro users also get a pre-built library of common UK grades as a starting point.</div>
   </div>
   <div class="faq-item">
+    <button type="button" class="faq-q" aria-expanded="false">Can I import my cut list from Excel?</button>
+    <div class="faq-a">Yes, on every plan. Click Paste list, then Open a file, and choose a CSV or Excel (.xlsx) file. If the first row has headings like Name, Length, Width, Qty and Grain, CutNest uses them to find the right columns; otherwise it reads each row as name, width, height, quantity. You see a preview before anything is added. The file never leaves your computer.</div>
+  </div>
+  <div class="faq-item">
+    <button type="button" class="faq-q" aria-expanded="false">Does it work in inches?</button>
+    <div class="faq-a">Yes. Choose inches in Settings (or on first start) and every size is typed and shown in inches, with fractions: 23 5/8, 3/32 kerf, 8&prime; 6. Layouts, cut sheets, CSV and DXF exports all come out in inches, and you can switch back to millimetres at any time. Prices can be in pounds, dollars or euros.</div>
+  </div>
+  <div class="faq-item">
+    <button type="button" class="faq-q" aria-expanded="false">Can it label the parts after cutting?</button>
+    <div class="faq-a">With Pro, yes. The Labels button prints one label per part on standard Avery sheets (L7160, L7163, L7159 on A4, or 5160 and 5163 on US Letter). Each label shows the job, part name, size, material and the same sheet and part number as the cut sheet, and flags parts whose grain is locked. You can skip labels already used on a part-used sheet.</div>
+  </div>
+  <div class="faq-item">
     <button type="button" class="faq-q" aria-expanded="false">My sheets have rough or damaged edges. Can CutNest allow for that?</button>
     <div class="faq-a">Yes. Set an edge trim on the material in your Library (for example 10mm) and CutNest nests parts inside the trimmed area, on every plan. Saw cut sheets tell the operator to trim first and measure everything from the trimmed edge; CNC layouts show the trim as a border to keep clear of.</div>
   </div>
   <div class="faq-item">
     <button type="button" class="faq-q" aria-expanded="false">What if my material has a grain direction and can&rsquo;t be rotated?</button>
-    <div class="faq-a">With Pro, tick &ldquo;Lock grain&rdquo; on that material in your library. Works for brushed stainless, veneered MDF, wood grain, patterned glass &mdash; any material where rotation matters. CutNest will never flip pieces against the grain.</div>
+    <div class="faq-a">With Pro, tick &ldquo;Lock grain&rdquo; on that material in your library, or set it per part with the grain button on each row &mdash; so doors stay with the grain while shelves and backs are free to turn and fill the gaps. Works for brushed stainless, veneered MDF, wood grain, patterned glass &mdash; any material where rotation matters. CutNest will never flip a locked piece against the grain.</div>
   </div>
   <div class="faq-item">
     <button type="button" class="faq-q" aria-expanded="false">Do I need to install anything or create an account?</button>
