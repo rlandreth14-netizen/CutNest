@@ -199,6 +199,7 @@ if(cnPrefersDark())document.documentElement.setAttribute('data-theme','dark');
           <div id="results-assumptions" style="font-size:11px;color:rgba(255,255,255,.6);margin-top:2px"></div>
         </div>
         <div class="res-acts">
+          <button class="btn-exp quote-btn" onclick="openQuote()" title="Price this job for your customer: material, cutting, handling, extras and tax, as a branded quote">💷 Quote</button>
           <button class="btn-exp" onclick="exportCSV()">⬇ CSV</button>
           <button class="btn-exp" onclick="exportDXF()" title="Machine-ready DXF for CNC/laser/router">⬇ DXF</button>
           <button class="btn-exp pdf-btn" onclick="exportPDF()" title="Download print-quality PDF">⬇ PDF</button>
@@ -224,8 +225,9 @@ if(cnPrefersDark())document.documentElement.setAttribute('data-theme','dark');
           <span style="font-size:13px;color:var(--text2)">&#128181; Add sheet prices in your Library to see this job&rsquo;s material cost.</span>
           <button class="btn btn-out" style="margin-left:auto;padding:5px 12px;white-space:nowrap" onclick="openLib()">Open Library</button>
         </div>
-        <div style="display:flex;justify-content:flex-end;margin-top:7px">
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:7px;flex-wrap:wrap">
           <button class="copy-btn" id="copy-btn" onclick="copyQuote()">Copy for quote</button>
+          <button class="copy-btn quote-cta" onclick="openQuote()">💷 Build a customer quote</button>
         </div>
       </div>
       <div id="sheet-nav-wrap" class="no-print"></div>
@@ -441,6 +443,24 @@ if(cnPrefersDark())document.documentElement.setAttribute('data-theme','dark');
   </div>
 </div>
 
+<!-- QUOTE MODAL -->
+<div class="overlay" id="quote-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Customer quote">
+  <div class="modal quote-modal">
+    <div class="modal-hdr"><div class="modal-title">&#128183; Customer quote</div><button class="modal-x" onclick="closeQuote()" aria-label="Close">&#10005;</button></div>
+    <div class="modal-body quote-grid">
+      <div id="quote-form"></div>
+      <aside class="quote-side">
+        <div class="q-h">Quote total</div>
+        <div id="quote-summary"></div>
+        <div class="quote-btns">
+          <button class="btn btn-teal" onclick="printQuote()">&#128424; Print / save PDF</button>
+          <button class="btn btn-out" onclick="copyQuoteText()">Copy as text</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+
 <!-- PART LABELS MODAL -->
 <div class="overlay" id="labels-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Print part labels">
   <div class="modal" style="max-width:480px">
@@ -525,6 +545,7 @@ if(cnPrefersDark())document.documentElement.setAttribute('data-theme','dark');
 <script src="/js/engine.js"></script>
 <script src="/js/units.js"></script>
 <script src="/js/import.js"></script>
+<script src="/js/quote.js"></script>
 <script src="/js/app.js"></script>
 </body>
 </html>

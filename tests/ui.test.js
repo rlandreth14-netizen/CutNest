@@ -521,6 +521,67 @@ const tests = {
     expect(!page.errors.length && !free.errors.length, 'page errors: ' + page.errors.concat(free.errors).join(' | '));
   },
 
+  async 'quote: Pro prices the job, remembers it, numbers it; free is offered the upgrade'() {
+    const free = await freshPage();
+    await startWithMetal(free);
+    await setPiece(free, 1, 800, 600, 2);
+    await calculateAndWait(free);
+    await free.click('.res-acts >> text=Quote');
+    expect(await free.isVisible('#upgrade-modal'), 'free plan should see the upgrade window for quotes');
+
+    const page = await freshPage({ pro: true });
+    await page.goto(base + '/app.html');
+    await page.waitForFunction(() => isPro && library.length > 20);
+    await page.selectOption('#mat-blocks select', '601');                // MDF 18mm: saw / guillotine
+    await page.fill('#job-qty', '2');
+    await setPiece(page, 1, 800, 600, 3);
+    await calculateAndWait(page);
+    await page.click('text=Build a customer quote');
+    expect(await page.isVisible('#quote-modal'), 'quote window should open');
+    expect(await page.inputValue('#q-no') === 'Q-0001', 'first quote should be numbered Q-0001');
+    await page.fill('#q-customer', 'Harper <Joinery>');
+    await page.fill('#q-mrate', '90');
+    await page.fill('#q-speed-0', '10');
+    await page.click('text=+ Add a line');
+    await page.fill('#q-extras .q-extra input >> nth=0', 'Delivery');
+    await page.fill('#q-extras .q-extra input >> nth=1', '40');
+    const f = await page.evaluate(() => currentFigures());
+    expect(f.cutting > 0 && f.materialPrice > 0 && f.extrasTotal === 40, 'figures missing: ' + JSON.stringify([f.cutting, f.materialPrice, f.extrasTotal]));
+    expect(Math.abs(f.total - (f.subtotal * 1.2)) < 0.011, 'VAT at 20% should be added');
+    expect(await page.textContent('#qs-total') === await page.evaluate(t => money(t), f.total), 'summary total should match the figures');
+    expect(f.jobQty === 2 && /per unit/.test(await page.textContent('#quote-summary')), 'price per unit should show for 2 units');
+    expect(f.mats[0].method === 'guillotine' && f.mats[0].cuts >= 3, 'saw job should count its cut sequence');
+    const html = await page.evaluate(() => buildQuoteHtml());
+    expect(html.includes('QUOTATION') && html.includes('Harper &lt;Joinery&gt;') && html.includes('Delivery'), 'printed quote should carry the customer (escaped) and extras');
+    expect(html.includes('size: A4'), 'metric quote prints on A4');
+
+    // A logo is scaled down in the browser and printed in the header.
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFklEQVR42mNk+M9QzwAEjDAGNzYAAB2DA/2y7c3tAAAAAElFTkSuQmCC', 'base64');
+    await page.setInputFiles('.q-file input[type=file]', { name: 'logo.png', mimeType: 'image/png', buffer: png });
+    await page.waitForFunction(() => /^data:image\/png;base64,/.test(quoteSettings().logo));
+    expect(await page.isVisible('#q-logo-prev img'), 'logo preview should show');
+    expect((await page.evaluate(() => buildQuoteHtml())).includes('<img src="data:image/png'), 'logo should be on the quote');
+
+    // Printing uses the number up; the next job gets the next one.
+    await page.evaluate(() => { window.open = () => ({ document: { write() {}, close() {} }, focus() {}, print() {} }); });
+    await page.click('#quote-modal >> text=Print / save PDF');
+    expect(await page.evaluate(() => autoQuoteNo()) === 'Q-0002', 'next quote number should be Q-0002');
+
+    // The customer and extras belong to the job; the speed belongs to the material.
+    await page.waitForTimeout(500);
+    await page.reload();
+    await page.waitForFunction(() => isPro && library.length > 20);
+    const kept = await page.evaluate(() => ({ q: quoteJob, speed: library.find(l => l.id == 601).cutSpeed, rate: quoteSettings().machineRate }));
+    expect(kept.q && kept.q.customer === 'Harper <Joinery>' && kept.q.no === 'Q-0001' && kept.q.extras.length === 1, 'quote details lost on reload: ' + JSON.stringify(kept.q));
+    expect(kept.speed === 10000, 'cutting speed should be saved to the material, got ' + kept.speed);
+    expect(kept.rate === 90, 'machine rate should be saved');
+    page.on('dialog', d => d.accept());
+    await page.click('text=New job');
+    expect(await page.evaluate(() => quoteJob) === null, 'New job should clear the quote details');
+    await page.keyboard.press('Escape');
+    expect(!page.errors.length && !free.errors.length, 'page errors: ' + page.errors.concat(free.errors).join(' | '));
+  },
+
   async 'landing page, FAQ and legal pages'() {
     const page = await freshPage({ viewport: { width: 390, height: 800 } });
     await page.goto(base + '/');

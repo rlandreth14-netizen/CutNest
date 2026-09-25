@@ -1787,7 +1787,7 @@ async function _doCalculate() {
     // Some materials worked, some didn't — show the working results AND the warnings.
     showErr('Some materials need attention: ' + errors.join(' | '));
   }
-  calcResult = { results };
+  calcResult = { results, jobQty };
   // The results now match the pieces, so the "pieces changed" banner goes.
   const staleEl = document.getElementById('stale-banner');
   if (staleEl) staleEl.style.display = 'none';
@@ -2633,7 +2633,7 @@ function exportDXF() {
 // one JSON file: materials and prices (including edited Pro grades), which Pro
 // grades were hidden, offcut stock and settings. Never the licence key.
 const BACKUP_KIND = 'cutnest-backup';
-const BACKUP_SETTINGS = ['kerf', 'kerfTouched', 'companyName', 'minOffcutLong', 'minOffcutShort', 'units', 'currency', 'currencyTouched'];
+const BACKUP_SETTINGS = ['kerf', 'kerfTouched', 'companyName', 'minOffcutLong', 'minOffcutShort', 'units', 'currency', 'currencyTouched', 'quote'];
 
 function backupLibrary() {
   flushEditForms();
@@ -2705,6 +2705,7 @@ async function restoreLibrary(input) {
     if (st.minOffcutShort != null) settings.minOffcutShort = Math.max(0, Math.min(6000, +st.minOffcutShort || 0));
     if (st.units === 'in' || st.units === 'mm') settings.units = st.units;
     if (CURRENCIES.indexOf(st.currency) !== -1) { settings.currency = st.currency; settings.currencyTouched = !!st.currencyTouched; }
+    if (st.quote && typeof st.quote === 'object') settings.quote = cleanQuoteSettings(st.quote);
     localStorage.setItem(SETT_KEY, JSON.stringify(settings));
   } catch (e) { showToast('Could not restore: browser storage is full or blocked', 5200); return; }
   loadSettings();
@@ -3560,6 +3561,9 @@ function normalizeLibEntry(e){
     allowRotation: e.allowRotation !== false,
     sizes: cleanSizes(Array.isArray(e.sizes) ? e.sizes : [e.size1, e.size2]),
     trim: cleanTrim(e.trim),
+    // Quote builder: this material's cutting speed (mm/min) and seconds per cut or pierce.
+    cutSpeed: +e.cutSpeed > 0 ? Math.min(1e6, Math.round(+e.cutSpeed)) : undefined,
+    cutSec: e.cutSec != null && e.cutSec !== '' && +e.cutSec >= 0 ? Math.min(3600, +e.cutSec) : undefined,
     _transient: e._transient === true || undefined
   };
 }
@@ -3763,7 +3767,8 @@ function saveState() {
     localStorage.setItem('cutnest-job-v1', JSON.stringify({
       jobRef: jr ? jr.value : '',
       jobQty: jq ? jq.value : '1',
-      mats: mats
+      mats: mats,
+      quote: quoteJob
     }));
   } catch(e) {}
 }
@@ -3776,6 +3781,7 @@ function restoreState() {
     if (state.mats && state.mats.length) { mats = state.mats; renderAll(); }
     const jr = document.getElementById('job-ref'); if (jr && state.jobRef) jr.value = state.jobRef;
     const jq = document.getElementById('job-qty'); if (jq && state.jobQty) jq.value = state.jobQty;
+    quoteJob = state.quote && typeof state.quote === 'object' ? state.quote : null;
   } catch(e) {}
 }
 
@@ -3788,6 +3794,7 @@ function newJob() {
   const out = document.getElementById('output'); if (out) out.style.display = 'none';
   const sb = document.getElementById('stale-banner'); if (sb) sb.style.display = 'none';
   calcResult = null;
+  quoteJob = null;
   localStorage.removeItem('cutnest-job-v1');
   renderAll();
 }
@@ -3839,7 +3846,7 @@ document.addEventListener('keydown', function(e) {
     // Settings saves on every keystroke, so Escape must roll back like Cancel
     // rather than leaving a half-typed kerf committed.
     if (sm && sm.style.display !== 'none') { cancelSettings(); return; }
-    ['lib-modal','history-modal','upgrade-modal','zoom-modal','paste-modal','offcut-modal','labels-modal'].forEach(function(id) {
+    ['lib-modal','history-modal','upgrade-modal','zoom-modal','paste-modal','offcut-modal','labels-modal','quote-modal'].forEach(function(id) {
       const el = document.getElementById(id);
       if (el && el.style.display !== 'none') el.style.display = 'none';
     });
