@@ -113,7 +113,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .btn:active{transform:scale(.97)}
 .btn-teal{background:var(--teal);color:#fff;font-size:14px;padding:8px 16px}
 .btn-teal:hover{background:var(--teal3)}
-.btn-out{background:#fff;border:1.5px solid var(--bdr2);color:var(--text2);font-size:12px;padding:6px 12px}
+.btn-out{background:var(--white);border:1.5px solid var(--bdr2);color:var(--text2);font-size:12px;padding:6px 12px}
 .btn-out:hover{border-color:var(--teal3);color:var(--teal)}
 .btn-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;min-width:40px;min-height:40px;padding:2px 5px;line-height:1;display:inline-flex;align-items:center;justify-content:center;transition:color .15s;touch-action:manipulation}
 .btn-del:hover{color:var(--red)}
@@ -191,7 +191,7 @@ tr:hover td{background:rgba(232,244,248,.5)}
 .pres-warn{font-size:11px;color:var(--red);margin-top:4px}
 .pres-count{font-family:"Barlow Condensed",sans-serif;font-size:40px;font-weight:800;color:var(--teal);line-height:1}
 .pres-unit{font-size:12px;color:var(--muted);margin-top:2px}
-.copy-btn{background:#fff;border:1px solid var(--bdr2);color:var(--muted);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;font-family:"Barlow",sans-serif;transition:.15s;white-space:nowrap}
+.copy-btn{background:var(--white);border:1px solid var(--bdr2);color:var(--muted);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;font-family:"Barlow",sans-serif;transition:.15s;white-space:nowrap}
 .copy-btn:hover{color:var(--teal3);border-color:var(--teal3)}
 .copy-btn.copied{color:var(--green);border-color:var(--green)}
 .total-cost-bar{background:linear-gradient(135deg,var(--teal2),var(--teal));border-radius:9px;padding:11px 15px;margin-top:9px;display:flex;align-items:center;justify-content:space-between}
@@ -326,10 +326,10 @@ tr:hover td{background:rgba(232,244,248,.5)}
 .kerf-tip-icon:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--teal2);color:#fff;font-size:10px;font-weight:400;padding:5px 9px;border-radius:6px;white-space:nowrap;pointer-events:none;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
 
 /* ── QTY TOUCH CONTROLS ── */
-.qty-wrap-mobile{display:inline-flex;align-items:center;border:1.5px solid var(--bdr);border-radius:7px;overflow:hidden;background:#fff;height:32px;width:fit-content;flex-shrink:0}
+.qty-wrap-mobile{display:inline-flex;align-items:center;border:1.5px solid var(--bdr);border-radius:7px;overflow:hidden;background:var(--white);height:32px;width:fit-content;flex-shrink:0}
 .qty-btn{background:var(--sky);border:none;width:32px;height:32px;font-size:16px;cursor:pointer;color:var(--teal);font-weight:700;display:flex;align-items:center;justify-content:center;touch-action:manipulation;flex-shrink:0;transition:background .1s;-webkit-user-select:none}
 .qty-btn:active{background:var(--sky2)}
-.qty-input-mobile{border:none;background:#fff;text-align:center;width:40px!important;min-width:0;height:32px;font-size:13px;font-weight:700;color:var(--text);outline:none;padding:0;font-family:"Barlow",sans-serif;flex-shrink:0;-moz-appearance:textfield}
+.qty-input-mobile{border:none;background:var(--white);text-align:center;width:40px!important;min-width:0;height:32px;font-size:13px;font-weight:700;color:var(--text);outline:none;padding:0;font-family:"Barlow",sans-serif;flex-shrink:0;-moz-appearance:textfield}
 .qty-input-mobile::-webkit-inner-spin-button,.qty-input-mobile::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .qty-input-mobile:focus{background:var(--sky)}
 /* ── SHEET NAVIGATION ── */
@@ -428,10 +428,10 @@ kbd{background:var(--white);border:1px solid var(--bdr2);border-radius:4px;paddi
   .pieces-table-wrap td:last-child{justify-content:flex-end;padding-top:6px;border-top:1px dashed var(--bdr);margin-top:4px}
   .pieces-table-wrap td:last-child:before{content:""}
   /* Touch-friendly qty controls */
-  .qty-wrap-mobile{display:flex;align-items:center;gap:0;border:1px solid var(--bdr);border-radius:7px;overflow:hidden;background:#fff}
+  .qty-wrap-mobile{display:flex;align-items:center;gap:0;border:1px solid var(--bdr);border-radius:7px;overflow:hidden;background:var(--white)}
   .qty-btn{background:var(--sky);border:none;width:36px;height:36px;font-size:18px;cursor:pointer;color:var(--teal);font-weight:700;flex-shrink:0;display:flex;align-items:center;justify-content:center;touch-action:manipulation}
   .qty-btn:active{background:var(--sky2)}
-  .qty-input-mobile{border:none;background:#fff;text-align:center;width:44px;font-size:14px;font-weight:700;color:var(--text);outline:none;padding:0}
+  .qty-input-mobile{border:none;background:var(--white);text-align:center;width:44px;font-size:14px;font-weight:700;color:var(--text);outline:none;padding:0}
   /* Results on mobile */
   .sheet-vis-upgraded{padding:8px}
   .layout-metrics{flex-wrap:wrap}
@@ -522,7 +522,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
 <main class="app-main">
 
   <!-- Job bar -->
-  <div class="no-print" style="background:#fff;border:1px solid var(--bdr);border-radius:12px;padding:12px 15px;margin-bottom:15px;display:flex;align-items:center;gap:11px;box-shadow:var(--sh);flex-wrap:wrap">
+  <div class="no-print" style="background:var(--white);border:1px solid var(--bdr);border-radius:12px;padding:12px 15px;margin-bottom:15px;display:flex;align-items:center;gap:11px;box-shadow:var(--sh);flex-wrap:wrap">
     <div style="flex:2;min-width:140px">
       <label class="lbl">Job Reference</label>
       <input type="text" id="job-ref" placeholder="e.g. JOB-001" style="margin-top:3px" oninput="saveState()"/>
@@ -711,7 +711,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
         <div class="settings-title">&#10002; Blade Kerf</div>
         <div class="settings-desc">Blade/cut gap between parts, in mm. Set this to your real kerf so sheet counts are accurate. Laser/saw/router ~3&ndash;4mm, plasma ~5mm, CNC turret punch ~15&ndash;20mm.</div>
         <div style="display:flex;gap:11px;align-items:flex-end">
-          <div style="width:100px"><label class="lbl">Kerf (mm)</label><input type="number" id="kerf-setting" value="4" min="0" max="100" oninput="saveSettings()"/></div>
+          <div style="width:100px"><label class="lbl">Kerf (mm)</label><input type="number" id="kerf-setting" value="4" min="0" max="100" step="0.1" oninput="saveSettings()"/></div>
           <div style="font-size:12px;color:var(--muted);padding-bottom:8px">3&ndash;4mm laser/saw/router &middot; 5mm plasma &middot; 15&ndash;20mm punch</div>
         </div>
       </div>
@@ -873,7 +873,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
 
 <!-- SHEET ZOOM MODAL -->
 <div class="overlay" id="zoom-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Sheet layout, enlarged" onclick="if(event.target===this)document.getElementById('zoom-modal').style.display='none'">
-  <div style="background:#fff;border-radius:14px;max-width:98vw;max-height:96vh;overflow:auto;padding:16px;position:relative">
+  <div style="background:var(--white);border-radius:14px;max-width:98vw;max-height:96vh;overflow:auto;padding:16px;position:relative">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div id="zoom-title" style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:var(--teal)"></div>
       <button onclick="document.getElementById('zoom-modal').style.display='none'" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1">✕</button>
@@ -982,7 +982,17 @@ function pruneFreeRects(rects) {
 // Finds the single biggest empty rectangle remaining on a sheet after
 // all pieces are placed. This is the offcut a fabricator could realistically
 // reclaim and put back on the rack — unlike raw "waste %" which counts every
-// fragmented gap. Uses a coordinate-sweep maximal-rectangle search.
+// fragmented gap.
+//
+// The candidate edges split the sheet into a grid of cells, each either wholly
+// free or wholly blocked. The search runs the "largest rectangle in a
+// histogram" sweep over that grid: O(cells) rather than the old brute force
+// over every pair of X edges and every pair of Y edges, which was O(parts^5)
+// and took minutes on a sheet of a few hundred small parts. Worse, that ran
+// past the worker timeout and was then re-run on the main thread, freezing
+// the tab. Same answer, including ties: among equal-area rectangles it picks
+// the lowest (left, right, top, bottom) edge index, which is the one the
+// brute-force loop order used to find first.
 function largestEmptyRect(sheetW, sheetH, placed) {
   if (!placed.length) return { x:0, y:0, w:sheetW, h:sheetH, area:sheetW*sheetH };
 
@@ -1005,30 +1015,47 @@ function largestEmptyRect(sheetW, sheetH, placed) {
   const xsU = Array.from(new Set(xs)).filter(function(v){return v>=0 && v<=sheetW;}).sort(function(a,b){return a-b;});
   const ysU = Array.from(new Set(ys)).filter(function(v){return v>=0 && v<=sheetH;}).sort(function(a,b){return a-b;});
 
-  function overlapsAnyBlock(rx, ry, rw, rh) {
-    for (let i=0;i<blocks.length;i++){
-      const b = blocks[i];
-      if (!(rx+rw <= b.x || b.x+b.w <= rx || ry+rh <= b.y || b.y+b.h <= ry)) return true;
-    }
-    return false;
-  }
+  // Mark blocked cells. Every block edge (clipped to the sheet) is a grid line,
+  // so each block covers a whole number of cells.
+  const C = xsU.length - 1, R = ysU.length - 1;
+  const xIdx = new Map(), yIdx = new Map();
+  xsU.forEach(function(v, i){ xIdx.set(v, i); });
+  ysU.forEach(function(v, i){ yIdx.set(v, i); });
+  const blocked = new Uint8Array(C * R);
+  blocks.forEach(function(b){
+    const x0 = xIdx.get(Math.max(0, b.x)), x1 = xIdx.get(Math.min(sheetW, b.x + b.w));
+    const y0 = yIdx.get(Math.max(0, b.y)), y1 = yIdx.get(Math.min(sheetH, b.y + b.h));
+    if (x0 === undefined || x1 === undefined || y0 === undefined || y1 === undefined) return;
+    for (let r = y0; r < y1; r++) blocked.fill(1, r * C + x0, r * C + x1);
+  });
 
+  // top[c] = first row of the free run in column c that ends at the current
+  // row (r + 1 when the cell is blocked). A smaller top means a taller bar, so
+  // bar heights are compared by index and every width/height is an exact
+  // difference of two edges, as in the old search.
+  const top = new Int32Array(C);
+  const stack = new Int32Array(C + 1);
   let best = { x:0, y:0, w:0, h:0, area:0 };
-  for (let xi=0; xi<xsU.length-1; xi++){
-    for (let xj=xi+1; xj<xsU.length; xj++){
-      const rx = xsU[xi], rw = xsU[xj]-xsU[xi];
-      if (rw <= 0) continue;
-      for (let yi=0; yi<ysU.length-1; yi++){
-        for (let yj=yi+1; yj<ysU.length; yj++){
-          const ry = ysU[yi], rh = ysU[yj]-ysU[yi];
-          if (rh <= 0) continue;
-          const area = rw*rh;
-          if (area <= best.area) continue;
-          if (!overlapsAnyBlock(rx, ry, rw, rh)) {
-            best = { x:rx, y:ry, w:rw, h:rh, area:area };
-          }
-        }
+  let bk = null;   // edge indices [left, right, top, bottom] of `best`
+  for (let r = 0; r < R; r++) {
+    for (let c = 0; c < C; c++) if (blocked[r * C + c]) top[c] = r + 1;
+    let sp = 0;
+    for (let c = 0; c <= C; c++) {
+      const tc = c < C ? top[c] : r + 1;          // sentinel bar of height 0
+      while (sp > 0 && top[stack[sp - 1]] <= tc) {
+        const tk = top[stack[--sp]];
+        if (tk > r) continue;                     // zero-height bar
+        const left = sp > 0 ? stack[sp - 1] + 1 : 0;
+        const rw = xsU[c] - xsU[left], rh = ysU[r + 1] - ysU[tk];
+        const area = rw * rh;
+        if (area < best.area || area <= 0) continue;
+        if (area === best.area && bk &&
+            (left > bk[0] || (left === bk[0] && (c > bk[1] || (c === bk[1] &&
+            (tk > bk[2] || (tk === bk[2] && r + 1 >= bk[3]))))))) continue;
+        best = { x:xsU[left], y:ysU[tk], w:rw, h:rh, area:area };
+        bk = [left, c, tk, r + 1];
       }
+      stack[sp++] = c;
     }
   }
   return best;
@@ -1063,8 +1090,14 @@ function guillotinePack(sheetW, sheetH, queue, allowRotation) {
   while (improved && rem.length > 0) {
     improved = false;
     let bs = Infinity, bi = -1, bj = -1, bfit = null;
+    const tried = new Set();
     for (let i = 0; i < rem.length; i++) {
       const pc = rem[i];
+      // Pieces of the same size score identically and only a strictly better
+      // score wins, so only the first one of each size can ever be picked.
+      const dk = pc.w + 'x' + pc.h;
+      if (tried.has(dk)) continue;
+      tried.add(dk);
       const orients = [{pw:pc.w,ph:pc.h,rot:false}];
       if (allowRotation && pc.w !== pc.h) orients.push({pw:pc.h,ph:pc.w,rot:true});
       for (let oi = 0; oi < orients.length; oi++) {
@@ -1131,9 +1164,16 @@ function maxRectsPack(sheetW, sheetH, queue, allowRot) {
   while (improved && rem.length > 0) {
     improved = false;
     let bestScore = Infinity, bestI = -1, bestFit = null;
+    const tried = new Set();
 
     for (let i = 0; i < rem.length; i++) {
       const pc = rem[i];
+      // Pieces of the same size score identically and only a strictly better
+      // score wins, so only the first one of each size can ever be picked.
+      // A job of 300 identical brackets used to score all 300 per placement.
+      const dk = pc.w + 'x' + pc.h;
+      if (tried.has(dk)) continue;
+      tried.add(dk);
       const orientations = [{pw:pc.w, ph:pc.h, rot:false}];
       if (allowRotation && pc.w !== pc.h) orientations.push({pw:pc.h, ph:pc.w, rot:true});
 
@@ -2294,26 +2334,32 @@ function findEmptySpot(sheetW, sheetH, placed, pc, allowRotation) {
   const xs = Array.from(xsSet).filter(function(v){return v>=0 && v<sheetW;}).sort(function(a,b){return a-b;});
   const ys = Array.from(ysSet).filter(function(v){return v>=0 && v<sheetH;}).sort(function(a,b){return a-b;});
 
-  function overlaps(x,y,w,h){
-    for (let i=0;i<placed.length;i++){
-      const p = placed[i];
-      // Reserve a full blade-kerf moat on ALL FOUR sides of every existing piece.
-      // (Previously the moat was only added to the right/bottom, so a piece slotted
-      // against an existing piece's TOP or LEFT edge could sit with a sub-kerf gap.)
-      const px=p.x-KERF, py=p.y-KERF, pw=p.w+2*KERF, ph=p.h+2*KERF;
-      if (!(x+w <= px || px+pw <= x || y+h <= py || py+ph <= y)) return true;
-    }
-    return false;
-  }
+  // Reserve a full blade-kerf moat on ALL FOUR sides of every existing piece.
+  // (Previously the moat was only added to the right/bottom, so a piece slotted
+  // against an existing piece's TOP or LEFT edge could sit with a sub-kerf gap.)
+  const moats = placed.map(function(p){
+    return { x:p.x-KERF, y:p.y-KERF, w:p.w+2*KERF, h:p.h+2*KERF };
+  });
 
+  // Same search order and same answer as testing every (x, y) against every
+  // moat, which cost minutes when a sheet overflowed with a few hundred small
+  // parts: only moats in this row band are tested, and once a candidate hits a
+  // moat, every X up to that moat's right edge must hit it too, so those are
+  // skipped.
   for (const {pw, ph, rot} of orientations) {
     for (const y of ys) {
       if (y + ph > sheetH) continue;
-      for (const x of xs) {
-        if (x + pw > sheetW) continue;
-        if (!overlaps(x, y, pw, ph)) {
-          return { x:x, y:y, w:pw, h:ph, rot:rot };
+      const band = moats.filter(function(m){ return !(y+ph <= m.y || m.y+m.h <= y); });
+      for (let i = 0; i < xs.length; i++) {
+        const x = xs[i];
+        if (x + pw > sheetW) break;               // xs is sorted
+        let hitEnd = null;
+        for (let j = 0; j < band.length; j++) {
+          const m = band[j];
+          if (!(x+pw <= m.x || m.x+m.w <= x)) { hitEnd = m.x + m.w; break; }
         }
+        if (hitEnd === null) return { x:x, y:y, w:pw, h:ph, rot:rot };
+        while (i + 1 < xs.length && xs[i + 1] < hitEnd) i++;
       }
     }
   }
@@ -3032,7 +3078,7 @@ function stepQty(matId, pi, delta) {
   const m = mats.find(m => m.id === matId);
   if (!m) return;
   pushUndoTyping();
-  const cur = Math.max(1, (+m.pieces[pi].qty || 1) + delta);
+  const cur = Math.max(1, Math.min(9999, (+m.pieces[pi].qty || 1) + delta));
   m.pieces[pi].qty = cur;
   // Update input directly for speed without full re-render
   const tbody = document.getElementById('ptbody-' + matId);
@@ -3485,7 +3531,13 @@ function optimalityVerdict(res) {
 
 
 // ── CALCULATE ─────────────────────────────────
+// Ctrl+Enter and the stale banner's Recalculate button both call calculate()
+// directly, so disabling the Calculate button alone did not stop a second run
+// starting while the first was still packing.
+let _calcBusy = false;
 function calculate() {
+  if (_calcBusy) return;
+  _calcBusy = true;
   document.getElementById('err-box').style.display='none';
   document.getElementById('output').style.display='none';
   const overlay = document.getElementById('calc-overlay');
@@ -3504,6 +3556,7 @@ function calculate() {
     } finally {
       if (overlay) overlay.classList.add('hidden');
       if (btn) btn.disabled = false;
+      _calcBusy = false;
     }
   };
   if (typeof requestAnimationFrame === 'function') {
@@ -3731,6 +3784,9 @@ async function _doCalculate() {
     showErr('Some materials need attention: ' + errors.join(' | '));
   }
   calcResult = { results };
+  // The results now match the pieces, so the "pieces changed" banner goes.
+  const staleEl = document.getElementById('stale-banner');
+  if (staleEl) staleEl.style.display = 'none';
   saveToHistory();
   renderOutput();
 }
@@ -4129,7 +4185,7 @@ function renderOutput() {
           <td style="color:var(--muted);font-size:12px">${sh.sheetW}×${sh.sheetH}</td>
           <td><div style="display:flex;align-items:center;gap:5px"><div style="width:9px;height:9px;border-radius:2px;background:${COLORS[p.pieceIndex%COLORS.length]};flex-shrink:0"></div>${esc(p.label||'P'+(p.pieceIndex+1))}</div></td>
           <td style="color:var(--muted)">${p.w}</td><td style="color:var(--muted)">${p.h}</td>
-          <td style="color:var(--muted)">${p.x}</td><td style="color:var(--muted)">${p.y}</td>
+          <td style="color:var(--muted)">${fmtMm(p.x)}</td><td style="color:var(--muted)">${fmtMm(p.y)}</td>
           <td style="color:${p.rotated?'var(--ora)':'var(--muted)'}">${p.rotated?'Yes ↻':'No'}</td>
         </tr>`;
       });
@@ -4140,6 +4196,10 @@ function renderOutput() {
 }
 
 // ── COPY & EXPORT ─────────────────────────────
+// Positions are sums of part sizes and kerfs, so with decimal sizes or a 0.3mm
+// kerf they pick up float noise (304.29999999999995). Show them to 0.1mm.
+function fmtMm(v) { return Math.round(v * 10) / 10; }
+
 function copyQuote() {
   navigator.clipboard.writeText(window._quoteText||'').then(()=>{
     const b=document.getElementById('copy-btn');
@@ -4218,7 +4278,7 @@ function exportPDF() {
   calcResult.results.forEach(({libMat,sheets}) => {
     sheets.forEach((sh,si) => {
       sh.placed.forEach(p => {
-        body += `<tr><td>${esc(libMat.name)}</td><td>${si+1}</td><td>${esc(p.label||'P'+(p.pieceIndex+1))}</td><td>${p.w}</td><td>${p.h}</td><td>${p.x}</td><td>${p.y}</td><td>${p.rotated?'Yes':''}</td></tr>`;
+        body += `<tr><td>${esc(libMat.name)}</td><td>${si+1}</td><td>${esc(p.label||'P'+(p.pieceIndex+1))}</td><td>${p.w}</td><td>${p.h}</td><td>${fmtMm(p.x)}</td><td>${fmtMm(p.y)}</td><td>${p.rotated?'Yes':''}</td></tr>`;
       });
     });
   });
@@ -4374,7 +4434,7 @@ function exportCSV() {
     ...(csvTotal > 0 ? [['TOTAL MATERIAL COST',`£${csvTotal.toFixed(2)}`]] : []),
     [],['PLACEMENT DETAIL'],
     ['Material','Sheet #','Sheet Size','Label','W','H','X','Y','Rotated'],
-    ...calcResult.results.flatMap(({libMat,sheets})=>sheets.flatMap((sh,si)=>sh.placed.map(p=>[libMat.name,si+1,`${sh.sheetW}x${sh.sheetH}`+(sh.isRemnant?' (remnant)':''),p.label||`P${p.pieceIndex+1}`,p.w,p.h,p.x,p.y,p.rotated?'Yes':'No']))),
+    ...calcResult.results.flatMap(({libMat,sheets})=>sheets.flatMap((sh,si)=>sh.placed.map(p=>[libMat.name,si+1,`${sh.sheetW}x${sh.sheetH}`+(sh.isRemnant?' (remnant)':''),p.label||`P${p.pieceIndex+1}`,p.w,p.h,fmtMm(p.x),fmtMm(p.y),p.rotated?'Yes':'No']))),
   ];
   // Every not-placed piece — oversized AND unplaced — with the reason and the
   // minimum sheet that would take it. An export must never hide a dropped piece.
@@ -4626,14 +4686,18 @@ function hiddenMastersHtml(){
 function renderLibEntries() {
   const wrap=document.getElementById('lib-entries');
   if(!pending.length){wrap.innerHTML='<p style="color:var(--muted);font-size:13px;margin-bottom:12px">Your library is empty. Add your first material below — enter the sheet sizes and prices from your supplier.</p>'+hiddenMastersHtml();return;}
-  wrap.innerHTML=pending.map(e=>`
+  // Ids are numbers for hand-made entries but strings for shared-link ones
+  // ('shared-…'). Written bare into onclick, a string id became a JS expression
+  // (shared - 1750… - 0) and threw, so those materials could not be edited or
+  // deleted. JSON-quote, then escape for the attribute.
+  wrap.innerHTML=pending.map(e=>{ const jid=esc(JSON.stringify(e.id)); return `
     <div class="lib-entry">
       <div class="le-hdr">
         <div><div class="le-name">${esc(e.name)}</div><div class="le-meta">${esc(e.material||'')}${e.thickness?' · '+esc(e.thickness):''}</div></div>
         <div style="display:flex;gap:7px;align-items:center">
           ${isMasterId(e.id) ? `<button class="btn-sm-bl" title="Restore the CutNest default for this grade" onclick="resetMasterEntry(${JSON.stringify(e.id)})">↺ Reset</button>` : ''}
-          <button class="btn-sm-bl" onclick="toggleEdit(${e.id})">Edit</button>
-          <button class="btn-del" onclick="delPending(${e.id})">✕</button>
+          <button class="btn-sm-bl" onclick="toggleEdit(${jid})">Edit</button>
+          <button class="btn-del" onclick="delPending(${jid})">✕</button>
         </div>
       </div>
       <div id="ev-${e.id}">
@@ -4651,21 +4715,21 @@ function renderLibEntries() {
       <div id="ee-${e.id}" style="display:none">
         <div class="edit-basic mt8">
           <div class="edit-basic-grid">
-            <div><label class="lbl">Name</label><input type="text" value="${esc(e.name)}" oninput="upd(${e.id},'name',this.value)"/></div>
-            <div><label class="lbl">Material</label><input type="text" value="${esc(e.material||'')}" oninput="upd(${e.id},'material',this.value)"/></div>
-            <div><label class="lbl">Thickness</label><input type="text" value="${esc(e.thickness||'')}" oninput="upd(${e.id},'thickness',this.value)"/></div>
+            <div><label class="lbl">Name</label><input type="text" value="${esc(e.name)}" oninput="upd(${jid},'name',this.value)"/></div>
+            <div><label class="lbl">Material</label><input type="text" value="${esc(e.material||'')}" oninput="upd(${jid},'material',this.value)"/></div>
+            <div><label class="lbl">Thickness</label><input type="text" value="${esc(e.thickness||'')}" oninput="upd(${jid},'thickness',this.value)"/></div>
           </div>
         </div>
         <div class="sizes-edit">
           <div class="se-box"><div class="se-title">📐 Size 1</div><div class="se-inputs" style="grid-template-columns:1fr 1fr 1fr">
-            <div><label class="lbl">W (mm)</label><input type="number" value="${e.size1.w}" oninput="updSz(${e.id},1,'w',+this.value)"/></div>
-            <div><label class="lbl">H (mm)</label><input type="number" value="${e.size1.h}" oninput="updSz(${e.id},1,'h',+this.value)"/></div>
-            <div><label class="lbl">Price £</label><input type="number" value="${e.size1.price||''}" placeholder="0" oninput="updSz(${e.id},1,'price',+this.value)"/></div>
+            <div><label class="lbl">W (mm)</label><input type="number" value="${e.size1.w}" oninput="updSz(${jid},1,'w',+this.value)"/></div>
+            <div><label class="lbl">H (mm)</label><input type="number" value="${e.size1.h}" oninput="updSz(${jid},1,'h',+this.value)"/></div>
+            <div><label class="lbl">Price £</label><input type="number" value="${e.size1.price||''}" placeholder="0" oninput="updSz(${jid},1,'price',+this.value)"/></div>
           </div></div>
           <div class="se-box"><div class="se-title">📐 Size 2</div><div class="se-inputs" style="grid-template-columns:1fr 1fr 1fr">
-            <div><label class="lbl">W (mm)</label><input type="number" value="${e.size2&&e.size2.w||''}" placeholder="optional" oninput="updSz(${e.id},2,'w',+this.value)"/></div>
-            <div><label class="lbl">H (mm)</label><input type="number" value="${e.size2&&e.size2.h||''}" placeholder="optional" oninput="updSz(${e.id},2,'h',+this.value)"/></div>
-            <div><label class="lbl">Price £</label><input type="number" value="${e.size2&&e.size2.price||''}" placeholder="opt" oninput="updSz(${e.id},2,'price',+this.value)"/></div>
+            <div><label class="lbl">W (mm)</label><input type="number" value="${e.size2&&e.size2.w||''}" placeholder="optional" oninput="updSz(${jid},2,'w',+this.value)"/></div>
+            <div><label class="lbl">H (mm)</label><input type="number" value="${e.size2&&e.size2.h||''}" placeholder="optional" oninput="updSz(${jid},2,'h',+this.value)"/></div>
+            <div><label class="lbl">Price £</label><input type="number" value="${e.size2&&e.size2.price||''}" placeholder="opt" oninput="updSz(${jid},2,'price',+this.value)"/></div>
           </div></div>
         </div>
         <div class="cut-opts">
@@ -4673,7 +4737,7 @@ function renderLibEntries() {
             <label class="lbl">Cutting Method
               <span class="kerf-tip-icon" data-tip="Free = pieces nested anywhere (CNC punch, laser, router, plasma). Guillotine = straight edge-to-edge cuts only (panel saw, guillotine shear).">?</span>
             </label>
-            <select onchange="upd(${e.id},'cuttingMethod',this.value)">
+            <select onchange="upd(${jid},'cuttingMethod',this.value)">
               <option value="free" ${(e.cuttingMethod||'free')==='free'?'selected':''}>Free placement (punch / laser / router)</option>
               <option value="guillotine" ${e.cuttingMethod==='guillotine'?'selected':''}>Guillotine (saw / shear — straight cuts)</option>
             </select>
@@ -4683,14 +4747,14 @@ function renderLibEntries() {
               <span class="kerf-tip-icon" data-tip="Lock ON = pieces keep their orientation (brushed steel, wood grain, directional finishes). Lock OFF = pieces may rotate 90° to pack tighter.">?</span>
             </label>
             <label class="grain-toggle">
-              <input type="checkbox" ${e.allowRotation===false?'checked':''} onchange="upd(${e.id},'allowRotation',!this.checked)"/>
+              <input type="checkbox" ${e.allowRotation===false?'checked':''} onchange="upd(${jid},'allowRotation',!this.checked)"/>
               <span>Lock grain — don't rotate pieces</span>
             </label>
           </div>
         </div>
-        <div style="text-align:right;margin-top:9px"><button class="btn-sm-gr" onclick="toggleEdit(${e.id})">✓ Done</button></div>
+        <div style="text-align:right;margin-top:9px"><button class="btn-sm-gr" onclick="toggleEdit(${jid})">✓ Done</button></div>
       </div>
-    </div>`).join('') + hiddenMastersHtml();
+    </div>`; }).join('') + hiddenMastersHtml();
 }
 // Sweep all open edit forms and flush their current DOM values into pending
 // This ensures values are captured even if the user never blurred a field
@@ -5217,11 +5281,18 @@ function openLegal(type){
   lt.textContent=LEGAL_CONTENT[type].title;lb.innerHTML=LEGAL_CONTENT[type].body;lm.style.display='flex';
 }
 
+// Kerf in mm, 0-100, to 0.1mm. parseInt(v)||4 used to turn a deliberate 0
+// (and any laser kerf under 1mm, e.g. 0.3) back into 4mm on the next load,
+// while Settings still showed the value the user typed.
+function parseKerf(v){
+  const n = parseFloat(v);
+  return isFinite(n) ? Math.max(0, Math.min(100, Math.round(n * 10) / 10)) : 4;
+}
 function loadSettings(){
   try{const r=localStorage.getItem(SETT_KEY);if(r)settings=Object.assign({kerf:4,companyName:'',minOffcutLong:1000,minOffcutShort:300},JSON.parse(r));}catch(e){}
   if(settings.minOffcutLong==null)settings.minOffcutLong=1000;
   if(settings.minOffcutShort==null)settings.minOffcutShort=300;
-  KERF=Math.max(0,parseInt(settings.kerf)||4);
+  KERF=parseKerf(settings.kerf);
   const kd=document.getElementById('kerf-display');if(kd)kd.textContent=KERF+'mm';
 }
 // Snapshot taken when Settings opens so Cancel has something to restore. Every
@@ -5257,7 +5328,7 @@ function openSettings(){
 function cancelSettings(){
   if(_settingsSnapshot){
     settings = JSON.parse(JSON.stringify(_settingsSnapshot));
-    KERF = Math.max(0, parseInt(settings.kerf) || 4);
+    KERF = parseKerf(settings.kerf);
     try{ localStorage.setItem(SETT_KEY, JSON.stringify(settings)); }catch(e){}
     const kd=document.getElementById('kerf-display'); if(kd) kd.textContent = KERF + 'mm';
   }
@@ -5274,7 +5345,7 @@ function saveSettings() {
   const cn = document.getElementById('company-name');
   const ol = document.getElementById('offcut-long');
   const os = document.getElementById('offcut-short');
-  if (kf) { settings.kerf = Math.max(0, Math.min(100, parseInt(kf.value) || 0)); settings.kerfTouched = true; KERF = settings.kerf; }
+  if (kf) { settings.kerf = parseKerf(kf.value); settings.kerfTouched = true; KERF = settings.kerf; }
   if (cn) settings.companyName = cn.value ? cn.value.trim() : '';
   if (ol) settings.minOffcutLong = Math.max(0, Math.min(6000, parseInt(ol.value) || 0));
   if (os) settings.minOffcutShort = Math.max(0, Math.min(6000, parseInt(os.value) || 0));
