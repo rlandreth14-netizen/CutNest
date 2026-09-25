@@ -440,6 +440,55 @@ const tests = {
     expect(!page.errors.length, 'page errors: ' + page.errors.join(' | '));
   },
 
+  async 'open a cut list file: CSV with headers, and Excel'() {
+    const page = await freshPage({ pro: true });
+    await page.goto(base + '/app.html');
+    await page.waitForFunction(() => isPro && library.length > 20);
+    await page.selectOption('#mat-blocks select', '102');
+    await page.click('text=Paste list');
+    // Columns in an unusual order, a quoted label with a comma, a thousands separator.
+    await page.setInputFiles('#paste-modal input[type=file]', { name: 'cuts.csv', mimeType: 'text/csv',
+      buffer: Buffer.from('Qty,Width,Length,Description,Grain\n2,600,"1,200","Door, left",lock\n5,300,450,Shelf,\n') });
+    await page.waitForFunction(() => /Add 2 rows/.test(document.getElementById('paste-confirm').textContent));
+    await page.click('#paste-confirm');
+    const csvPieces = await page.evaluate(() => mats[0].pieces.map(p => [p.label, p.w, p.h, p.qty, p.grain || '']));
+    expect(JSON.stringify(csvPieces) === JSON.stringify([['Door, left', 1200, 600, 2, 'lock'], ['Shelf', 450, 300, 5, '']]),
+      'CSV import wrong: ' + JSON.stringify(csvPieces));
+    // Excel (.xlsx built by tests/import.test.js).
+    await page.click('text=Paste list');
+    await page.check('#paste-replace');
+    await page.setInputFiles('#paste-modal input[type=file]', path.join(__dirname, 'fixtures', 'cutlist.xlsx'));
+    await page.waitForFunction(() => /Add 3 rows/.test(document.getElementById('paste-confirm').textContent));
+    await page.click('#paste-confirm');
+    const xl = await page.evaluate(() => mats[0].pieces.map(p => [p.label, p.w, p.h, p.qty, p.grain || '']));
+    expect(JSON.stringify(xl) === JSON.stringify([['Door & Frame', 800, 600, 4, 'lock'], ['Shelf', 450.5, 380, 6, ''], ['', 700, 280, 1, '']]),
+      'Excel import wrong: ' + JSON.stringify(xl));
+    expect(!page.errors.length, 'page errors: ' + page.errors.join(' | '));
+  },
+
+  async 'library backup and restore'() {
+    const page = await freshPage();
+    await startWithMetal(page);
+    await page.evaluate(() => { settings.companyName = 'Backup Test Ltd'; localStorage.setItem(SETT_KEY, JSON.stringify(settings)); });
+    await page.click('button[aria-label="Stock library"]');
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.click('text=Back up')]);
+    const file = await dl.path();
+    const backup = JSON.parse(fs.readFileSync(file, 'utf8'));
+    expect(backup.kind === 'cutnest-backup' && backup.library.length === 3, 'backup should hold the 3 starter materials');
+    expect(!JSON.stringify(backup).includes('licence'), 'backup must not contain the licence key');
+    // A fresh browser: restore it.
+    const other = await freshPage();
+    await other.goto(base + '/app.html');
+    await other.click('button[aria-label="Stock library"]');
+    other.once('dialog', d => d.accept());
+    await other.setInputFiles('#lib-modal input[type=file]', file);
+    await other.waitForFunction(() => library.length === 3, null, { timeout: 5000 });
+    expect(await other.evaluate(() => settings.companyName) === 'Backup Test Ltd', 'settings not restored');
+    expect(await other.evaluate(() => library.map(l => l.name).join()) === await page.evaluate(() => library.map(l => l.name).join()),
+      'restored library differs');
+    expect(!other.errors.length, 'page errors: ' + other.errors.join(' | '));
+  },
+
   async 'landing page, FAQ and legal pages'() {
     const page = await freshPage({ viewport: { width: 390, height: 800 } });
     await page.goto(base + '/');
@@ -465,6 +514,16 @@ const tests = {
       return { active: !!reg.active, entries: (await c.keys()).length };
     });
     expect(ok.active, 'service worker did not activate (a precached file is probably missing)');
+    // Every script and stylesheet app.html loads must be available offline.
+    const missing = await page.evaluate(async () => {
+      const html = await (await fetch('/app.html')).text();
+      const refs = [...html.matchAll(/(?:src|href)="(\/(?:js|css|fonts)\/[^"]+)"/g)].map(m => m[1]);
+      const c = await caches.open((await caches.keys())[0]);
+      const out = [];
+      for (const r of refs) if (!(await c.match(r))) out.push(r);
+      return out;
+    });
+    expect(!missing.length, 'not in the offline cache: ' + missing.join(', '));
     expect(ok.entries > 10, 'expected the precache to be filled, got ' + ok.entries);
   }
 };

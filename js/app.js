@@ -402,6 +402,10 @@ function pieceMayRotate(p, libMat) {
 // Anything it cannot read is reported line by line rather than silently dropped.
 function parsePastedPieces(text) {
   const rows = [], errors = [];
+  // A spreadsheet export with a header row (Part, Length, Width, Qty, Grain)
+  // is read by column, in whatever order the columns come.
+  const byHeader = parseByHeader(text);
+  if (byHeader) return byHeader;
   String(text || '').split(/\r?\n/).forEach(function (raw, i) {
     let line = String(raw || '').trim();
     if (!line) return;
@@ -504,6 +508,59 @@ function parsePastedPieces(text) {
   return { rows: rows, errors: errors };
 }
 
+// Header-row mode for parsePastedPieces. Returns null when the text has no
+// recognisable header, so the forgiving line-by-line parser takes over.
+function parseByHeader(text) {
+  const lines = String(text || '').split(/\r?\n/);
+  const first = lines.findIndex(function (l) { return l.trim(); });
+  if (first === -1) return null;
+  const delim = detectDelimiter(text);
+  if (!delim) return null;
+  const map = headerMap(splitDelimited(lines[first], delim));
+  if (!map) return null;
+  const rows = [], errors = [];
+  const num = function (c) { return String(c == null ? '' : c).replace(/(\d),(?=\d{3}(\D|$))/g, '$1').trim(); };
+  for (let i = first + 1; i < lines.length; i++) {
+    const raw = lines[i];
+    if (!raw.trim()) continue;
+    const cells = splitDelimited(raw, delim);
+    const wc = num(cells[map.w]), hc = num(cells[map.h]);
+    if (!wc && !hc) continue;                     // blank or totals row
+    const w = parseLen(wc), h = parseLen(hc);
+    const where = 'Line ' + (i + 1) + ': ';
+    const quote = ' \u2014 "' + raw.trim().slice(0, 40) + '"';
+    if (!(w > 0) || !(h > 0)) { errors.push(where + 'need a width and a height' + quote); continue; }
+    if (w > 99999 || h > 99999) { errors.push(where + 'dimension looks wrong (over ' + len(99999) + ')' + quote); continue; }
+    const qRaw = map.qty != null ? parseInt(num(cells[map.qty]), 10) : 1;
+    const qty = Math.max(1, Math.min(9999, qRaw || 1));
+    const label = map.label != null ? String(cells[map.label] || '').slice(0, 40) : '';
+    let warn = null;
+    if (w < 5 || h < 5) warn = 'dimension under ' + len(5) + ' \u2014 check this line';
+    else if (qty > 500) warn = 'quantity over 500 \u2014 check this line';
+    const row = { w: w, h: h, qty: qty, label: label, warn: warn };
+    const g = map.grain != null ? grainCell(cells[map.grain]) : undefined;
+    if (g) row.grain = g;
+    rows.push(row);
+  }
+  return { rows: rows, errors: errors, header: true };
+}
+
+// "Choose a file" in the paste window: read it into the text box so the
+// preview shows exactly what will be added.
+async function importCutListFile(input) {
+  const file = input && input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  const ta = document.getElementById('paste-input');
+  try {
+    ta.value = await fileToCutListText(file);
+    renderPastePreview();
+    showToast('Read ' + file.name + ' \u2014 check the preview, then add');
+  } catch (e) {
+    showToast(e.message || 'That file could not be read', 5200);
+  }
+}
+
 const PASTE_ROW_LIMIT = 500;   // same ceiling as the shared-link importer
 let _pasteTargetMat = null;
 
@@ -551,6 +608,7 @@ function renderPastePreview() {
             'Only the first ' + PASTE_ROW_LIMIT + ' rows will be added (' + res.rows.length + ' found).</div>';
   }
   if (res.rows.length) {
+    if (res.header) html += '<div style="font-size:11.5px;color:var(--muted);margin-bottom:4px">Read by column headings.</div>';
     html += '<div style="font-size:12px;color:var(--teal);font-weight:700;margin-bottom:6px">\u2713 ' + res.rows.length +
             ' row' + (res.rows.length !== 1 ? 's' : '') + ' \u00b7 ' + totalCuts + ' total cut' + (totalCuts !== 1 ? 's' : '') + '</div>';
     html += '<div style="max-height:180px;overflow:auto;border:1px solid var(--bdr);border-radius:8px"><table style="font-size:12px">' +
@@ -592,7 +650,9 @@ function confirmPaste() {
   // rows and written to localStorage on every keystroke.
   const room = Math.max(0, PASTE_ROW_LIMIT - existing.length);
   m.pieces = existing.concat(res.rows.slice(0, room).map(function (r) {
-    return { w: r.w, h: r.h, qty: r.qty, label: r.label };   // drop the warn flag
+    const p = { w: r.w, h: r.h, qty: r.qty, label: r.label };   // drop the warn flag
+    if (r.grain) p.grain = r.grain;
+    return p;
   }));
   if (!m.pieces.length) m.pieces = [{ w: '', h: '', qty: 1, label: '' }];
   closePaste();
@@ -2446,6 +2506,93 @@ function exportDXF() {
   document.body.appendChild(a);
   a.click();
   setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+}
+
+// ── BACKUP & RESTORE ──────────────────────────
+// Everything CutNest keeps lives in this browser, so clearing site data or
+// changing computer used to lose a library built up over months. A backup is
+// one JSON file: materials and prices (including edited Pro grades), which Pro
+// grades were hidden, offcut stock and settings. Never the licence key.
+const BACKUP_KIND = 'cutnest-backup';
+const BACKUP_SETTINGS = ['kerf', 'kerfTouched', 'companyName', 'minOffcutLong', 'minOffcutShort', 'units', 'currency', 'currencyTouched'];
+
+function backupLibrary() {
+  flushEditForms();
+  // What the Library shows right now, plus (on the free plan) any edited Pro
+  // grades that are stored but hidden, exactly as saveData keeps them.
+  const lib = pending.map(normalizeLibEntry).filter(function (e) { return e && !e._transient; });
+  if (!isPro) {
+    try {
+      const have = {}; lib.forEach(function (e) { have[e.id] = 1; });
+      JSON.parse(localStorage.getItem(STOR_KEY) || '[]').forEach(function (e) {
+        if (e && isMasterId(e.id) && !have[e.id]) lib.push(normalizeLibEntry(e));
+      });
+    } catch (e) {}
+  }
+  const st = {};
+  BACKUP_SETTINGS.forEach(function (k) { if (settings[k] !== undefined) st[k] = settings[k]; });
+  const data = { kind: BACKUP_KIND, version: 1, exported: new Date().toISOString(),
+                 library: lib, deletedMasters: getDeletedMasterIds(), offcuts: loadOffcuts(), settings: st };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = 'cutnest-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+  a.style.display = 'none'; document.body.appendChild(a); a.click();
+  setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+  showToast('\u2713 Backup saved: ' + lib.length + ' material' + (lib.length !== 1 ? 's' : '') + ', ' + data.offcuts.length + ' offcut' + (data.offcuts.length !== 1 ? 's' : ''));
+}
+
+async function restoreLibrary(input) {
+  const file = input && input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  let data;
+  try {
+    if (file.size > 5 * 1024 * 1024) throw new Error('size');
+    data = JSON.parse(await file.text());
+  } catch (e) { showToast('That is not a CutNest backup file', 4200); return; }
+  if (!data || data.kind !== BACKUP_KIND || !Array.isArray(data.library)) {
+    showToast('That is not a CutNest backup file', 4200); return;
+  }
+  let entries = data.library.slice(0, 500).map(normalizeLibEntry).filter(Boolean);
+  entries.forEach(function (e) { delete e._transient; });
+  // The free plan keeps up to FREE_LIB_LIMIT of its own materials; stored Pro
+  // grades are kept (hidden) so they return on upgrade.
+  let dropped = 0;
+  if (!isPro) {
+    let own = 0;
+    entries = entries.filter(function (e) {
+      if (isMasterId(e.id)) return true;
+      own++;
+      if (own > FREE_LIB_LIMIT) { dropped++; return false; }
+      return true;
+    });
+  }
+  const offcuts = Array.isArray(data.offcuts) ? data.offcuts : [];
+  const when = isNaN(Date.parse(data.exported)) ? 'an earlier date' : new Date(data.exported).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  if (!confirm('Restore ' + entries.length + ' material' + (entries.length !== 1 ? 's' : '') + ', ' + offcuts.length +
+               ' offcut' + (offcuts.length !== 1 ? 's' : '') + ' and your settings from the backup made on ' + when +
+               '?\n\nThis replaces the library, offcut stock and settings in this browser.')) return;
+  pushUndo();
+  try {
+    localStorage.setItem(STOR_KEY, JSON.stringify(entries));
+    setDeletedMasterIds(Array.isArray(data.deletedMasters) ? data.deletedMasters.filter(function (id) { return isMasterId(id); }) : []);
+    localStorage.setItem(OFFCUT_KEY, JSON.stringify(offcuts));
+    saveOffcuts(loadOffcuts());                       // heal anything malformed
+    const st = data.settings && typeof data.settings === 'object' ? data.settings : {};
+    if (st.kerf != null) settings.kerf = parseKerf(st.kerf);
+    if (st.kerfTouched) settings.kerfTouched = true;
+    if (typeof st.companyName === 'string') settings.companyName = st.companyName.slice(0, 80);
+    if (st.minOffcutLong != null) settings.minOffcutLong = Math.max(0, Math.min(6000, +st.minOffcutLong || 0));
+    if (st.minOffcutShort != null) settings.minOffcutShort = Math.max(0, Math.min(6000, +st.minOffcutShort || 0));
+    if (st.units === 'in' || st.units === 'mm') settings.units = st.units;
+    if (CURRENCIES.indexOf(st.currency) !== -1) { settings.currency = st.currency; settings.currencyTouched = !!st.currencyTouched; }
+    localStorage.setItem(SETT_KEY, JSON.stringify(settings));
+  } catch (e) { showToast('Could not restore: browser storage is full or blocked', 5200); return; }
+  loadSettings();
+  refreshUnitLabels();
+  await loadLib();
+  openLib();
+  showToast('\u2713 Restored from backup' + (dropped ? ' \u2014 free plan keeps ' + FREE_LIB_LIMIT + ' of your own materials, ' + dropped + ' left out' : ''), 5200);
 }
 
 // ── LIBRARY MODAL ─────────────────────────────

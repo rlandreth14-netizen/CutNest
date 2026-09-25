@@ -363,9 +363,17 @@ if(cnPrefersDark())document.documentElement.setAttribute('data-theme','dark');
           <div><button class="btn btn-teal" style="padding:7px 10px;margin-top:16px" onclick="addLibEntry()">+ Add</button></div>
         </div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
-        <button class="btn btn-out" onclick="closeLib()" style="padding:8px 14px">Cancel</button>
-        <button class="btn btn-teal" onclick="saveLibClose()" style="padding:8px 20px">&#128190; Save Library</button>
+      <div style="display:flex;gap:8px;margin-top:16px;justify-content:space-between;flex-wrap:wrap">
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-out" onclick="backupLibrary()" style="padding:8px 12px" title="Download your materials, prices, offcut stock and settings as a file">&#11015; Back up</button>
+          <label class="btn btn-out" style="padding:8px 12px;cursor:pointer;position:relative" title="Load a CutNest backup file">&#11014; Restore
+            <input type="file" accept=".json,application/json" onchange="restoreLibrary(this)" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden" aria-label="Restore a CutNest backup file"/>
+          </label>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-out" onclick="closeLib()" style="padding:8px 14px">Cancel</button>
+          <button class="btn btn-teal" onclick="saveLibClose()" style="padding:8px 20px">&#128190; Save Library</button>
+        </div>
       </div>
     </div>
   </div>
@@ -437,13 +445,18 @@ if(cnPrefersDark())document.documentElement.setAttribute('data-theme','dark');
   <div class="modal" style="max-width:620px">
     <div class="modal-hdr"><div class="modal-title">&#128203; Paste your cut list</div><button class="modal-x" onclick="closePaste()" aria-label="Close">&#10005;</button></div>
     <div class="modal-body">
-      <p class="modal-sub">Paste straight from an email, a spreadsheet or a text. One piece per line. Most formats work:</p>
+      <p class="modal-sub">Paste straight from an email, a spreadsheet or a text, or open a file. One piece per line. Most formats work:</p>
       <div id="paste-examples" style="background:var(--sky);border:1px solid var(--bdr);border-radius:8px;padding:9px 12px;margin-bottom:11px;font-family:monospace;font-size:12px;color:var(--text2);line-height:1.8">
         600x400x4 &nbsp;&middot;&nbsp; 600 x 400 x 4 &nbsp;&middot;&nbsp; 600,400,4<br>
         Door Front,800,600,4 &nbsp;&middot;&nbsp; 4 off 600x400<br>
         600x400 qty 4 &nbsp;&middot;&nbsp; 600x400 <span style="color:var(--muted)">(qty 1)</span>
       </div>
-      <label class="lbl">Your list</label>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <label class="lbl" for="paste-input">Your list</label>
+        <label class="btn btn-out" style="padding:5px 12px;margin-bottom:4px;cursor:pointer;position:relative">&#128196; Open a file (CSV, Excel)
+          <input type="file" accept=".csv,.tsv,.txt,.xlsx,.xlsm,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="importCutListFile(this)" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden" aria-label="Open a cut list file"/>
+        </label>
+      </div>
       <textarea id="paste-input" rows="7" oninput="renderPastePreview()"
         placeholder="Door Front, 800, 600, 4&#10;Side Panel 450 380 6&#10;700x280x4"
         style="width:100%;background:var(--sky);border:1px solid var(--bdr);color:var(--text);border-radius:8px;padding:9px 11px;font-family:monospace;font-size:13px;outline:none;resize:vertical"></textarea>
@@ -489,6 +502,7 @@ if(cnPrefersDark())document.documentElement.setAttribute('data-theme','dark');
 
 <script src="/js/engine.js"></script>
 <script src="/js/units.js"></script>
+<script src="/js/import.js"></script>
 <script src="/js/app.js"></script>
 </body>
 </html>
