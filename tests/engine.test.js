@@ -1,8 +1,7 @@
 // CutNest engine tests. Run with: npm test   (or: node tests/engine.test.js)
 //
-// The engine lives in <script id="cutnest-engine"> inside app.html, so these
-// tests pull that block out and run it directly. There is no copy to drift:
-// whatever ships is what gets tested.
+// The engine lives in js/engine.js, the same file the page and the packing
+// worker load. There is no copy to drift: whatever ships is what gets tested.
 //
 // What is checked, on hand-picked cases and on seeded random jobs:
 //   - every piece is placed exactly once, or reported as unplaced
@@ -17,13 +16,11 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const html = fs.readFileSync(path.join(__dirname, '..', 'app.html'), 'utf8');
-const match = html.match(/<script id="cutnest-engine">([\s\S]*?)<\/script>/);
-if (!match) { console.error('Could not find <script id="cutnest-engine"> in app.html'); process.exit(1); }
+const engineSrc = fs.readFileSync(path.join(__dirname, '..', 'js', 'engine.js'), 'utf8');
 
 const ctx = { settings: { minOffcutLong: 1000, minOffcutShort: 300 } };
 vm.createContext(ctx);
-vm.runInContext('var KERF = 4, PACK_EFFORT = 8;\n' + match[1] +
+vm.runInContext('var KERF = 4, PACK_EFFORT = 8;\n' + engineSrc +
   '\nthis.E = { runMat, deriveGuillotineCuts, largestEmptyRect, maxRectsPack };' +
   '\nthis.setKerf = function (k) { KERF = k; };', ctx);
 const E = ctx.E;
