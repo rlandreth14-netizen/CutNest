@@ -252,6 +252,85 @@ const tests = {
     expect(await page.isVisible('#output'), 'previous results should come back after cancelling');
   },
 
+  async 'Pro: add sheet sizes and a stock limit in the Library'() {
+    const page = await freshPage({ pro: true });
+    await page.goto(base + '/app.html');
+    await page.waitForFunction(() => isPro && library.length > 20);
+    // Custom material with one size, then two more added in the editor.
+    await page.click('button[aria-label="Stock library"]');
+    await page.fill('#n-name', 'Ali 3mm Test');
+    await page.fill('#n-w1', '1000');
+    await page.fill('#n-h1', '1000');
+    await page.fill('#n-pr1', '40');
+    await page.click('#add-form-wrap >> text=+ Add');
+    const entry = page.locator('.lib-entry', { hasText: 'Ali 3mm Test' });
+    await entry.locator('text=Edit').click();
+    await entry.locator('text=+ Add sheet size').click();
+    await entry.locator('[aria-label="Size 2 width in mm"]').fill('2000');
+    await entry.locator('[aria-label="Size 2 height in mm"]').fill('1000');
+    await entry.locator('[aria-label="Size 2 price"]').fill('70');
+    await entry.locator('[aria-label="Size 2 maximum sheets available"]').fill('1');
+    await entry.locator('text=+ Add sheet size').click();
+    await entry.locator('[aria-label="Size 3 width in mm"]').fill('1500');
+    await entry.locator('[aria-label="Size 3 height in mm"]').fill('1000');
+    await entry.locator('[aria-label="Size 3 price"]').fill('55');
+    await page.click('text=Save Library');
+    const saved = await page.evaluate(() => library.find(l => l.name === 'Ali 3mm Test').sizes);
+    expect(saved.length === 3 && saved[1].max === 1 && saved[2].price === 55, 'sizes not saved: ' + JSON.stringify(saved));
+    // 4 pieces of 950x950: best is one 2000x1000 (max 1) + two 1000x1000.
+    const id = await page.evaluate(() => library.find(l => l.name === 'Ali 3mm Test').id);
+    await page.selectOption('#mat-blocks select', String(id));
+    expect((await page.textContent('#mat-blocks')).includes('Size 3'), 'job view should list all 3 sizes');
+    await setPiece(page, 1, 950, 950, 4);
+    await calculateAndWait(page);
+    const used = await page.evaluate(() => calcResult.results[0].sheets.map(s => s.sheetW + 'x' + s.sheetH));
+    expect(used.filter(u => u === '2000x1000').length <= 1, 'stock limit of 1 big sheet broken: ' + used.join(','));
+    expect(await page.evaluate(() => calcResult.results[0].unplaced.length) === 0, 'all pieces should be placed');
+    // Now allow only 1 of the only size that fits a 1900x950 piece: 2 pieces cannot both go.
+    await setPiece(page, 1, 1900, 950, 2);
+    await calculateAndWait(page);
+    expect((await page.textContent('#mat-visuals')).includes('Not enough sheets in stock'), 'should say stock ran out');
+    expect(!page.errors.length, 'page errors: ' + page.errors.join(' | '));
+  },
+
+  async 'free plan: 2 sheet sizes, and says so'() {
+    const page = await freshPage();
+    await page.addInitScript(() => {
+      if (localStorage.getItem('cutnest-lib-v1')) return;
+      localStorage.setItem('cutnest-lib-v1', JSON.stringify([{ id: 77, name: 'Three Size MDF', material: 'Timber',
+        sizes: [{ w: 2440, h: 1220, price: 30 }, { w: 1220, h: 610, price: 12 }, { w: 3050, h: 1220, price: 40, max: 2 }] }]));
+    });
+    await page.goto(base + '/app.html');
+    await page.waitForFunction(() => library.length === 1);
+    await page.selectOption('#mat-blocks select', '77');
+    await setPiece(page, 1, 3000, 600, 1);
+    await calculateAndWait(page).catch(() => {});
+    expect((await page.textContent('#err-box')).includes('too big'), 'free plan must not use the Pro-only 3rd size');
+    await page.click('button[aria-label="Stock library"]');
+    await page.click('#lib-entries >> text=Edit');
+    await page.click('#lib-entries >> text=+ Add sheet size');
+    expect(await page.isVisible('#upgrade-modal'), 'adding a 3rd size on the free plan should open the upgrade prompt');
+  },
+
+  async 'old libraries and old share links still load'() {
+    const page = await freshPage();
+    await page.addInitScript(() => {
+      if (localStorage.getItem('cutnest-lib-v1')) return;
+      localStorage.setItem('cutnest-lib-v1', JSON.stringify([{ id: 5, name: 'Legacy Steel', material: 'Mild Steel',
+        size1: { w: 2450, h: 1150, price: 105 }, size2: { w: 2050, h: 900, price: 65 } }]));
+    });
+    await page.goto(base + '/app.html');
+    await page.waitForFunction(() => library.length === 1);
+    const sizes = await page.evaluate(() => library[0].sizes);
+    expect(sizes.length === 2 && sizes[1].w === 2050 && sizes[1].price === 65, 'legacy size1/size2 not converted: ' + JSON.stringify(sizes));
+    const v2 = { v: 2, jobRef: 'OLD-LINK', jobQty: '1', mats: [{ name: 'Old Link Steel', cuttingMethod: 'free', allowRotation: true,
+      size1: { w: 2450, h: 1150, price: 100 }, size2: { w: 0, h: 0, price: 0 }, pieces: [{ w: 500, h: 400, qty: 2, label: 'A' }] }] };
+    await page.goto(base + '/app.html?job=' + encodeURIComponent(Buffer.from(JSON.stringify(v2)).toString('base64')));
+    await page.waitForFunction(() => mats[0] && mats[0].pieces[0].w === 500);
+    const linked = await page.evaluate(() => library.find(l => l.name === 'Old Link Steel').sizes);
+    expect(linked.length === 1 && linked[0].w === 2450, 'v2 link sizes not read: ' + JSON.stringify(linked));
+  },
+
   async 'landing page, FAQ and legal pages'() {
     const page = await freshPage({ viewport: { width: 390, height: 800 } });
     await page.goto(base + '/');

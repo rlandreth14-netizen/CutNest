@@ -708,6 +708,71 @@ function packOpenBest(sheetW, sheetH, queue, allowRot, effort) {
   return best;
 }
 
+// ── STOCK SHEET SIZES ─────────────────────────────────────────
+// A material lists its sheet sizes as `sizes: [{w, h, price, max}]`. `max` is
+// how many sheets of that size can be used (what you have, or what the
+// supplier can send); null means no limit. Libraries saved before multiple
+// sizes existed used size1/size2, which are read the same way.
+const MAX_SHEET_SIZES = 12;
+function stockSizes(libMat) {
+  const raw = Array.isArray(libMat && libMat.sizes) ? libMat.sizes
+            : [libMat && libMat.size1, libMat && libMat.size2];
+  const out = [], seen = {};
+  for (const s of raw) {
+    if (!s || !(+s.w > 0) || !(+s.h > 0)) continue;
+    const w = +s.w, h = +s.h, key = w + 'x' + h;
+    if (seen[key]) continue;                      // one entry per size
+    seen[key] = 1;
+    const max = (s.max != null && s.max !== '' && +s.max >= 1) ? Math.floor(+s.max) : null;
+    out.push({ w: w, h: h, price: +s.price || 0, max: max });
+    if (out.length >= MAX_SHEET_SIZES) break;
+  }
+  return out;
+}
+
+// Sheets used per size (bought sheets only; a remnant is already owned).
+function sheetsUsedBySize(sheetArr) {
+  const used = {};
+  for (const sh of sheetArr || []) {
+    if (sh.isRemnant) continue;
+    const k = sh.sheetW + 'x' + sh.sheetH;
+    used[k] = (used[k] || 0) + 1;
+  }
+  return used;
+}
+
+// True if a layout uses no more sheets of any size than that size allows.
+function withinStock(sheetArr, sizes) {
+  const used = sheetsUsedBySize(sheetArr);
+  return sizes.every(function(s){ return s.max == null || (used[s.w + 'x' + s.h] || 0) <= s.max; });
+}
+
+// The deeper searches (rebalancing, the open-sheets second opinion) try
+// sizes in combination, so their cost climbs steeply with the number of
+// sizes. With three sizes or fewer they try every size, exactly as before;
+// with more, they try the `limit` (default 3) most promising. `rank` scores a
+// size (lower is better) and `prefer` lists sizes to keep first (ones in use).
+// Measured on 4-12 size materials: rebalancing over 3 sizes saves about 0.5%
+// of material cost versus 2; the open-sheets search gains nothing from a
+// third size, so it uses 2.
+function searchSizes(sizes, rank, prefer, limit) {
+  if (sizes.length <= 3) return sizes.slice();
+  const lim = limit || 3;
+  const keep = [];
+  (prefer || []).forEach(function(s){ if (keep.indexOf(s) === -1 && keep.length < lim) keep.push(s); });
+  sizes.slice().sort(function(a, b){ return rank(a) - rank(b) || (b.w * b.h - a.w * a.h); })
+    .forEach(function(s){ if (keep.indexOf(s) === -1 && keep.length < lim) keep.push(s); });
+  return sizes.filter(function(s){ return keep.indexOf(s) !== -1; });   // original order
+}
+
+// True when pieces were left over because a size with a sheet limit ran out,
+// so the user is told "not enough stock" rather than something misleading.
+function stockShortfall(unplaced, sizes, sheetArr) {
+  if (!unplaced || !unplaced.length) return false;
+  const used = sheetsUsedBySize(sheetArr);
+  return sizes.some(function(s){ return s.max != null && (used[s.w + 'x' + s.h] || 0) >= s.max; });
+}
+
 // What a set of sheets costs, so greedy and open-sheet candidates can be
 // compared on money rather than sheet count when sizes differ in price.
 function sheetSetCost(sheetArr, sizes) {
@@ -720,7 +785,29 @@ function sheetSetCost(sheetArr, sizes) {
   return cost;
 }
 
+// Packing is deterministic, and the consolidation and rebalancing passes ask
+// for the same pieces on the same sheet many times over. runMat() switches
+// this cache on for the length of one job. Same answers, just not recomputed.
+let _packCache = null;
+const PACK_CACHE_MAX = 20000;
+
 function packSheetBest(sheetW, sheetH, queue, allowRot, cuttingMethod) {
+  if (!_packCache) return _packSheetBest(sheetW, sheetH, queue, allowRot, cuttingMethod);
+  let key = sheetW + 'x' + sheetH + '|' + (allowRot !== false ? 1 : 0) + (cuttingMethod || 'free') + '|' + PACK_EFFORT + '|';
+  for (const p of queue) key += p.pieceIndex + '-' + p.instanceIndex + ':' + p.w + ':' + p.h + ',';
+  let r = _packCache.get(key);
+  if (!r) {
+    r = _packSheetBest(sheetW, sheetH, queue, allowRot, cuttingMethod);
+    if (_packCache.size < PACK_CACHE_MAX) _packCache.set(key, r);
+  }
+  // Callers annotate and mutate what they get back, so hand out a copy.
+  return Object.assign({}, r, {
+    placed: r.placed.map(function(p){ return Object.assign({}, p); }),
+    unplaced: r.unplaced.slice()
+  });
+}
+
+function _packSheetBest(sheetW, sheetH, queue, allowRot, cuttingMethod) {
   const cm = cuttingMethod || 'free';
   const ar = allowRot !== false;
   if (cm === 'guillotine') return guillotinePackBest(sheetW, sheetH, queue, ar);
@@ -810,6 +897,13 @@ function rebalanceSheets(sheets, sizes, allowRot, cm) {
   const haveCost = sizes.every(function(s){ return s.price && s.price>0; });
   const originalSig = sig(sheets);
 
+  // Sizes to re-pack onto: all of them when there are three or fewer (the
+  // original behaviour); otherwise the sizes in use plus the best value.
+  const usedNow = sheetsUsedBySize(sheets);
+  const inUse = sizes.filter(function(s){ return usedNow[s.w + 'x' + s.h]; })
+                     .sort(function(a, b){ return usedNow[b.w + 'x' + b.h] - usedNow[a.w + 'x' + a.h]; });
+  const poolSizes = searchSizes(sizes, function(s){ return haveCost ? s.price / (s.w * s.h) : -(s.w * s.h); }, inUse);
+
   // Sort by utilisation, least-full first
   function util(sh){ return sh.placed.reduce(function(a,p){return a+p.w*p.h;},0)/(sh.sheetW*sh.sheetH); }
 
@@ -833,8 +927,12 @@ function rebalanceSheets(sheets, sizes, allowRot, cm) {
         pool.push({ w:p.w, h:p.h, label:p.label, pieceIndex:p.pieceIndex, instanceIndex:p.instanceIndex });
       });});
 
-      // Re-pack the pool greedily across all sizes, cost-aware
-      const newLayout = packPoolBestValue(pool, sizes, allowRot, cm, haveCost);
+      // Re-pack the pool across the sizes, cost-aware, never using more of a
+      // size than is left once the sheets outside the pool are counted.
+      const rest = working.filter(function(s,i){ return poolIdx.indexOf(i) === -1; });
+      const usedRest = sheetsUsedBySize(rest);
+      const caps = poolSizes.map(function(s){ return s.max == null ? null : s.max - (usedRest[s.w + 'x' + s.h] || 0); });
+      const newLayout = packPoolBestValue(pool, poolSizes, allowRot, cm, haveCost, caps);
       if (!newLayout) continue;
 
       // Did everything get placed?
@@ -853,10 +951,9 @@ function rebalanceSheets(sheets, sizes, allowRot, cm) {
 
       if (cheaper || sameCostFewerSheets) {
         // Build candidate: all non-pool sheets + new layout
-        const rest = working.filter(function(s,i){ return poolIdx.indexOf(i) === -1; });
         const candidate = rest.concat(newLayout);
         // Integrity check
-        if (sameSig(sig(candidate), originalSig)) {
+        if (sameSig(sig(candidate), originalSig) && withinStock(candidate, sizes)) {
           working = candidate;
           improved = true;
           break;
@@ -873,7 +970,7 @@ function rebalanceSheets(sheets, sizes, allowRot, cm) {
 // Pack a pool of pieces across sizes, choosing the layout with the lowest
 // TOTAL cost (not greedy per-sheet). Tries leading with each sheet size and
 // recursively packs the remainder, keeping the cheapest complete layout.
-function packPoolBestValue(pool, sizes, allowRot, cm, haveCost) {
+function packPoolBestValue(pool, sizes, allowRot, cm, haveCost, caps) {
   const depthLimit = 40; // guard against pathological recursion
   let bestResult = null;
   let bestCost = Infinity;
@@ -895,7 +992,13 @@ function packPoolBestValue(pool, sizes, allowRot, cm, haveCost) {
     if (depth > depthLimit) return;
     if (costOf(acc) >= bestCost) return; // prune
 
-    for (const sz of sizes) {
+    for (let si = 0; si < sizes.length; si++) {
+      const sz = sizes[si];
+      if (caps && caps[si] != null) {
+        let n = 0;
+        for (const a of acc) if (a.sheetW === sz.w && a.sheetH === sz.h) n++;
+        if (n >= caps[si]) continue;               // none of this size left
+      }
       const r = packSheetBest(sz.w, sz.h, queue, allowRot, cm);
       if (!r.placed.length) continue;
       const done = new Set(r.placed.map(function(p){ return pieceKey(p); }));
@@ -1062,11 +1165,7 @@ function runMatSafe(libMat, pieces, jobQty, remnant) {
     for (let q = 0; q < (+p.qty||1) * mult; q++)
       queue.push({...p, w:+p.w, h:+p.h, label:p.label||'', pieceIndex:pi, instanceIndex:q});
   });
-  const vSize = function(s){ return s && +s.w>0 && +s.h>0; };
-  const sizes = [
-    vSize(libMat.size1) ? {w:+libMat.size1.w,h:+libMat.size1.h,price:+libMat.size1.price||0} : null,
-    vSize(libMat.size2) ? {w:+libMat.size2.w,h:+libMat.size2.h,price:+libMat.size2.price||0} : null
-  ].filter(Boolean);
+  const sizes = stockSizes(libMat);
   if (!sizes.length) return { sheets:[], unplaced:queue, sizeMap:{}, noValidSize:true };
 
   const ar = libMat.allowRotation !== false;
@@ -1082,17 +1181,21 @@ function runMatSafe(libMat, pieces, jobQty, remnant) {
     }
   }
   const sheets = [];
+  const usedSafe = sizes.map(function(){ return 0; });
   let limit = 200;
   while (queue.length && limit-- > 0) {
-    let best = null, bestScore = Infinity;
-    for (const sz of sizes) {
+    let best = null, bestScore = Infinity, bestSi = -1;
+    for (let si = 0; si < sizes.length; si++) {
+      const sz = sizes[si];
+      if (sz.max != null && usedSafe[si] >= sz.max) continue;
       const r = packSheetBest(sz.w, sz.h, queue, ar, cm);
       if (!r.placed.length) continue;
       const placedArea = r.placed.reduce(function(a,p){return a+p.w*p.h;},0);
       const score = (sz.price||1) / Math.max(placedArea, 1);
-      if (best === null || score < bestScore) { best = r; bestScore = score; }
+      if (best === null || score < bestScore) { best = r; bestScore = score; bestSi = si; }
     }
     if (!best || !best.placed.length) break;
+    usedSafe[bestSi]++;
     sheets.push(best);
     const done = new Set(best.placed.map(function(p){return pieceKey(p);}));
     queue = queue.filter(function(p){ return !done.has(pieceKey(p)); });
@@ -1113,10 +1216,17 @@ function runMatSafe(libMat, pieces, jobQty, remnant) {
   });
   const safeAll = remnantSheets.concat(sheets);
   normalizeRotatedFlags(safeAll, pieces);
-  return { sheets: safeAll, unplaced:queue, sizeMap, allowRotation: ar };
+  return { sheets: safeAll, unplaced:queue, sizeMap, allowRotation: ar,
+           stockShort: stockShortfall(queue, sizes, safeAll) };
 }
 
 function runMat(libMat, pieces, remnant, jobQty) {
+  _packCache = new Map();
+  try { return _runMat(libMat, pieces, remnant, jobQty); }
+  finally { _packCache = null; }
+}
+
+function _runMat(libMat, pieces, remnant, jobQty) {
   // Expand pieces by quantity × job multiplier
   const mult = Math.max(1, parseInt(jobQty) || 1);
   let queue = [];
@@ -1139,15 +1249,14 @@ function runMat(libMat, pieces, remnant, jobQty) {
   else                        PACK_EFFORT = 1;   // huge job: strongest single heuristic
   // The remaining-sheets lookahead (estimateRemaining) itself runs a full pack
   // per size; skip it on large jobs where its guidance is marginal.
-  const useLookahead = totalParts <= 220;
+  let useLookahead = totalParts <= 220;
 
   // Build the list of valid stock sheet sizes. A size only counts if it has
   // real positive width AND height — otherwise packing onto it is impossible.
-  const validSize = function(s){ return s && +s.w > 0 && +s.h > 0; };
-  const sizes = [
-    validSize(libMat.size1) ? { w:+libMat.size1.w, h:+libMat.size1.h, price:+libMat.size1.price||0 } : null,
-    validSize(libMat.size2) ? { w:+libMat.size2.w, h:+libMat.size2.h, price:+libMat.size2.price||0 } : null
-  ].filter(Boolean);
+  const sizes = stockSizes(libMat);
+  // The lookahead packs every size again for every sheet, so its cost is
+  // squared in the number of sizes. Beyond three, use the cheap area estimate.
+  if (sizes.length > 3) useLookahead = false;
 
   // No usable stock size for this material → return a clear error, not silent failure.
   if (!sizes.length) {
@@ -1177,15 +1286,19 @@ function runMat(libMat, pieces, remnant, jobQty) {
   const originalQueue = queue.slice();
 
   const sheets = [];
+  const usedBySize = sizes.map(function(){ return 0; });
   let limit = 150;
 
   while (queue.length > 0 && limit-- > 0) {
     let bestChoice = null;
     let bestScore = Infinity;
+    let bestSi = -1;
     const _ar = libMat.allowRotation !== false;
     const _cm = libMat.cuttingMethod || 'free';
 
-    for (const sz of sizes) {
+    for (let si = 0; si < sizes.length; si++) {
+      const sz = sizes[si];
+      if (sz.max != null && usedBySize[si] >= sz.max) continue;   // none left
       const r = packSheetBest(sz.w, sz.h, queue, _ar, _cm);
 
   if (!r.placed.length) continue;
@@ -1262,11 +1375,13 @@ function runMat(libMat, pieces, remnant, jobQty) {
   ) {
     bestChoice = r;
     bestScore = score;
+    bestSi = si;
   }
 }
 
     if (!bestChoice || !bestChoice.placed.length) break;
 
+    usedBySize[bestSi]++;
     sheets.push(bestChoice);
     const done = new Set(
       bestChoice.placed.map(p => `${p.pieceIndex}-${p.instanceIndex}`)
@@ -1310,11 +1425,30 @@ function runMat(libMat, pieces, remnant, jobQty) {
   let _altFewerSheets = null;
   if (_cm !== 'guillotine' && _placedCount <= CONSOLIDATE_PART_LIMIT && originalQueue.length) {
     const havePricesForCmp = sizes.every(function(z){ return z.price > 0; });
+    // Placing more pieces always wins (it only differs when stock runs out);
+    // then money, then sheet count (or the other way round when unpriced).
     const scoreOf = function(arr){
+      const miss = originalQueue.length - arr.reduce(function(a, sh){ return a + sh.placed.length; }, 0);
       return havePricesForCmp
-        ? { a: sheetSetCost(arr, sizes), b: arr.length }
-        : { a: arr.length, b: sheetSetCost(arr, sizes) };
+        ? { m: miss, a: sheetSetCost(arr, sizes), b: arr.length }
+        : { m: miss, a: arr.length, b: sheetSetCost(arr, sizes) };
     };
+    const better = function(x, y){
+      if (x.m !== y.m) return x.m < y.m;
+      return x.a < y.a - 1e-9 || (Math.abs(x.a - y.a) < 1e-9 && x.b < y.b);
+    };
+    // Every piece must fit a size for an all-one-size nest to exist there.
+    const fitsAll = function(sz){
+      return originalQueue.every(function(p){
+        return (p.w <= sz.w && p.h <= sz.h) || (_arOpen && p.h <= sz.w && p.w <= sz.h);
+      });
+    };
+    const openSizes = searchSizes(sizes, function(sz){
+      if (!fitsAll(sz)) return Infinity;
+      let lb = 0;
+      try { lb = packingLowerBound(originalQueue, sz.w, sz.h, KERF, _arOpen); } catch (e) { lb = 0; }
+      return havePricesForCmp ? lb * sz.price : lb;
+    }, [], 2);
     let bestArr = consolidated, bestScore = scoreOf(consolidated);
     // Also track the option with the FEWEST SHEETS. When prices are set the
     // engine optimises for money, which can mean buying 3 small sheets instead
@@ -1322,7 +1456,7 @@ function runMat(libMat, pieces, remnant, jobQty) {
     // handling and extra setup that CutNest cannot price, so the alternative is
     // recorded and shown to the user rather than silently discarded.
     let fewestArr = consolidated;
-    for (const sz of sizes) {
+    for (const sz of openSizes) {
       let cand = null;
       try { cand = packOpenBest(sz.w, sz.h, originalQueue, _arOpen, PACK_EFFORT); }
       catch (e) { cand = null; }
@@ -1355,14 +1489,15 @@ function runMat(libMat, pieces, remnant, jobQty) {
         let candC;
         try { candC = consolidateSheets(candidates[ci], _arOpen, _cm); }
         catch (e) { candC = candidates[ci]; }
+        if (!withinStock(candC, sizes)) continue;   // needs more sheets than exist
         const sc = scoreOf(candC);
-        if (sc.a < bestScore.a - 1e-9 || (Math.abs(sc.a - bestScore.a) < 1e-9 && sc.b < bestScore.b)) {
+        if (better(sc, bestScore)) {
           bestArr = candC; bestScore = sc;
         }
-        if (candC.length < fewestArr.length) fewestArr = candC;
+        if (sc.m === 0 && candC.length < fewestArr.length) fewestArr = candC;
       }
     }
-    if (havePricesForCmp && fewestArr.length < bestArr.length) {
+    if (havePricesForCmp && bestScore.m === 0 && scoreOf(fewestArr).m === 0 && fewestArr.length < bestArr.length) {
       const cheapCost = sheetSetCost(bestArr, sizes);
       const fewCost   = sheetSetCost(fewestArr, sizes);
       if (fewCost > cheapCost) {
@@ -1411,8 +1546,15 @@ function runMat(libMat, pieces, remnant, jobQty) {
 
   var _allSheets = remnantSheets.concat(sheets);
   normalizeRotatedFlags(_allSheets, pieces);
+  // Unplaced = whatever is not on a final sheet. Taken from the final layout,
+  // not the greedy pass, because a later pass may have placed pieces the greedy
+  // pass could not (listing them as both placed and unplaced).
+  const onSheet = new Set();
+  sheets.forEach(function(sh){ sh.placed.forEach(function(p){ onSheet.add(pieceKey(p)); }); });
+  const unplacedFinal = originalQueue.filter(function(p){ return !onSheet.has(pieceKey(p)); });
   // Recorded so optimalityVerdict() can compute the correct bound later.
-  return {sheets: _allSheets, unplaced:queue, sizeMap, allowRotation: libMat.allowRotation !== false, altFewerSheets: _altFewerSheets};
+  return {sheets: _allSheets, unplaced: unplacedFinal, sizeMap, allowRotation: libMat.allowRotation !== false,
+          altFewerSheets: _altFewerSheets, stockShort: stockShortfall(unplacedFinal, sizes, _allSheets)};
 }
 
 // Find an empty spot for a single piece by scanning gaps between placed pieces.

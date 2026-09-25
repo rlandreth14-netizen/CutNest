@@ -38,7 +38,7 @@ function loadStarterPack(type) {
   };
   const pack = packs[type];
   if (!pack) return;
-  library = pack;
+  library = pack.map(normalizeLibEntry);
   // Set a sensible default blade gap for the chosen trade so first-run numbers
   // are realistic without the user touching Settings. Sheet metal here means
   // laser/plasma profile cutting (~4mm); timber saw/router ~4mm; acrylic ~3mm.
@@ -164,11 +164,8 @@ function buildBlock(m, idx) {
   if (libMat) {
     sizeHtml = `
       <div class="sz-info-row">
-        <div class="sz-badge"><span class="sl">Size 1${libMat.size1.bc?' · '+libMat.size1.bc:''}</span><span class="sv">${libMat.size1.w} × ${libMat.size1.h} mm</span></div>
-        ${libMat.size2&&libMat.size2.w&&libMat.size2.h
-          ? `<div class="sz-badge"><span class="sl">Size 2${libMat.size2.bc?' · '+libMat.size2.bc:''}</span><span class="sv">${libMat.size2.w} × ${libMat.size2.h} mm</span></div>`
-          : `<div class="sz-badge" style="opacity:.4"><span class="sl">Size 2</span><span class="sv" style="color:var(--muted)">Not set</span></div>`}
-        <div class="sz-auto-note">Optimizer picks best size per sheet</div>
+        ${sizeBadgesHtml(libMat)}
+        <div class="sz-auto-note">The optimiser picks the best mix</div>
       </div>
       ${!isPro && (libMat.allowRotation === false || libMat.cuttingMethod === 'guillotine')
         ? `<div style="font-size:11.5px;color:#92400e;background:#fffbeb;border:1px solid var(--amber);border-radius:7px;padding:6px 10px;margin-bottom:8px">&#128274; ${libMat.allowRotation === false && libMat.cuttingMethod === 'guillotine' ? 'Grain lock and guillotine mode are' : libMat.allowRotation === false ? 'Grain lock is' : 'Guillotine mode is'} Pro. On the free plan this material is calculated with free placement and rotation allowed. <button onclick="showUpgradeModal('&#128274;','Grain lock &amp; guillotine mode','Pro keeps grain direction on brushed, veneered and patterned sheet, and nests for saws and shears with a numbered edge-to-edge cut sequence.')" style="background:none;border:none;color:var(--teal);font-weight:700;cursor:pointer;padding:0;font-size:11.5px;text-decoration:underline;font-family:inherit">Unlock</button></div>`
@@ -1189,11 +1186,15 @@ function optimalityVerdict(res) {
 // only picks sheet sizes by price for Pro (withoutPrices strips them from the
 // copy handed to the packer).
 function freeTierMat(libMat) {
-  return Object.assign({}, libMat, { allowRotation: true, cuttingMethod: 'free' });
+  return Object.assign({}, libMat, {
+    allowRotation: true, cuttingMethod: 'free',
+    sizes: stockSizes(libMat).slice(0, FREE_SHEET_SIZES).map(function(z){ return Object.assign({}, z, { max: null }); })
+  });
 }
 function withoutPrices(libMat) {
-  const strip = function(s){ return s ? Object.assign({}, s, { price: 0 }) : s; };
-  return Object.assign({}, libMat, { size1: strip(libMat.size1), size2: strip(libMat.size2) });
+  return Object.assign({}, libMat, {
+    sizes: stockSizes(libMat).map(function(z){ return Object.assign({}, z, { price: 0 }); })
+  });
 }
 // What a free calculation of this material leaves out, in the user's words.
 function gatedFeatures(libMat, m) {
@@ -1201,8 +1202,11 @@ function gatedFeatures(libMat, m) {
   if (libMat.allowRotation === false) out.push('grain lock');
   if (libMat.cuttingMethod === 'guillotine') out.push('guillotine mode');
   if (m && m.remnant && m.remnant.w && m.remnant.h) out.push('your remnant');
-  const priced = [libMat.size1, libMat.size2].filter(function(s){ return s && +s.w > 0 && +s.h > 0; });
-  if (priced.length > 1 && priced.every(function(s){ return +s.price > 0; })) out.push('cost-optimised sheet choice');
+  const sizes = stockSizes(libMat);
+  if (sizes.length > FREE_SHEET_SIZES) out.push('sheet sizes after the first ' + FREE_SHEET_SIZES);
+  if (sizes.some(function(z){ return z.max != null; })) out.push('stock limits');
+  const used = sizes.slice(0, FREE_SHEET_SIZES);
+  if (used.length > 1 && used.every(function(s){ return +s.price > 0; })) out.push('cost-optimised sheet choice');
   return out;
 }
 function gatedNoticeHtml(gated) {
@@ -1384,14 +1388,10 @@ async function _doCalculate() {
     if (!valid.length) { errors.push(`Material ${mats.indexOf(m)+1} (${esc(libMat.name)}): Please add at least one piece.`); continue; }
 
     // check pieces fit — only against sizes that have real positive dimensions
-    const vSize = function(s){ return s && +s.w > 0 && +s.h > 0; };
-    const sizes = [
-      vSize(libMat.size1) ? libMat.size1 : null,
-      vSize(libMat.size2) ? libMat.size2 : null
-    ].filter(Boolean);
+    const sizes = stockSizes(libMat);   // already cut to the free plan's sizes when not Pro
 
     if (!sizes.length) {
-      errors.push(`${esc(libMat.name)}: no valid sheet size set. Open Library → Edit ${esc(libMat.name)} and enter Size 1 width and height.`);
+      errors.push(`${esc(libMat.name)}: no valid sheet size set. Open Library → Edit ${esc(libMat.name)} and add a sheet size.`);
       continue;
     }
     // ── OVERSIZED PIECES ──
@@ -1457,9 +1457,10 @@ async function _doCalculate() {
     // genuine packing failure, not an oversized part. Keep the material in the
     // results (so its card and "not placed" block still render) and flag it.
     if (res.sheets.length === 0) {
-      const s1 = libMat.size1 ? (libMat.size1.w+'×'+libMat.size1.h) : 'none';
-      const s2 = libMat.size2 ? (libMat.size2.w+'×'+libMat.size2.h) : 'none';
-      errors.push(`${esc(libMat.name)}: packing returned nothing for pieces that should fit. Sheets: ${s1} / ${s2}. [This is a bug — please email hello@cutnest.co.uk]`);
+      if (!res.stockShort) {
+        const list = sizes.map(function(z){ return z.w + '×' + z.h; }).join(' / ');
+        errors.push(`${esc(libMat.name)}: packing returned nothing for pieces that should fit. Sheets: ${list}. [This is a bug — please email hello@cutnest.co.uk]`);
+      }
     }
     results.push({ libMat, ...res, gated });
   }
@@ -1520,7 +1521,7 @@ function groupUnplaced(unplaced){
 
 // Plain-text lines, used by CSV and PDF so an export can never hide a problem
 // that the screen shows.
-function notPlacedLines(libMat, unplaced, oversized){
+function notPlacedLines(libMat, unplaced, oversized, stockShort){
   const allowRot = libMat.allowRotation !== false;
   const out = [];
   (oversized||[]).forEach(function(o){
@@ -1540,8 +1541,9 @@ function notPlacedLines(libMat, unplaced, oversized){
     out.push({
       label: u.label || (u.w+'\u00d7'+u.h),
       w:u.w, h:u.h, qty:u.qty,
-      why: 'Packer ran out of sheets for this job',
-      fix: 'Split the job, or add a second sheet size in Library'
+      why: stockShort ? 'Not enough sheets in stock' : 'Packer ran out of sheets for this job',
+      fix: stockShort ? 'Raise or clear "Max sheets" on a size in Library, or add another size'
+                      : 'Split the job, or add another sheet size in Library'
     });
   });
   return out;
@@ -1553,8 +1555,8 @@ function notPlacedCount(unplaced, oversized){
 }
 
 // The on-screen block. Deliberately loud: red header bar, one row per piece.
-function notPlacedHtml(libMat, unplaced, oversized){
-  const rows = notPlacedLines(libMat, unplaced, oversized);
+function notPlacedHtml(libMat, unplaced, oversized, stockShort){
+  const rows = notPlacedLines(libMat, unplaced, oversized, stockShort);
   if (!rows.length) return '';
   const n = notPlacedCount(unplaced, oversized);
   return `<div style="background:#fff5f5;border:2px solid var(--red);border-radius:11px;margin-top:14px;overflow:hidden">
@@ -1598,7 +1600,7 @@ function renderOutput() {
     const total = boughtSheets(sheets).length;
     const chips = Object.entries(sizeMap).map(([dim,cnt]) => {
       const [sw, sh] = dim.split('×').map(Number);
-      const matchedSize = [libMat.size1, libMat.size2].find(s => s && s.w === sw && s.h === sh);
+      const matchedSize = sizeByDims(libMat, sw, sh);
       const unitPrice = matchedSize && matchedSize.price > 0 ? matchedSize.price : 0;
       const lineTotal = unitPrice * cnt;
       quoteLines.push(`${libMat.name}: ${cnt} sheet${cnt>1?'s':''} — ${dim}mm${unitPrice ? ' @ £'+unitPrice+' each' : ''}`);
@@ -1659,9 +1661,7 @@ function renderOutput() {
   results.forEach(({libMat, sheets}) => {
     sheets.forEach(sh => {
       if (sh.isRemnant) return; // already owned — costs nothing
-      const size = (libMat.size2 && libMat.size2.w && libMat.size2.h &&
-                    sh.sheetW === libMat.size2.w && sh.sheetH === libMat.size2.h)
-                    ? libMat.size2 : libMat.size1;
+      const size = sizeByDims(libMat, sh.sheetW, sh.sheetH);
       if (size && size.price > 0) grandTotal += size.price;
       else allPriced = false;
     });
@@ -1772,7 +1772,7 @@ function renderOutput() {
   const MAX_H = isNarrow ? 300 : 420;
 
   let globalSheetIdx = 0;
-  results.forEach(({libMat, sheets, unplaced, oversized}) => {
+  results.forEach(({libMat, sheets, unplaced, oversized, stockShort}) => {
     const sec = document.createElement('div');
     sec.className = 'detail-section';
     const buyCount = boughtSheets(sheets).length;
@@ -1865,7 +1865,7 @@ function renderOutput() {
       </div>`;
     });
 
-    html += notPlacedHtml(libMat, unplaced, oversized);
+    html += notPlacedHtml(libMat, unplaced, oversized, stockShort);
     sec.innerHTML = html;
     visWrap.appendChild(sec);
   });
@@ -1919,7 +1919,7 @@ function exportPDF() {
   calcResult.results.forEach(({libMat, sheets, sizeMap}) => {
     Object.entries(sizeMap).forEach(([dim,cnt]) => {
       const [sw,sh] = dim.split('×').map(Number);
-      const sz = [libMat.size1,libMat.size2].find(s=>s&&s.w===sw&&s.h===sh);
+      const sz = sizeByDims(libMat, sw, sh);
       const lineTotal = sz && sz.price > 0 ? sz.price * cnt : 0;
       grandTotal += lineTotal;
       body += `<tr><td>${esc(libMat.name)} ${esc(libMat.thickness||'')}</td><td>${cnt}</td><td>${dim}mm</td><td>${lineTotal>0?'£'+lineTotal.toFixed(2):'—'}</td></tr>`;
@@ -1957,7 +1957,7 @@ function exportPDF() {
       body += `</div></div>`;
     });
     if (_v && _v.optimal) body += `<div style="font-size:10px;color:#065f46;font-weight:700;padding:3px 0">✓ Provably optimal — no arrangement of these parts fits on fewer sheets.</div>`;
-    const npRows = notPlacedLines(libMat, unplaced, oversized);
+    const npRows = notPlacedLines(libMat, unplaced, oversized, _r.stockShort);
     if (npRows.length) {
       body += `<div class="np-box"><div class="np-hdr">⚠ ${notPlacedCount(unplaced, oversized)} piece(s) NOT placed — not included in the sheets or cost above</div>`;
       body += `<table class="sum-tbl" style="margin-bottom:0"><thead><tr><th>Part</th><th>Size</th><th>Qty</th><th>Why</th><th>What to do</th></tr></thead><tbody>`;
@@ -2034,8 +2034,7 @@ function shareJob() {
         name: libMat ? libMat.name : '',
         cuttingMethod: libMat ? (libMat.cuttingMethod||'free') : 'free',
         allowRotation: libMat ? (libMat.allowRotation !== false) : true,
-        size1: libMat ? libMat.size1 : null,
-        size2: libMat ? libMat.size2 : null,
+        sizes: libMat ? stockSizes(libMat) : [],
         pieces: m.pieces.filter(function(p){return p.w>0 && p.h>0;})
       };
     }).filter(function(m){return m.pieces.length;});
@@ -2043,7 +2042,7 @@ function shareJob() {
     if (!slimMats.length) { showToast('Add some pieces before sharing'); return; }
 
     const state = {
-      v: 2,
+      v: 3,
       jobRef: (document.getElementById('job-ref')||{}).value||'',
       jobQty: (document.getElementById('job-qty')||{}).value||'1',
       mats: slimMats
@@ -2117,7 +2116,7 @@ function exportCSV() {
   const summaryRows = calcResult.results.flatMap(({libMat,sizeMap}) =>
     Object.entries(sizeMap).map(([dim,c]) => {
       const [sw,sh] = dim.split('×').map(Number);
-      const sz = [libMat.size1,libMat.size2].find(s=>s&&s.w===sw&&s.h===sh);
+      const sz = sizeByDims(libMat, sw, sh);
       const lineTotal = sz && sz.price > 0 ? sz.price * c : 0;
       csvTotal += lineTotal;
       return [`${c}x ${libMat.name} ${dim}mm`, lineTotal > 0 ? `£${lineTotal.toFixed(2)}` : ''];
@@ -2134,8 +2133,8 @@ function exportCSV() {
   ];
   // Every not-placed piece — oversized AND unplaced — with the reason and the
   // minimum sheet that would take it. An export must never hide a dropped piece.
-  const npAll = calcResult.results.flatMap(({libMat,unplaced,oversized}) =>
-    notPlacedLines(libMat, unplaced, oversized).map(r =>
+  const npAll = calcResult.results.flatMap(({libMat,unplaced,oversized,stockShort}) =>
+    notPlacedLines(libMat, unplaced, oversized, stockShort).map(r =>
       [libMat.name, r.label, r.w, r.h, r.qty, r.why, r.fix]));
   if(npAll.length){
     rows.push([],['*** PIECES NOT PLACED — NOT INCLUDED IN THE SHEETS OR COST ABOVE ***'],
@@ -2310,7 +2309,8 @@ function exportDXF() {
 
 // ── LIBRARY MODAL ─────────────────────────────
 function openLib() {
-  pending=library.map(e=>({...e,size1:{...e.size1},size2:{...e.size2||{w:'',h:'',bc:''}}}));
+  pending=library.map(e=>({...e,sizes:(e.sizes||[]).map(z=>({...z}))}));
+  _libOpen.clear();
   renderLibEntries();
   document.getElementById('lib-modal').style.display='flex';
 }
@@ -2320,11 +2320,7 @@ async function saveLibClose() {
   // Explicit save: promote any transient (shared-link) materials to permanent
   // by dropping the flag, so saveData will now persist them.
   library = pending.map(e => {
-    const c = {
-      ...e,
-      size1: {...e.size1},
-      size2: {...(e.size2||{w:'',h:''})}
-    };
+    const c = normalizeLibEntry(e);
     delete c._transient;
     return c;
   });
@@ -2351,7 +2347,7 @@ function resetMasterEntry(id){
   const m = MASTER_LIBRARY.find(function(x){ return x.id === id; });
   if (!m) return;
   const i = pending.findIndex(function(x){ return x.id === id; });
-  const copy = JSON.parse(JSON.stringify(m));
+  const copy = normalizeLibEntry(JSON.parse(JSON.stringify(m)));
   if (i === -1) pending.push(copy); else pending[i] = copy;
   renderLibEntries();
   showToast('↺ ' + m.name + ' reset to CutNest default');
@@ -2396,38 +2392,22 @@ function renderLibEntries() {
           <button class="btn-del" onclick="delPending(${jid})">✕</button>
         </div>
       </div>
-      <div id="ev-${e.id}">
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
-          <div class="sz-badge"><span class="sl">Size 1${e.size1.bc?' · '+esc(e.size1.bc):''}</span><span class="sv">${e.size1.w} × ${e.size1.h} mm</span></div>
-          ${e.size2&&e.size2.w&&e.size2.h
-            ? `<div class="sz-badge"><span class="sl">Size 2${e.size2.bc?' · '+esc(e.size2.bc):''}</span><span class="sv">${e.size2.w} × ${e.size2.h} mm</span></div>`
-            : `<div class="sz-badge" style="opacity:.4"><span class="sl">Size 2</span><span class="sv" style="color:var(--muted)">Not set</span></div>`}
-        </div>
+      <div id="ev-${e.id}"${_libOpen.has(e.id) ? ' style="display:none"' : ''}>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">${sizeBadgesHtml(e)}</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
           <span class="mode-chip">${e.cuttingMethod==='guillotine'?'⊞ Guillotine'+(isPro?'':' (Pro)'):'⊡ Free placement'}</span>
           ${e.allowRotation===false?'<span class="mode-chip grain-on">🔒 Grain locked'+(isPro?'':' (Pro)')+'</span>':''}
         </div>
       </div>
-      <div id="ee-${e.id}" style="display:none">
+      <div id="ee-${e.id}" style="display:${_libOpen.has(e.id) ? 'block' : 'none'}">
         <div class="edit-basic mt8">
           <div class="edit-basic-grid">
-            <div><label class="lbl">Name</label><input type="text" value="${esc(e.name)}" oninput="upd(${jid},'name',this.value)"/></div>
-            <div><label class="lbl">Material</label><input type="text" value="${esc(e.material||'')}" oninput="upd(${jid},'material',this.value)"/></div>
-            <div><label class="lbl">Thickness</label><input type="text" value="${esc(e.thickness||'')}" oninput="upd(${jid},'thickness',this.value)"/></div>
+            <div><label class="lbl">Name</label><input type="text" data-f="name" value="${esc(e.name)}" oninput="upd(${jid},'name',this.value)"/></div>
+            <div><label class="lbl">Material</label><input type="text" data-f="material" value="${esc(e.material||'')}" oninput="upd(${jid},'material',this.value)"/></div>
+            <div><label class="lbl">Thickness</label><input type="text" data-f="thickness" value="${esc(e.thickness||'')}" oninput="upd(${jid},'thickness',this.value)"/></div>
           </div>
         </div>
-        <div class="sizes-edit">
-          <div class="se-box"><div class="se-title">📐 Size 1</div><div class="se-inputs" style="grid-template-columns:1fr 1fr 1fr">
-            <div><label class="lbl">W (mm)</label><input type="number" value="${e.size1.w}" oninput="updSz(${jid},1,'w',+this.value)"/></div>
-            <div><label class="lbl">H (mm)</label><input type="number" value="${e.size1.h}" oninput="updSz(${jid},1,'h',+this.value)"/></div>
-            <div><label class="lbl">Price £</label><input type="number" value="${e.size1.price||''}" placeholder="0" oninput="updSz(${jid},1,'price',+this.value)"/></div>
-          </div></div>
-          <div class="se-box"><div class="se-title">📐 Size 2</div><div class="se-inputs" style="grid-template-columns:1fr 1fr 1fr">
-            <div><label class="lbl">W (mm)</label><input type="number" value="${e.size2&&e.size2.w||''}" placeholder="optional" oninput="updSz(${jid},2,'w',+this.value)"/></div>
-            <div><label class="lbl">H (mm)</label><input type="number" value="${e.size2&&e.size2.h||''}" placeholder="optional" oninput="updSz(${jid},2,'h',+this.value)"/></div>
-            <div><label class="lbl">Price £</label><input type="number" value="${e.size2&&e.size2.price||''}" placeholder="opt" oninput="updSz(${jid},2,'price',+this.value)"/></div>
-          </div></div>
-        </div>
+        ${sizeEditorHtml(e, jid)}
         <div class="cut-opts">
           <div class="cut-opt-box">
             <label class="lbl">Cutting Method
@@ -2453,44 +2433,105 @@ function renderLibEntries() {
       </div>
     </div>`; }).join('') + hiddenMastersHtml();
 }
-// Sweep all open edit forms and flush their current DOM values into pending
-// This ensures values are captured even if the user never blurred a field
+// Which library entries have their edit form open, so adding or removing a
+// sheet size (which re-renders the list) keeps the form open.
+const _libOpen = new Set();
+
+// "Size 1 · 2450 × 1150 mm · £105 · max 6" badges for the library and job views.
+function sizeBadgesHtml(libMat) {
+  const sizes = (libMat && libMat.sizes || []).filter(function(z){ return +z.w > 0 && +z.h > 0; });
+  if (!sizes.length) return '<div class="sz-badge" style="border-color:var(--red)"><span class="sl" style="color:var(--red)">No sheet size</span><span class="sv" style="color:var(--red)">Add one in Library</span></div>';
+  return sizes.map(function(z, i){
+    const locked = !isPro && i >= FREE_SHEET_SIZES;
+    const extra = [];
+    if (+z.price > 0) extra.push('£' + (+z.price));
+    if (z.max != null && z.max !== '') extra.push(isPro ? 'max ' + z.max : 'max ' + z.max + ' (Pro)');
+    return '<div class="sz-badge"' + (locked ? ' style="opacity:.5" title="Pro: the free plan uses the first ' + FREE_SHEET_SIZES + ' sizes"' : '') + '>' +
+      '<span class="sl">Size ' + (i + 1) + (extra.length ? ' · ' + esc(extra.join(' · ')) : '') + (locked ? ' · Pro' : '') + '</span>' +
+      '<span class="sv">' + (+z.w) + ' × ' + (+z.h) + ' mm</span></div>';
+  }).join('');
+}
+
+// One row per sheet size: width, height, price, and (Pro) how many are available.
+function sizeEditorHtml(e, jid) {
+  const sizes = e.sizes && e.sizes.length ? e.sizes : [{ w: '', h: '', price: '', max: null }];
+  const rows = sizes.map(function(z, i){
+    const locked = !isPro && i >= FREE_SHEET_SIZES;
+    return `<div class="size-row" data-sz="${i}"${locked ? ' style="opacity:.55"' : ''}>
+      <div class="size-no">${i + 1}</div>
+      <div><label class="lbl">W (mm)</label><input type="number" data-f="w" value="${+z.w > 0 ? +z.w : ''}" min="1" aria-label="Size ${i + 1} width in mm" oninput="updSz(${jid},${i},'w',this.value)"/></div>
+      <div><label class="lbl">H (mm)</label><input type="number" data-f="h" value="${+z.h > 0 ? +z.h : ''}" min="1" aria-label="Size ${i + 1} height in mm" oninput="updSz(${jid},${i},'h',this.value)"/></div>
+      <div><label class="lbl">Price £</label><input type="number" data-f="price" value="${+z.price > 0 ? +z.price : ''}" min="0" step="0.01" placeholder="0" aria-label="Size ${i + 1} price" oninput="updSz(${jid},${i},'price',this.value)"/></div>
+      <div><label class="lbl" title="How many sheets of this size you can use (what you have in stock, or what your supplier can send). Leave blank for no limit.">Max sheets</label><input type="number" data-f="max" value="${z.max != null && z.max !== '' ? z.max : ''}" min="1" placeholder="${isPro ? 'no limit' : 'Pro'}" aria-label="Size ${i + 1} maximum sheets available" oninput="updSz(${jid},${i},'max',this.value)"${isPro ? '' : ' disabled'}/></div>
+      <button type="button" class="btn-del" onclick="removeSizeRow(${jid},${i})" aria-label="Remove size ${i + 1}"${sizes.length > 1 ? '' : ' disabled style="visibility:hidden"'}>✕</button>
+    </div>`;
+  }).join('');
+  const full = sizes.length >= MAX_SHEET_SIZES;
+  return `<div class="se-box" style="margin-top:8px">
+    <div class="se-title">📐 Sheet sizes <span style="font-weight:400;text-transform:none;letter-spacing:0">— the optimiser picks the best mix</span></div>
+    ${rows}
+    <button type="button" class="btn-add-remnant" style="margin-top:6px" onclick="addSizeRow(${jid})"${full ? ' disabled' : ''}>+ Add sheet size${!isPro && sizes.length >= FREE_SHEET_SIZES ? ' &#128274;' : ''}${full ? ' (max ' + MAX_SHEET_SIZES + ')' : ''}</button>
+    ${!isPro && sizes.length > FREE_SHEET_SIZES ? `<div style="font-size:11.5px;color:#92400e;margin-top:6px">&#128274; The free plan uses the first ${FREE_SHEET_SIZES} sizes. Pro uses all of them.</div>` : ''}
+  </div>`;
+}
+
+// Sweep all open edit forms and flush their current DOM values into pending.
+// The oninput handlers normally keep pending current; this catches anything
+// that changed without an input event (autofill, for example).
 function flushEditForms() {
   pending.forEach(e => {
     const ed = document.getElementById(`ee-${e.id}`);
     if (!ed || ed.style.display === 'none') return;
-    // Each text input sits alone in its own <div>, so :nth-of-type(2)/(3) matched
-    // NOTHING and material/thickness were never flushed. Index the node list.
-    const texts   = ed.querySelectorAll('input[type=text]');
-    const nameEl  = texts[0] || null;
-    const matEl   = texts[1] || null;
-    const thkEl   = texts[2] || null;
-    if (nameEl)  e.name      = nameEl.value.trim()  || e.name;
-    if (matEl)   e.material  = matEl.value.trim();
-    if (thkEl)   e.thickness = thkEl.value.trim();
-    const nums = ed.querySelectorAll('input[type=number]');
-    if (!e.size1) e.size1 = {w:'',h:'',price:0};
-    if (!e.size2) e.size2 = {w:'',h:'',price:0};
-    if (nums[0] && nums[0].value !== '') e.size1.w = +nums[0].value;
-    if (nums[1] && nums[1].value !== '') e.size1.h = +nums[1].value;
-    if (nums[2] && nums[2].value !== '') e.size1.price = +nums[2].value;
-    if (nums[3] && nums[3].value !== '') e.size2.w = +nums[3].value;
-    if (nums[4] && nums[4].value !== '') e.size2.h = +nums[4].value;
-    if (nums[5] && nums[5].value !== '') e.size2.price = +nums[5].value;
+    ed.querySelectorAll('input[type=text][data-f]').forEach(function(inp){
+      const f = inp.getAttribute('data-f'), v = inp.value.trim();
+      if (f === 'name') e.name = v || e.name; else e[f] = v;
+    });
+    ed.querySelectorAll('.size-row').forEach(function(row){
+      const i = +row.getAttribute('data-sz');
+      if (!e.sizes) e.sizes = [];
+      if (!e.sizes[i]) e.sizes[i] = { w: '', h: '', price: 0, max: null };
+      row.querySelectorAll('input[data-f]').forEach(function(inp){ e.sizes[i][inp.getAttribute('data-f')] = inp.value; });
+    });
   });
 }
 
 function toggleEdit(id) {
   flushEditForms();
-  const ed=document.getElementById(`ee-${id}`), vw=document.getElementById(`ev-${id}`);
-  const o=ed.style.display!=='none';
-  ed.style.display=o?'none':'block';
-  vw.style.display=o?'block':'none';
-  // Re-render view side so it shows updated values
-  if (o) renderLibEntries();
+  if (_libOpen.has(id)) _libOpen.delete(id); else _libOpen.add(id);
+  renderLibEntries();
 }
 function upd(id,f,v){const e=pending.find(x=>x.id===id);if(e)e[f]=v;}
-function updSz(id,n,d,v){const e=pending.find(x=>x.id===id);if(!e)return;const k=n===1?'size1':'size2';if(!e[k])e[k]={w:'',h:''};e[k][d]=v;}
+function updSz(id, i, f, v) {
+  const e = pending.find(x => x.id === id);
+  if (!e) return;
+  if (!e.sizes) e.sizes = [];
+  if (!e.sizes[i]) e.sizes[i] = { w: '', h: '', price: 0, max: null };
+  e.sizes[i][f] = v;
+}
+function addSizeRow(id) {
+  const e = pending.find(x => x.id === id);
+  if (!e) return;
+  flushEditForms();
+  if (!e.sizes) e.sizes = [];
+  if (!isPro && e.sizes.length >= FREE_SHEET_SIZES) {
+    showUpgradeModal('\u{1F4D0}', 'More sheet sizes', 'The free plan uses 2 sheet sizes per material. Pro uses up to ' + MAX_SHEET_SIZES + ', with a limit on how many of each you have, and picks the cheapest mix.');
+    return;
+  }
+  if (e.sizes.length >= MAX_SHEET_SIZES) return;
+  e.sizes.push({ w: '', h: '', price: '', max: null });
+  _libOpen.add(id);
+  renderLibEntries();
+  const rows = document.querySelectorAll('#ee-' + CSS.escape(String(id)) + ' .size-row');
+  const last = rows[rows.length - 1];
+  if (last) last.querySelector('input').focus();
+}
+function removeSizeRow(id, i) {
+  const e = pending.find(x => x.id === id);
+  if (!e || !e.sizes || e.sizes.length <= 1) return;
+  flushEditForms();
+  e.sizes.splice(i, 1);
+  renderLibEntries();
+}
 function delPending(id){pending=pending.filter(x=>x.id!==id);renderLibEntries();}
 function addLibEntry(){
   const name=document.getElementById('n-name').value.trim();
@@ -2505,8 +2546,10 @@ function addLibEntry(){
     grade:'',
     cuttingMethod:'free',
     allowRotation:true,
-    size1:{w:w1, h:h1, price:pr1},
-    size2:{w:+document.getElementById('n-w2').value||'', h:+document.getElementById('n-h2').value||'', price:pr2}
+    sizes: cleanSizes([
+      { w: w1, h: h1, price: pr1 },
+      { w: +document.getElementById('n-w2').value || '', h: +document.getElementById('n-h2').value || '', price: pr2 }
+    ])
   });
   ['n-name','n-mat','n-thk','n-w1','n-h1','n-pr1','n-w2','n-h2','n-pr2'].forEach(id=>document.getElementById(id).value='');
   renderLibEntries();
@@ -3043,11 +3086,6 @@ async function saveData(lib){
 // broken to use (no object at all), which the caller filters out.
 function normalizeLibEntry(e){
   if (!e || typeof e !== 'object') return null;
-  const numOr = function(v, d){ const n = parseFloat(v); return isFinite(n) && n >= 0 ? n : d; };
-  const size = function(s){
-    if (!s || typeof s !== 'object') return {w:'',h:'',price:0};
-    return { w: (+s.w>0? +s.w : ''), h: (+s.h>0? +s.h : ''), price: numOr(s.price, 0) };
-  };
   return {
     id: (e.id !== undefined && e.id !== null) ? e.id : ('lib-' + Date.now() + '-' + Math.random().toString(36).slice(2,7)),
     name: (typeof e.name === 'string' ? e.name : '').slice(0, 80),
@@ -3056,11 +3094,38 @@ function normalizeLibEntry(e){
     grade: (typeof e.grade === 'string' ? e.grade : '').slice(0, 30),
     cuttingMethod: (e.cuttingMethod === 'guillotine') ? 'guillotine' : 'free',
     allowRotation: e.allowRotation !== false,
-    size1: size(e.size1),
-    size2: size(e.size2),
+    sizes: cleanSizes(Array.isArray(e.sizes) ? e.sizes : [e.size1, e.size2]),
     _transient: e._transient === true || undefined
   };
 }
+
+// Sheet sizes as stored: [{w, h, price, max}], only real sizes, one per
+// width x height, at most MAX_SHEET_SIZES. Libraries saved before multiple
+// sizes existed had size1/size2; normalizeLibEntry passes those in here.
+function cleanSizes(raw) {
+  const out = [], seen = {};
+  (raw || []).forEach(function(s){
+    if (!s || typeof s !== 'object') return;
+    const w = parseFloat(s.w), h = parseFloat(s.h);
+    if (!(w > 0) || !(h > 0) || w > 100000 || h > 100000) return;
+    const key = w + 'x' + h;
+    if (seen[key] || out.length >= MAX_SHEET_SIZES) return;
+    seen[key] = 1;
+    const price = parseFloat(s.price);
+    const max = parseInt(s.max, 10);
+    out.push({ w: w, h: h, price: isFinite(price) && price > 0 ? Math.min(price, 1000000) : 0,
+               max: max >= 1 ? Math.min(max, 9999) : null });
+  });
+  return out;
+}
+
+// The size on a material with these exact dimensions, for pricing a sheet.
+function sizeByDims(libMat, w, h) {
+  return (libMat && libMat.sizes || []).find(function(s){ return s.w === w && s.h === h; }) || null;
+}
+
+// Free plan: 2 sheet sizes per material, no stock limits.
+const FREE_SHEET_SIZES = 2;
 
 async function loadLib(){
   setSS('saving','Loading…');
@@ -3089,14 +3154,10 @@ async function loadLib(){
       // master grade, heal it by copying the master's sizes. This fixes corrupted
       // entries WITHOUT removing them, so jobs that reference them keep working.
       custom.forEach(function(e){
-        const bad1 = !(e.size1 && +e.size1.w>0 && +e.size1.h>0);
-        if(bad1 && e.name){
+        if(!e.sizes.length && e.name){
           const master = masterByName[e.name.trim().toLowerCase()];
           if(master){
-            e.size1 = {w:master.size1.w, h:master.size1.h, price:(e.size1&&+e.size1.price)||master.size1.price};
-            if(!(e.size2 && +e.size2.w>0 && +e.size2.h>0) && master.size2){
-              e.size2 = {w:master.size2.w, h:master.size2.h, price:master.size2.price};
-            }
+            e.sizes = normalizeLibEntry(master).sizes;
             if(!e.cuttingMethod) e.cuttingMethod = master.cuttingMethod||'free';
           }
         }
@@ -3118,7 +3179,7 @@ async function loadLib(){
         masters.push(storedById[m.id] ? storedById[m.id] : m); // user's edit wins
       });
 
-      library = masters.concat(custom);
+      library = masters.concat(custom).map(normalizeLibEntry).filter(Boolean);
       setSS('ok','Pro library active');
     }else{
       // Not Pro: the master library is a Pro feature, so master-id entries are
@@ -3465,8 +3526,8 @@ document.addEventListener('DOMContentLoaded',function(){
           material: '', thickness: '', grade: '',
           cuttingMethod: (sm.cuttingMethod === 'guillotine') ? 'guillotine' : 'free',
           allowRotation: sm.allowRotation !== false,
-          size1: cleanSize(sm.size1),
-          size2: cleanSize(sm.size2)
+          // v3 links carry sizes[]; v1/v2 links carried size1/size2.
+          sizes: cleanSizes(Array.isArray(sm.sizes) ? sm.sizes.slice(0, MAX_SHEET_SIZES) : [cleanSize(sm.size1), cleanSize(sm.size2)])
         });
         newMats.push({
           id: 'mat-' + Date.now() + '-' + i,

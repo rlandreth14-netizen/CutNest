@@ -9,6 +9,7 @@
 //   - every pair of pieces is at least one kerf apart
 //   - grain lock is never broken, and the "rotated" flag tells the truth
 //   - guillotine layouts can always be sawn (a cut sequence exists)
+//   - no more sheets of a size are used than its stock limit allows
 //   - big jobs of small parts finish in reasonable time
 
 'use strict';
@@ -21,7 +22,7 @@ const engineSrc = fs.readFileSync(path.join(__dirname, '..', 'js', 'engine.js'),
 const ctx = { settings: { minOffcutLong: 1000, minOffcutShort: 300 } };
 vm.createContext(ctx);
 vm.runInContext('var KERF = 4, PACK_EFFORT = 8;\n' + engineSrc +
-  '\nthis.E = { runMat, deriveGuillotineCuts, largestEmptyRect, maxRectsPack };' +
+  '\nthis.E = { runMat, packJob, stockSizes, deriveGuillotineCuts, largestEmptyRect, maxRectsPack };' +
   '\nthis.setKerf = function (k) { KERF = k; };', ctx);
 const E = ctx.E;
 
@@ -66,16 +67,30 @@ function checkLayout(name, lib, pieces, res, kerf) {
         }
       }
     }
+    if (!s.isRemnant) {
+      ok(E.stockSizes(lib).some(z => z.w === s.sheetW && z.h === s.sheetH), name,
+         `sheet ${s.sheetW}x${s.sheetH} is not one of the material's sizes`);
+    }
     if (lib.cuttingMethod === 'guillotine' && s.placed.length > 1) {
       ok(!!E.deriveGuillotineCuts(s.placed, s.sheetW, s.sheetH, kerf), name, 'guillotine sheet has no valid cut sequence');
     }
   }
 }
 
+function checkStock(name, lib, res) {
+  const used = {};
+  res.sheets.forEach(s => { if (!s.isRemnant) used[s.sheetW + 'x' + s.sheetH] = (used[s.sheetW + 'x' + s.sheetH] || 0) + 1; });
+  E.stockSizes(lib).forEach(z => {
+    if (z.max != null) ok((used[z.w + 'x' + z.h] || 0) <= z.max, name, `used ${used[z.w + 'x' + z.h]} sheets of ${z.w}x${z.h}, only ${z.max} allowed`);
+  });
+  ok(!res.stockShort || res.unplaced.length > 0, name, 'stockShort set but nothing is unplaced');
+}
+
 function run(name, lib, pieces, kerf) {
   ctx.setKerf(kerf);
   const res = E.runMat(lib, pieces, null, 1);
   checkLayout(name, lib, pieces, res, kerf);
+  checkStock(name, lib, res);
   return res;
 }
 
@@ -106,6 +121,36 @@ console.log('Known cases');
   ok(r.x === 504 && r.w === 1496 && r.h === 1000, 'offcut beside a part', JSON.stringify(r));
 }
 
+{
+  // Sheet sizes: old size1/size2 libraries read the same as sizes[].
+  const legacy = E.stockSizes({ size1: { w: 2450, h: 1150, price: 100 }, size2: { w: 0, h: 0, price: 0 } });
+  ok(legacy.length === 1 && legacy[0].w === 2450 && legacy[0].max === null, 'legacy sizes', JSON.stringify(legacy));
+  const dup = E.stockSizes({ sizes: [{ w: 1000, h: 500 }, { w: 1000, h: 500 }, { w: 0, h: 5 }, { w: 800, h: 400, max: '3' }] });
+  ok(dup.length === 2 && dup[1].max === 3, 'sizes are cleaned', JSON.stringify(dup));
+}
+{
+  // Stock limit: only 2 big sheets, so the rest must go on the small size.
+  const lib = material({ sizes: [{ w: 2000, h: 1000, price: 50, max: 2 }, { w: 1000, h: 1000, price: 40 }] });
+  const res = run('stock limit spills to next size', lib, [{ w: 900, h: 900, qty: 7, label: 'Sq' }], 4);
+  const big = res.sheets.filter(s => s.sheetW === 2000).length;
+  ok(big <= 2 && res.unplaced.length === 0, 'stock limit spills to next size', `big sheets ${big}, unplaced ${res.unplaced.length}`);
+}
+{
+  // Stock runs out completely: pieces are left over and the reason is stock.
+  const lib = material({ sizes: [{ w: 1000, h: 1000, price: 40, max: 2 }] });
+  const res = run('stock runs out', lib, [{ w: 900, h: 900, qty: 5, label: 'Sq' }], 4);
+  ok(res.sheets.length === 2 && res.unplaced.length === 3 && res.stockShort === true, 'stock runs out',
+     `sheets ${res.sheets.length}, unplaced ${res.unplaced.length}, stockShort ${res.stockShort}`);
+}
+{
+  // More than two sizes: the cheapest way to cut 4 of 1200x1200 is 4 of the
+  // 1250x1250 sheets (4 x 20), not 2 of the big 2500x1250 (2 x 60).
+  const lib = material({ sizes: [{ w: 2500, h: 1250, price: 60 }, { w: 1250, h: 1250, price: 20 }, { w: 3000, h: 1500, price: 90 }] });
+  const res = run('cheapest of three sizes', lib, [{ w: 1200, h: 1200, qty: 4, label: 'Big' }], 4);
+  const cost = res.sheets.reduce((a, s) => a + E.stockSizes(lib).find(z => z.w === s.sheetW && z.h === s.sheetH).price, 0);
+  ok(cost === 80, 'cheapest of three sizes', 'expected £80, got £' + cost);
+}
+
 // ── Seeded random jobs ────────────────────────────────────────────
 console.log('Random jobs');
 let seed = 20260925;
@@ -114,12 +159,26 @@ const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
 const JOBS = +(process.env.CUTNEST_JOBS || 80);
 for (let t = 0; t < JOBS; t++) {
   const kerf = [0, 0.3, 3, 4, 5, 18][ri(0, 5)];
-  const lib = material({
+  const priced = rnd() < 0.5;
+  let sizeSpec;
+  if (rnd() < 0.5) {
+    sizeSpec = { size1: { w: 2450, h: 1150, price: priced ? 100 : 0 },
+                 size2: rnd() < 0.6 ? { w: 1950, h: 900, price: 60 } : { w: 0, h: 0, price: 0 } };
+  } else {
+    // 1 to 8 sizes, some with stock limits.
+    const sizes = [];
+    for (let i = 0, n = ri(1, 8); i < n; i++) {
+      const w = ri(9, 30) * 100, h = ri(6, 15) * 100;
+      sizes.push({ w, h, price: priced ? Math.round(w * h / 30000) : 0, max: rnd() < 0.35 ? ri(1, 4) : null });
+    }
+    sizeSpec = { sizes };
+  }
+  const lib = material(Object.assign({
     cuttingMethod: rnd() < 0.4 ? 'guillotine' : 'free',
-    allowRotation: rnd() < 0.7,
-    size1: { w: 2450, h: 1150, price: rnd() < 0.5 ? 100 : 0 },
-    size2: rnd() < 0.6 ? { w: 1950, h: 900, price: 60 } : { w: 0, h: 0, price: 0 }
-  });
+    allowRotation: rnd() < 0.7
+  }, sizeSpec));
+  delete lib.size1; delete lib.size2;
+  if (!lib.sizes) { lib.size1 = sizeSpec.size1; lib.size2 = sizeSpec.size2; }
   const small = rnd() < 0.15;
   const pieces = [];
   for (let i = 0, n = ri(1, 15); i < n; i++) {
@@ -149,6 +208,21 @@ console.log('Speed');
     console.log(`  366 small parts, ${cm}: ${ms}ms`);
     ok(ms < 30000, 'speed ' + cm, `took ${ms}ms (budget 30000ms)`);
   }
+}
+
+{
+  // Twelve sheet sizes (the maximum) on a 200-part job.
+  seed = 11;
+  const sizes = [];
+  for (let i = 0; i < 12; i++) sizes.push({ w: 1200 + i * 150, h: 800 + (i % 4) * 150, price: 40 + i * 9 });
+  const pieces = [];
+  for (let i = 0; i < 25; i++) pieces.push({ w: ri(80, 700), h: ri(60, 500), qty: ri(4, 12), label: 'P' + i });
+  const lib = material({ sizes });
+  const t0 = Date.now();
+  run('12 sizes', lib, pieces, 4);
+  const ms = Date.now() - t0;
+  console.log(`  ${pieces.reduce((a, p) => a + p.qty, 0)} parts on 12 sheet sizes: ${ms}ms`);
+  ok(ms < 30000, 'speed 12 sizes', `took ${ms}ms (budget 30000ms)`);
 }
 
 console.log(`\n${checks} checks, ${failures} failed`);
