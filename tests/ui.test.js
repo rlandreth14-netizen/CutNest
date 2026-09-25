@@ -361,6 +361,27 @@ const tests = {
     expect(!page.errors.length, 'page errors: ' + page.errors.join(' | '));
   },
 
+  async 'grain per piece: Pro sets it, free is told'() {
+    const page = await freshPage({ pro: true });
+    await page.goto(base + '/app.html');
+    await page.waitForFunction(() => isPro && library.length > 20);
+    await page.selectOption('#mat-blocks select', '102');              // mild steel: may rotate
+    await setPiece(page, 1, 1100, 400, 6);
+    await page.click('[aria-label^="Piece 1 grain"]');                  // Auto -> Lock
+    expect(await page.evaluate(() => mats[0].pieces[0].grain) === 'lock', 'first click should lock the grain');
+    await calculateAndWait(page);
+    const rotated = await page.evaluate(() => calcResult.results[0].sheets.some(s => s.placed.some(p => p.rotated)));
+    expect(!rotated, 'a grain-locked piece was rotated');
+    await page.reload();
+    await page.waitForFunction(() => isPro && library.length > 20);
+    expect(await page.evaluate(() => mats[0].pieces[0].grain) === 'lock', 'grain setting lost on reload');
+
+    const free = await freshPage();
+    await startWithMetal(free);
+    await free.click('[aria-label^="Piece 1 grain"]');
+    expect(await free.isVisible('#upgrade-modal'), 'free plan: grain button should open the upgrade prompt');
+  },
+
   async 'landing page, FAQ and legal pages'() {
     const page = await freshPage({ viewport: { width: 390, height: 800 } });
     await page.goto(base + '/');

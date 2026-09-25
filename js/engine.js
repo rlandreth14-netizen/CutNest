@@ -28,7 +28,30 @@ function fitsWithKerf(r, pw, ph, sheetW, sheetH) {
   const rRight = r.x + r.w, rBottom = r.y + r.h;
   const needW = pw + (rRight  >= sheetW - 0.0001 ? 0 : KERF);
   const needH = ph + (rBottom >= sheetH - 0.0001 ? 0 : KERF);
-  return needW <= r.w && needH <= r.h;
+  return needW <= r.w + FIT_EPS && needH <= r.h + FIT_EPS;
+}
+
+// Tolerance for "does it fit" comparisons, in mm. Sizes entered in inches
+// become fractional millimetres (24" = 609.6mm), and sums of those pick up
+// floating-point noise, so two 24" parts could fail to fit a 48" sheet by
+// 0.0000000000002mm. A millionth of a millimetre is far below anything a
+// machine can cut, and whole-millimetre jobs are unaffected.
+const FIT_EPS = 1e-6;
+
+// ── ROTATION PER PIECE ────────────────────────────────────────
+// A material says whether its pieces may be turned 90° (grain lock). A piece
+// can override that with `rot`: false = never rotate this piece, true = may
+// rotate even on a grain-locked material. Pieces without `rot` follow the
+// material, which is exactly the behaviour before per-piece grain existed.
+function mayRotate(pc, materialAllows) {
+  return pc.rot === undefined ? materialAllows !== false : pc.rot === true;
+}
+
+// Pieces carried from one pass to the next keep their rotation rule.
+function poolPiece(p) {
+  const q = { w:p.w, h:p.h, label:p.label, pieceIndex:p.pieceIndex, instanceIndex:p.instanceIndex };
+  if (p.rot !== undefined) q.rot = p.rot;
+  return q;
 }
 
 // Identity of one physical part instance. Was written out by hand in 10 places.
@@ -194,16 +217,17 @@ function guillotinePack(sheetW, sheetH, queue, allowRotation) {
       const pc = rem[i];
       // Pieces of the same size score identically and only a strictly better
       // score wins, so only the first one of each size can ever be picked.
-      const dk = pc.w + 'x' + pc.h;
+      const canRot = mayRotate(pc, allowRotation);
+      const dk = pc.w + 'x' + pc.h + (canRot ? 'r' : '');
       if (tried.has(dk)) continue;
       tried.add(dk);
       const orients = [{pw:pc.w,ph:pc.h,rot:false}];
-      if (allowRotation && pc.w !== pc.h) orients.push({pw:pc.h,ph:pc.w,rot:true});
+      if (canRot && pc.w !== pc.h) orients.push({pw:pc.h,ph:pc.w,rot:true});
       for (let oi = 0; oi < orients.length; oi++) {
         const pw = orients[oi].pw, ph = orients[oi].ph, rot = orients[oi].rot;
         for (let j = 0; j < free.length; j++) {
           const r = free[j];
-          if (pw <= r.w && ph <= r.h) {
+          if (pw <= r.w + FIT_EPS && ph <= r.h + FIT_EPS) {
             const score = r.w * r.h - pw * ph;
             if (score < bs) { bs = score; bi = i; bj = j; bfit = {x:r.x,y:r.y,pw:pw,ph:ph,rot:rot}; }
           }
@@ -213,7 +237,7 @@ function guillotinePack(sheetW, sheetH, queue, allowRotation) {
     if (bi === -1) break;
     const pc2 = rem[bi];
     const x = bfit.x, y = bfit.y, pw = bfit.pw, ph = bfit.ph, rot = bfit.rot;
-    placed.push({x:x,y:y,w:pw,h:ph,label:pc2.label,pieceIndex:pc2.pieceIndex,instanceIndex:pc2.instanceIndex,rotated:rot});
+    placed.push({x:x,y:y,w:pw,h:ph,label:pc2.label,pieceIndex:pc2.pieceIndex,instanceIndex:pc2.instanceIndex,rotated:rot,rot:pc2.rot});
     rem.splice(bi, 1);
     improved = true;
     const used = free.splice(bj, 1)[0];
@@ -270,11 +294,12 @@ function maxRectsPack(sheetW, sheetH, queue, allowRot) {
       // Pieces of the same size score identically and only a strictly better
       // score wins, so only the first one of each size can ever be picked.
       // A job of 300 identical brackets used to score all 300 per placement.
-      const dk = pc.w + 'x' + pc.h;
+      const canRot = mayRotate(pc, allowRotation);
+      const dk = pc.w + 'x' + pc.h + (canRot ? 'r' : '');
       if (tried.has(dk)) continue;
       tried.add(dk);
       const orientations = [{pw:pc.w, ph:pc.h, rot:false}];
-      if (allowRotation && pc.w !== pc.h) orientations.push({pw:pc.h, ph:pc.w, rot:true});
+      if (canRot && pc.w !== pc.h) orientations.push({pw:pc.h, ph:pc.w, rot:true});
 
       for (const {pw, ph, rot} of orientations) {
         for (const r of free) {
@@ -306,7 +331,7 @@ function maxRectsPack(sheetW, sheetH, queue, allowRot) {
     const pc = rem[bestI];
     const {x, y, pw, ph, rot} = bestFit;
     placed.push({x, y, w:pw, h:ph, label:pc.label,
-                 pieceIndex:pc.pieceIndex, instanceIndex:pc.instanceIndex, rotated:rot});
+                 pieceIndex:pc.pieceIndex, instanceIndex:pc.instanceIndex, rotated:rot, rot:pc.rot});
     rem.splice(bestI, 1);
     improved = true;
 
@@ -346,7 +371,7 @@ function maxRectsPack(sheetW, sheetH, queue, allowRot) {
       const spot = findEmptySpot(sheetW, sheetH, placed, pc, allowRotation);
       if (spot) {
         placed.push({ x:spot.x, y:spot.y, w:spot.w, h:spot.h, label:pc.label,
-                      pieceIndex:pc.pieceIndex, instanceIndex:pc.instanceIndex, rotated:spot.rot });
+                      pieceIndex:pc.pieceIndex, instanceIndex:pc.instanceIndex, rotated:spot.rot, rot:pc.rot });
       } else {
         stillRem.push(pc);
       }
@@ -490,7 +515,7 @@ function packingLowerBound(queue, W, H, kerf, allowRot) {
         const a1 = _dffU(p.w + k, BW, kw) * _dffU(p.h + k, BH, kh);
         // With rotation the piece picks its own orientation, so the bound MUST
         // take the cheaper one or it would not be a valid lower bound.
-        const a2 = allowRot ? _dffU(p.h + k, BW, kw) * _dffU(p.w + k, BH, kh) : a1;
+        const a2 = mayRotate(p, allowRot) ? _dffU(p.h + k, BW, kw) * _dffU(p.w + k, BH, kh) : a1;
         t += Math.min(a1, a2);
       }
       const v = Math.ceil(t / CAP - 1e-9);
@@ -635,7 +660,7 @@ function packOpenSheets(sheetW, sheetH, queue, allowRot, rule) {
 
   for (const pc of queue) {
     const orientations = [{pw:pc.w, ph:pc.h, rot:false}];
-    if (ar && pc.w !== pc.h) orientations.push({pw:pc.h, ph:pc.w, rot:true});
+    if (mayRotate(pc, ar) && pc.w !== pc.h) orientations.push({pw:pc.h, ph:pc.w, rot:true});
 
     let best = null;
     for (let bi = 0; bi < bins.length; bi++) {
@@ -660,7 +685,7 @@ function packOpenSheets(sheetW, sheetH, queue, allowRot, rule) {
     if (!best) {
       // Nothing fits anywhere: open a fresh sheet.
       let fit = null;
-      for (const o of orientations) if (o.pw <= sheetW && o.ph <= sheetH) { fit = o; break; }
+      for (const o of orientations) if (o.pw <= sheetW + FIT_EPS && o.ph <= sheetH + FIT_EPS) { fit = o; break; }
       if (!fit) continue;   // genuinely oversized; caller detects the shortfall
       bins.push({ free:[{x:0,y:0,w:sheetW,h:sheetH}], placed:[] });
       best = { bi: bins.length-1, r: bins[bins.length-1].free[0], pw:fit.pw, ph:fit.ph, rot:fit.rot };
@@ -669,7 +694,7 @@ function packOpenSheets(sheetW, sheetH, queue, allowRot, rule) {
     const b = bins[best.bi];
     const x = best.r.x, y = best.r.y;
     b.placed.push({x:x, y:y, w:best.pw, h:best.ph, label:pc.label,
-                   pieceIndex:pc.pieceIndex, instanceIndex:pc.instanceIndex, rotated:best.rot});
+                   pieceIndex:pc.pieceIndex, instanceIndex:pc.instanceIndex, rotated:best.rot, rot:pc.rot});
     const box = { x:x, y:y, w:best.pw + KERF, h:best.ph + KERF };
     const nf = [];
     for (const r of b.free) {
@@ -794,7 +819,7 @@ const PACK_CACHE_MAX = 20000;
 function packSheetBest(sheetW, sheetH, queue, allowRot, cuttingMethod) {
   if (!_packCache) return _packSheetBest(sheetW, sheetH, queue, allowRot, cuttingMethod);
   let key = sheetW + 'x' + sheetH + '|' + (allowRot !== false ? 1 : 0) + (cuttingMethod || 'free') + '|' + PACK_EFFORT + '|';
-  for (const p of queue) key += p.pieceIndex + '-' + p.instanceIndex + ':' + p.w + ':' + p.h + ',';
+  for (const p of queue) key += p.pieceIndex + '-' + p.instanceIndex + ':' + p.w + ':' + p.h + (p.rot === undefined ? '' : p.rot ? 'r' : 'n') + ',';
   let r = _packCache.get(key);
   if (!r) {
     r = _packSheetBest(sheetW, sheetH, queue, allowRot, cuttingMethod);
@@ -924,7 +949,7 @@ function rebalanceSheets(sheets, sizes, allowRot, cm) {
       // Pool all their pieces
       const pool = [];
       poolSheets.forEach(function(s){ s.placed.forEach(function(p){
-        pool.push({ w:p.w, h:p.h, label:p.label, pieceIndex:p.pieceIndex, instanceIndex:p.instanceIndex });
+        pool.push(poolPiece(p));
       });});
 
       // Re-pack the pool across the sizes, cost-aware, never using more of a
@@ -1061,9 +1086,7 @@ function consolidateSheets(sheets, allowRot, cm) {
       if (!donor || donor.isRemnant) continue;
 
       // Donor pieces to rehome
-      let remaining = donor.placed.map(function(p){
-        return { w:p.w, h:p.h, label:p.label, pieceIndex:p.pieceIndex, instanceIndex:p.instanceIndex };
-      });
+      let remaining = donor.placed.map(poolPiece);
 
       // Build a candidate new layout: copies of all non-donor sheets, into which
       // we try to absorb the donor's pieces.
@@ -1076,9 +1099,7 @@ function consolidateSheets(sheets, allowRot, cm) {
         const target = candidate[t];
         if (!target || target.isRemnant) continue;
 
-        const existing = target.placed.map(function(p){
-          return { w:p.w, h:p.h, label:p.label, pieceIndex:p.pieceIndex, instanceIndex:p.instanceIndex };
-        });
+        const existing = target.placed.map(poolPiece);
         const combined = existing.concat(remaining);
         const repacked = packSheetBest(target.sheetW, target.sheetH, combined, allowRot, cm);
 
@@ -1154,6 +1175,16 @@ function minSheetFor(w, h, allowRot) {
   return allowRot ? { w: Math.min(w,h), h: Math.max(w,h) } : { w: w, h: h };
 }
 
+// One physical part to place. A piece's `grain` ('lock' or 'free') becomes
+// its own rotation rule; without it the piece follows the material.
+function queueItem(p, pi, q) {
+  const item = {...p, w:+p.w, h:+p.h, label:p.label||'', pieceIndex:pi, instanceIndex:q};
+  delete item.rot;
+  if (p.grain === 'lock') item.rot = false;
+  else if (p.grain === 'free') item.rot = true;
+  return item;
+}
+
 // Fallback packer: greedy only, no consolidation/rebalancing. Used if the
 // full runMat throws, so one material's optimisation bug can't break the job.
 // Takes the remnant too — without it, a crash in runMat silently made the user
@@ -1163,7 +1194,7 @@ function runMatSafe(libMat, pieces, jobQty, remnant) {
   let queue = [];
   pieces.forEach(function(p, pi){
     for (let q = 0; q < (+p.qty||1) * mult; q++)
-      queue.push({...p, w:+p.w, h:+p.h, label:p.label||'', pieceIndex:pi, instanceIndex:q});
+      queue.push(queueItem(p, pi, q));
   });
   const sizes = stockSizes(libMat);
   if (!sizes.length) return { sheets:[], unplaced:queue, sizeMap:{}, noValidSize:true };
@@ -1232,7 +1263,7 @@ function _runMat(libMat, pieces, remnant, jobQty) {
   let queue = [];
   pieces.forEach((p, pi) => {
     for (let q = 0; q < (+p.qty||1) * mult; q++)
-      queue.push({...p, w:+p.w, h:+p.h, label:p.label||'', pieceIndex:pi, instanceIndex:q});
+      queue.push(queueItem(p, pi, q));
   });
 
   // ── EFFORT TUNING (performance) ──
@@ -1440,7 +1471,7 @@ function _runMat(libMat, pieces, remnant, jobQty) {
     // Every piece must fit a size for an all-one-size nest to exist there.
     const fitsAll = function(sz){
       return originalQueue.every(function(p){
-        return (p.w <= sz.w && p.h <= sz.h) || (_arOpen && p.h <= sz.w && p.w <= sz.h);
+        return (p.w <= sz.w + FIT_EPS && p.h <= sz.h + FIT_EPS) || (mayRotate(p, _arOpen) && p.h <= sz.w + FIT_EPS && p.w <= sz.h + FIT_EPS);
       });
     };
     const openSizes = searchSizes(sizes, function(sz){
@@ -1561,7 +1592,7 @@ function _runMat(libMat, pieces, remnant, jobQty) {
 // Returns {x,y,w,h,rot} or null. Honours kerf so cuts stay clean.
 function findEmptySpot(sheetW, sheetH, placed, pc, allowRotation) {
   const orientations = [{pw:pc.w, ph:pc.h, rot:false}];
-  if (allowRotation && pc.w !== pc.h) orientations.push({pw:pc.h, ph:pc.w, rot:true});
+  if (mayRotate(pc, allowRotation) && pc.w !== pc.h) orientations.push({pw:pc.h, ph:pc.w, rot:true});
 
   // Candidate corner positions: sheet origin + right/bottom edges of every placed piece
   const xsSet = new Set([0]);
@@ -1589,11 +1620,11 @@ function findEmptySpot(sheetW, sheetH, placed, pc, allowRotation) {
   // skipped.
   for (const {pw, ph, rot} of orientations) {
     for (const y of ys) {
-      if (y + ph > sheetH) continue;
+      if (y + ph > sheetH + FIT_EPS) continue;
       const band = moats.filter(function(m){ return !(y+ph <= m.y || m.y+m.h <= y); });
       for (let i = 0; i < xs.length; i++) {
         const x = xs[i];
-        if (x + pw > sheetW) break;               // xs is sorted
+        if (x + pw > sheetW + FIT_EPS) break;     // xs is sorted
         let hitEnd = null;
         for (let j = 0; j < band.length; j++) {
           const m = band[j];

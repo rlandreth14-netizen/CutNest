@@ -240,6 +240,7 @@ function buildBlock(m, idx) {
           <button class="qty-btn" onclick="stepQty('${m.id}',${pi},1)" type="button" aria-label="Increase piece ${pi+1} quantity">+</button>
         </div>
       </td>
+      <td data-label="Grain" style="width:74px">${grainButtonHtml(m, pi, libMat)}</td>
       <td style="white-space:nowrap;padding:4px 2px" data-label="Actions">
         <button onclick="duplicatePiece('${m.id}',${pi})" title="Duplicate piece" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:2px 5px" aria-label="Duplicate">⧉</button>
         <button class="btn-del" onclick="removePiece('${m.id}',${pi})" aria-label="Remove piece ${pi+1}">&#10005;</button>
@@ -286,7 +287,7 @@ function buildBlock(m, idx) {
         </div>
         <div class="pieces-table-wrap" style="overflow-x:auto">
           <table>
-            <thead><tr><th style="width:26px">#</th><th>Label</th><th>W (mm)</th><th>H (mm)</th><th style="width:90px">Qty</th><th style="width:52px"></th></tr></thead>
+            <thead><tr><th style="width:26px">#</th><th>Label</th><th>W (mm)</th><th>H (mm)</th><th style="width:90px">Qty</th><th style="width:74px">Grain</th><th style="width:52px"></th></tr></thead>
             <tbody id="ptbody-${m.id}">${pRows}</tbody>
           </table>
         </div>
@@ -301,6 +302,45 @@ function buildBlock(m, idx) {
     </div>`;
 }
 
+
+// ── GRAIN PER PIECE (Pro) ────────────────────────────────────
+// Each piece either follows its material's grain setting ('auto'), is locked
+// to the orientation entered ('lock': brushed or veneered faces, a door that
+// must run with the grain), or may be turned even on a grain-locked material
+// ('free': a hidden back panel). Stored as piece.grain: undefined|'lock'|'free'.
+const GRAIN_STATES = [
+  { v: undefined, text: 'Auto',  icon: '',        tip: 'Follows the material setting' },
+  { v: 'lock',    text: 'Lock',  icon: '\u{1F512} ', tip: 'Never rotate this piece' },
+  { v: 'free',    text: 'Turn',  icon: '\u21BB ',  tip: 'This piece may be rotated, even if the material is grain-locked' }
+];
+function grainButtonHtml(m, pi, libMat) {
+  const g = m.pieces[pi].grain;
+  const st = GRAIN_STATES.find(function(x){ return x.v === g; }) || GRAIN_STATES[0];
+  const matLocked = libMat && libMat.allowRotation === false;
+  const tip = st.v === undefined ? st.tip + (libMat ? (matLocked ? ' (grain locked: no rotation)' : ' (may rotate)') : '') : st.tip;
+  const on = st.v !== undefined;
+  return `<button type="button" class="grain-btn${on ? ' on' : ''}" onclick="cycleGrain('${m.id}',${pi})" title="${esc(tip)}${isPro ? '' : ' \u2014 Pro'}" aria-label="Piece ${pi+1} grain: ${esc(st.text)}. ${esc(tip)}">${st.icon}${st.text}${isPro ? '' : ' &#128274;'}</button>`;
+}
+function cycleGrain(matId, pi) {
+  if (!isPro) {
+    showUpgradeModal('\u{1F512}', 'Grain per piece', 'Pro lets you lock the grain on individual pieces, or let a hidden piece turn on a grain-locked sheet, so every part runs the right way and the rest pack as tight as possible.');
+    return;
+  }
+  const m = mats.find(function(x){ return x.id === matId; });
+  if (!m || !m.pieces[pi]) return;
+  pushUndo();
+  const i = GRAIN_STATES.findIndex(function(x){ return x.v === m.pieces[pi].grain; });
+  const next = GRAIN_STATES[(i + 1) % GRAIN_STATES.length].v;
+  if (next === undefined) delete m.pieces[pi].grain; else m.pieces[pi].grain = next;
+  renderAll(); saveState();
+  if (calcResult) { const sb = document.getElementById('stale-banner'); if (sb) sb.style.display = 'block'; }
+}
+// Whether this piece may be turned 90°, given its material.
+function pieceMayRotate(p, libMat) {
+  if (p.grain === 'lock') return false;
+  if (p.grain === 'free') return true;
+  return libMat.allowRotation !== false;
+}
 
 // ── PASTE A CUT LIST ──────────────────────────────────────────
 // The only bulk tool was "+ Add 5 empty rows". Every fabricator already has the
@@ -1219,6 +1259,7 @@ function gatedFeatures(libMat, m) {
   if (libMat.allowRotation === false) out.push('grain lock');
   if (libMat.cuttingMethod === 'guillotine') out.push('guillotine mode');
   if (m && m.remnant && m.remnant.w && m.remnant.h) out.push('your remnant');
+  if (m && m.pieces && m.pieces.some(function(p){ return p.grain; })) out.push('grain per piece');
   const sizes = stockSizes(libMat);
   if (sizes.length > FREE_SHEET_SIZES) out.push('sheet sizes after the first ' + FREE_SHEET_SIZES);
   if (sizes.some(function(z){ return z.max != null; })) out.push('stock limits');
@@ -1401,7 +1442,9 @@ async function _doCalculate() {
     // upgrade); the free calculation just runs without them and says so.
     const libMat = isPro ? storedMat : freeTierMat(storedMat);
     const gated = isPro ? [] : gatedFeatures(storedMat, m);
-    const valid = m.pieces.filter(p=>p.w>0&&p.h>0&&p.qty>0);
+    // Grain per piece is Pro: on the free plan every piece follows the material.
+    const valid = m.pieces.filter(p=>p.w>0&&p.h>0&&p.qty>0)
+      .map(function(p){ if (isPro || !p.grain) return p; const c = Object.assign({}, p); delete c.grain; return c; });
     if (!valid.length) { errors.push(`Material ${mats.indexOf(m)+1} (${esc(libMat.name)}): Please add at least one piece.`); continue; }
 
     // check pieces fit — only against sizes that have real positive dimensions
@@ -1422,10 +1465,10 @@ async function _doCalculate() {
     // banner that is easy to scroll past. Now the pieces that DO fit are packed
     // and reported as normal, and the offenders are carried through as
     // `oversized` so every surface can show a per-material "not placed" block.
-    const allowRot = libMat.allowRotation !== false;
     const fitting = [], oversized = [];
     for (const p of valid) {
       const pw = +p.w, ph = +p.h;
+      const allowRot = pieceMayRotate(p, libMat);     // this piece, not just the material
       const fits = sizes.some(function(sz){
         const sw = +sz.w, sh = +sz.h;
         // Only count the rotated orientation if this material actually permits
@@ -1443,7 +1486,7 @@ async function _doCalculate() {
       });
       const sizeStr = sizes.map(function(s){return (+s.w)+'×'+(+s.h)+'mm';}).join(' or ') + (trimMm ? ' usable after the ' + trimMm + 'mm edge trim' : '');
       errors.push(fitsRotated
-        ? `${esc(libMat.name)}: "${esc(p.label||pw+'×'+ph)}" (${pw}×${ph}mm) only fits rotated, but grain is locked for this material.`
+        ? `${esc(libMat.name)}: "${esc(p.label||pw+'×'+ph)}" (${pw}×${ph}mm) only fits rotated, but grain is locked for ${p.grain === 'lock' ? 'this piece' : 'this material'}.`
         : `${esc(libMat.name)}: "${esc(p.label||pw+'×'+ph)}" (${pw}×${ph}mm) is too big for the ${sizeStr} sheet.`);
     }
 
@@ -3557,7 +3600,8 @@ document.addEventListener('DOMContentLoaded',function(){
             w: clampNum(p && p.w, 0, 100000) || '',
             h: clampNum(p && p.h, 0, 100000) || '',
             qty: clampNum(p && p.qty, 1, 9999) || 1,
-            label: clampStr(p && p.label, 40)
+            label: clampStr(p && p.label, 40),
+            grain: (p && (p.grain === 'lock' || p.grain === 'free')) ? p.grain : undefined
           };
         });
         return out.length ? out : [{w:'',h:'',qty:1,label:''}];

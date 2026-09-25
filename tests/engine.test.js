@@ -55,7 +55,8 @@ function checkLayout(name, lib, pieces, res, kerf) {
       const o = pieces[p.pieceIndex];
       const same = p.w === o.w && p.h === o.h, swapped = p.w === o.h && p.h === o.w;
       ok(same || swapped, name, 'piece dimensions changed');
-      if (lib.allowRotation === false) ok(same, name, 'piece rotated although grain is locked');
+      const locked = o.grain === 'lock' || (o.grain !== 'free' && lib.allowRotation === false);
+      if (locked) ok(same, name, 'piece rotated although its grain is locked');
       ok(p.rotated === (!same && swapped), name, 'rotated flag does not match the placement');
     }
     for (let i = 0; i < s.placed.length; i++) {
@@ -168,6 +169,18 @@ console.log('Known cases');
   ok(res.sheets.length === 4, 'trim 11mm', `expected 4 sheets, got ${res.sheets.length}`);
 }
 
+{
+  // Grain per piece. Grain-locked material, but a hidden back panel may turn:
+  // it only fits turned, so it must be placed rotated.
+  let res = run('piece may turn on locked material', material({ allowRotation: false }),
+    [{ w: 1100, h: 2000, qty: 1, label: 'Back', grain: 'free' }], 4);
+  ok(res.unplaced.length === 0 && res.sheets[0].placed[0].rotated === true, 'piece may turn on locked material', 'expected one rotated piece');
+  // Free material, one locked piece: it must never turn, the others may.
+  res = run('locked piece on free material', material(),
+    [{ w: 1100, h: 400, qty: 6, label: 'Door', grain: 'lock' }, { w: 300, h: 1000, qty: 6, label: 'Shelf' }], 4);
+  ok(res.sheets.every(s => s.placed.every(p => p.pieceIndex !== 0 || !p.rotated)), 'locked piece on free material', 'a grain-locked piece was rotated');
+}
+
 // ── Seeded random jobs ────────────────────────────────────────────
 console.log('Random jobs');
 let seed = 20260925;
@@ -203,7 +216,8 @@ for (let t = 0; t < JOBS; t++) {
     pieces.push({
       w: small ? ri(20, 120) : ri(40, 1100) + (rnd() < 0.2 ? 0.5 : 0),
       h: small ? ri(20, 120) : ri(40, 850),
-      qty: ri(1, small ? 20 : 5), label: 'P' + i
+      qty: ri(1, small ? 20 : 5), label: 'P' + i,
+      grain: rnd() < 0.2 ? (rnd() < 0.5 ? 'lock' : 'free') : undefined
     });
   }
   run(`job ${t} (${lib.cuttingMethod}, kerf ${kerf}, rotation ${lib.allowRotation})`, lib, pieces, kerf);
