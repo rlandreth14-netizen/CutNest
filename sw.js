@@ -11,12 +11,16 @@
    bump the VERSION string below.
    ════════════════════════════════════════════════════════════════ */
 
-const VERSION = 'cutnest-v18';
+const VERSION = 'cutnest-v20';
 
 const PRECACHE = [
   '/',
   '/index.html',
   '/app.html',
+  '/css/app.css',
+  '/js/engine.js',
+  '/js/app.js',
+  '/js/pack-worker.js',
   '/terms.html',
   '/privacy.html',
   '/fonts/fonts.css',
@@ -105,12 +109,11 @@ self.addEventListener('fetch', function (event) {
   // ── Same-origin assets (fonts are self-hosted under /fonts): cache-first ──
   const isSameOrigin = url.origin === self.location.origin;
 
-  // HTML must never be served stale. A non-navigation fetch of a .html page
-  // (e.g. a prefetch, or app.html requested as a resource) should still go
-  // network-first so a phone-deployed update is picked up, not pinned to an old
-  // cached copy until VERSION bumps. Treat these like navigations.
-  const isHTML = isSameOrigin && /\.html?($|\?)/.test(url.pathname);
-  if (isHTML) {
+  // HTML, JS and CSS must never be served stale. They are deployed together,
+  // so a fresh app.html running a cached, older js/app.js would break. Fetch
+  // them network-first (cache only as the offline fallback), like navigations.
+  const isCode = isSameOrigin && /\.(html?|js|css)$/.test(url.pathname);
+  if (isCode) {
     event.respondWith(
       fetch(req)
         .then(function (res) {
