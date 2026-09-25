@@ -1301,15 +1301,20 @@ function exportCutSheets() {
   if (!calcResult) { showToast('Calculate a job first'); return; }
   const html = buildCutSheetsHtml();
   if (!html) { showToast('Nothing to print yet'); return; }
+  openPrintable(html, 'Cut sheets');
+}
+
+// Open a generated page in a new window and print it. If the popup is
+// blocked (common on phones), open it as a blob tab the user can print.
+function openPrintable(html, what) {
   const w = window.open('', '_blank');
   if (!w) {
-    // Popup blocked (common on mobile): fall back to a blob the user can open.
     try {
       const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
       const a = document.createElement('a');
       a.href = url; a.target = '_blank'; a.rel = 'noopener';
       a.click();
-      showToast('Cut sheets opened in a new tab \u2014 use your browser\u2019s Print / Save as PDF');
+      showToast(what + ' opened in a new tab \u2014 use your browser\u2019s Print / Save as PDF');
     } catch (e) {
       showToast('Your browser blocked the window \u2014 allow pop-ups for cutnest.co.uk');
     }
@@ -1318,6 +1323,119 @@ function exportCutSheets() {
   w.document.write(html);
   w.document.close();
   setTimeout(function () { w.print(); }, 700);
+}
+
+// ── PART LABELS (Pro) ─────────────────────────────────────────
+// One sticky label per part, printed on standard label sheets, so every
+// piece coming off the saw or laser can be identified. Each label carries the
+// same "Sheet N · Part M" numbers as the cut sheets (parts numbered top-left
+// to bottom-right on each sheet), so a label can be matched to its drawing.
+// Layouts are the manufacturers' published dimensions, in mm.
+const LABEL_LAYOUTS = {
+  L7160: { name: 'Avery L7160 / J8160 \u2014 21 per A4 (63.5 \u00d7 38.1mm)', page: 'A4', pw: 210, ph: 297, cols: 3, rows: 7, w: 63.5, h: 38.1, left: 7.2, top: 15.1, dx: 66.0, dy: 38.1 },
+  L7163: { name: 'Avery L7163 / J8163 \u2014 14 per A4 (99.1 \u00d7 38.1mm)', page: 'A4', pw: 210, ph: 297, cols: 2, rows: 7, w: 99.1, h: 38.1, left: 4.65, top: 15.1, dx: 101.6, dy: 38.1 },
+  L7159: { name: 'Avery L7159 \u2014 24 per A4 (63.5 \u00d7 33.9mm)', page: 'A4', pw: 210, ph: 297, cols: 3, rows: 8, w: 63.5, h: 33.9, left: 6.45, top: 12.9, dx: 66.0, dy: 33.9 },
+  A5160: { name: 'Avery 5160 \u2014 30 per US Letter (2 5/8 \u00d7 1")', page: 'letter', pw: 215.9, ph: 279.4, cols: 3, rows: 10, w: 66.675, h: 25.4, left: 4.7625, top: 12.7, dx: 69.85, dy: 25.4 },
+  A5163: { name: 'Avery 5163 \u2014 10 per US Letter (4 \u00d7 2")', page: 'letter', pw: 215.9, ph: 279.4, cols: 2, rows: 5, w: 101.6, h: 50.8, left: 3.96875, top: 12.7, dx: 106.3625, dy: 50.8 }
+};
+
+// Every placed part, in cut-sheet order, with what its label needs.
+function labelItems() {
+  const items = [];
+  const jr = (((document.getElementById('job-ref') || {}).value) || '').trim();
+  calcResult.results.forEach(function (r) {
+    const libMat = r.libMat;
+    const total = {}, seen = {};
+    r.sheets.forEach(function (sh) { sh.placed.forEach(function (p) { total[p.pieceIndex] = (total[p.pieceIndex] || 0) + 1; }); });
+    r.sheets.forEach(function (sh, si) {
+      sh.placed.slice().sort(function (a, b) { return (a.y - b.y) || (a.x - b.x); }).forEach(function (p, i) {
+        seen[p.pieceIndex] = (seen[p.pieceIndex] || 0) + 1;
+        const locked = p.rot === false || (p.rot === undefined && libMat.allowRotation === false);
+        items.push({
+          job: jr, material: libMat.name + (libMat.thickness && libMat.name.indexOf(libMat.thickness) === -1 ? ' ' + libMat.thickness : ''),
+          label: p.label || ('P' + (p.pieceIndex + 1)), w: p.w, h: p.h, rotated: p.rotated, locked: locked,
+          sheet: si + 1, sheets: r.sheets.length, part: i + 1, remnant: !!sh.isRemnant,
+          n: seen[p.pieceIndex], of: total[p.pieceIndex]
+        });
+      });
+    });
+  });
+  return items;
+}
+
+function buildLabelsHtml(layoutKey, skip) {
+  const L = LABEL_LAYOUTS[layoutKey] || LABEL_LAYOUTS.L7160;
+  const items = labelItems();
+  const perPage = L.cols * L.rows;
+  skip = Math.max(0, Math.min(perPage - 1, parseInt(skip, 10) || 0));
+  const co = (settings.companyName || '').trim();
+  const fs = L.h / 38.1;                         // font scale relative to a 38.1mm label
+  let pages = '', slot = skip, page = '';
+  const flush = function () { pages += '<section class="pg">' + page + '</section>'; page = ''; };
+  items.forEach(function (it) {
+    if (slot === perPage) { flush(); slot = 0; }
+    const col = slot % L.cols, row = Math.floor(slot / L.cols);
+    page += `<div class="lb" style="left:${L.left + col * L.dx}mm;top:${L.top + row * L.dy}mm">
+      <div class="top"><span>${esc(it.job || co || 'CutNest')}</span><span>${it.n} of ${it.of}</span></div>
+      <div class="name">${esc(it.label)}</div>
+      <div class="dim">${esc(dims(it.w, it.h))}${it.rotated ? ' <span class="rot">\u21bb</span>' : ''}</div>
+      <div class="mat">${esc(it.material)}</div>
+      <div class="bot"><span class="id">${it.remnant ? 'Remnant' : 'Sheet ' + it.sheet} \u00b7 Part ${it.part}</span>${it.locked ? '<span class="grain">GRAIN LOCKED</span>' : ''}</div>
+    </div>`;
+    slot++;
+  });
+  if (page) flush();
+  const title = 'Labels' + (items.length && items[0].job ? ' \u2014 ' + items[0].job : '');
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${esc(title)}</title><style>
+  @page { size: ${L.page === 'letter' ? '8.5in 11in' : 'A4'}; margin: 0; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#10202a;background:#fff}
+  .pg{position:relative;width:${L.pw}mm;height:${L.ph}mm;page-break-after:always;break-after:page;overflow:hidden}
+  .pg:last-child{page-break-after:auto;break-after:auto}
+  .lb{position:absolute;width:${L.w}mm;height:${L.h}mm;padding:${(2.2 * fs).toFixed(2)}mm ${(3 * fs).toFixed(2)}mm;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
+  .top,.bot{display:flex;justify-content:space-between;gap:4px;font-size:${(6.5 * fs).toFixed(1)}pt;color:#4a6a76;white-space:nowrap}
+  .top span:first-child{overflow:hidden;text-overflow:ellipsis}
+  .name{font-size:${(10.5 * fs).toFixed(1)}pt;font-weight:800;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dim{font-size:${(12 * fs).toFixed(1)}pt;font-weight:800;color:#0f4c5c;line-height:1.1}
+  .rot{font-size:.8em;color:#b45309}
+  .mat{font-size:${(7 * fs).toFixed(1)}pt;color:#4a6a76;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .id{font-weight:700;color:#10202a}
+  .grain{font-weight:800;color:#b45309}
+  @media screen{ body{background:#e5e7eb} .pg{background:#fff;margin:10px auto;box-shadow:0 2px 10px rgba(0,0,0,.15)} .lb{outline:1px dashed #cbd5e1} }
+  </style></head><body>${pages}</body></html>`;
+}
+
+function openLabels() {
+  if (!isPro) {
+    showUpgradeModal('\u{1F3F7}', 'Part labels', 'Pro prints a label for every part on standard label sheets (Avery A4 and US Letter): part name, size, material and the same sheet and part number as the cut sheet, so every piece can be identified off the machine.');
+    return;
+  }
+  if (!calcResult) { showToast('Calculate a job first'); return; }
+  const sel = document.getElementById('label-layout');
+  if (sel && !sel.dataset.filled) {
+    sel.innerHTML = Object.keys(LABEL_LAYOUTS).map(function (k) { return '<option value="' + k + '">' + esc(LABEL_LAYOUTS[k].name) + '</option>'; }).join('');
+    sel.dataset.filled = '1';
+    let saved = null; try { saved = localStorage.getItem('cutnest-label-layout'); } catch (e) {}
+    sel.value = LABEL_LAYOUTS[saved] ? saved : (isInch() ? 'A5160' : 'L7160');
+  }
+  updateLabelsSummary();
+  const m = document.getElementById('labels-modal'); if (m) m.style.display = 'flex';
+}
+function updateLabelsSummary() {
+  const sel = document.getElementById('label-layout'), sk = document.getElementById('label-skip'), out = document.getElementById('labels-summary');
+  if (!sel || !out || !calcResult) return;
+  const L = LABEL_LAYOUTS[sel.value], per = L.cols * L.rows;
+  const skip = Math.max(0, Math.min(per - 1, parseInt(sk && sk.value, 10) || 0));
+  const n = labelItems().length;
+  const sheets = Math.ceil((n + skip) / per);
+  out.textContent = n + ' label' + (n !== 1 ? 's' : '') + ' on ' + sheets + ' sheet' + (sheets !== 1 ? 's' : '') + ' of ' + per + (skip ? ', starting at label ' + (skip + 1) : '') + '.';
+}
+function printLabels() {
+  const sel = document.getElementById('label-layout'), sk = document.getElementById('label-skip');
+  try { localStorage.setItem('cutnest-label-layout', sel.value); } catch (e) {}
+  const html = buildLabelsHtml(sel.value, sk ? sk.value : 0);
+  const m = document.getElementById('labels-modal'); if (m) m.style.display = 'none';
+  openPrintable(html, 'Labels');
 }
 
 
@@ -3720,7 +3838,7 @@ document.addEventListener('keydown', function(e) {
     // Settings saves on every keystroke, so Escape must roll back like Cancel
     // rather than leaving a half-typed kerf committed.
     if (sm && sm.style.display !== 'none') { cancelSettings(); return; }
-    ['lib-modal','history-modal','upgrade-modal','zoom-modal','paste-modal','offcut-modal'].forEach(function(id) {
+    ['lib-modal','history-modal','upgrade-modal','zoom-modal','paste-modal','offcut-modal','labels-modal'].forEach(function(id) {
       const el = document.getElementById(id);
       if (el && el.style.display !== 'none') el.style.display = 'none';
     });

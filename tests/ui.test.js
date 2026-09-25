@@ -489,6 +489,38 @@ const tests = {
     expect(!other.errors.length, 'page errors: ' + other.errors.join(' | '));
   },
 
+  async 'part labels: Pro prints, free is offered the upgrade'() {
+    const free = await freshPage();
+    await startWithMetal(free);
+    await setPiece(free, 1, 800, 600, 2);
+    await calculateAndWait(free);
+    await free.click('.res-acts >> text=Labels');
+    expect(await free.isVisible('#upgrade-modal'), 'free plan should see the upgrade window for labels');
+    expect(!(await free.isVisible('#labels-modal')), 'free plan should not get the labels window');
+
+    const page = await freshPage({ pro: true });
+    await page.goto(base + '/app.html');
+    await page.waitForFunction(() => isPro && library.length > 20);
+    await page.selectOption('#mat-blocks select', '205');
+    await page.fill('#job-ref', 'JOB-047');
+    await page.evaluate(() => { mats[0].pieces = [{ w: 800, h: 600, qty: 2, label: 'Door Front' }, { w: 450, h: 380, qty: 4, label: 'Side <Panel>' }]; renderAll(); });
+    await calculateAndWait(page);
+    await page.click('.res-acts >> text=Labels');
+    expect(await page.isVisible('#labels-modal'), 'labels window should open for Pro');
+    expect(/^6 labels on 1 sheet of 21\./.test(await page.textContent('#labels-summary')), 'summary wrong: ' + await page.textContent('#labels-summary'));
+    await page.fill('#label-skip', '19');
+    await page.dispatchEvent('#label-skip', 'input');
+    expect(/6 labels on 2 sheets of 21, starting at label 20/.test(await page.textContent('#labels-summary')), 'skip not counted: ' + await page.textContent('#labels-summary'));
+    const html = await page.evaluate(() => buildLabelsHtml('L7160', 0));
+    expect((html.match(/class="lb"/g) || []).length === 6, 'expected 6 labels in the output');
+    expect(html.includes('Sheet 1 \u00b7 Part 1') || html.includes('Sheet 1 &middot; Part 1') || html.includes('Sheet 1 · Part 1'), 'labels should carry the cut-sheet numbers');
+    expect(html.includes('JOB-047') && html.includes('Side &lt;Panel&gt;'), 'labels should show the job and escape part names');
+    expect(html.includes('size: A4'), 'Avery L7160 should print on A4');
+    await page.keyboard.press('Escape');
+    expect(!(await page.isVisible('#labels-modal')), 'Escape should close the labels window');
+    expect(!page.errors.length && !free.errors.length, 'page errors: ' + page.errors.concat(free.errors).join(' | '));
+  },
+
   async 'landing page, FAQ and legal pages'() {
     const page = await freshPage({ viewport: { width: 390, height: 800 } });
     await page.goto(base + '/');
@@ -542,7 +574,7 @@ const tests = {
       console.log(`  ok   ${name} (${Date.now() - t0}ms)`);
     } catch (e) {
       results.push([false, name]);
-      console.log(`  FAIL ${name}\n       ${String(e.message).split('\n')[0]}`);
+      console.log(`  FAIL ${name}\n       ${String(e.message).split("\n")[0]}`); if (process.env.DEBUG) console.log(e.stack);
     }
     for (const ctx of browser.contexts()) await ctx.close();
   }

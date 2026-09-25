@@ -205,6 +205,7 @@ if(cnPrefersDark())document.documentElement.setAttribute('data-theme','dark');
           <button class="btn-exp" onclick="shareJob()" title="Share this job">🔗 Share</button>
           <button class="btn-exp" onclick="saveAllOffcuts()" title="Keep this job's reclaimable offcuts — they are offered back as a remnant on the next job in this material">♻ Save offcuts</button>
           <button class="btn-exp" onclick="exportCutSheets()" title="One page per sheet, drawn to scale, dimensioned, with the cut sequence — for the machine">📐 Cut sheets</button>
+          <button class="btn-exp" onclick="openLabels()" title="A label for every part, on standard label sheets">🏷 Labels</button>
           <button class="btn-exp" onclick="doPrint()">🖨 Print</button>
         </div>
       </div>
@@ -435,6 +436,27 @@ if(cnPrefersDark())document.documentElement.setAttribute('data-theme','dark');
       <div style="display:flex;gap:8px;margin-top:14px;justify-content:space-between;align-items:center">
         <button class="btn btn-out" onclick="clearAllOffcuts()" style="padding:8px 14px;font-size:12px">Clear all</button>
         <button class="btn btn-teal" onclick="closeOffcuts()" style="padding:8px 20px">Done</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PART LABELS MODAL -->
+<div class="overlay" id="labels-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Print part labels">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-hdr"><div class="modal-title">&#127991; Part labels</div><button class="modal-x" onclick="document.getElementById('labels-modal').style.display='none'" aria-label="Close">&#10005;</button></div>
+    <div class="modal-body">
+      <p class="modal-sub">One label per part, numbered to match the cut sheets. Print at 100% (actual size), not "fit to page".</p>
+      <label class="lbl" for="label-layout">Label sheets</label>
+      <select id="label-layout" onchange="updateLabelsSummary()"></select>
+      <div style="display:flex;gap:10px;align-items:flex-end;margin-top:10px;flex-wrap:wrap">
+        <div style="width:150px"><label class="lbl" for="label-skip">Skip used labels</label><input type="number" id="label-skip" min="0" value="0" oninput="updateLabelsSummary()"/></div>
+        <div style="font-size:12px;color:var(--muted);padding-bottom:9px;flex:1">For a part-used sheet: how many labels are already gone.</div>
+      </div>
+      <div id="labels-summary" style="margin-top:10px;font-size:13px;font-weight:600;color:var(--teal)"></div>
+      <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+        <button class="btn btn-out" onclick="document.getElementById('labels-modal').style.display='none'" style="padding:8px 14px">Cancel</button>
+        <button class="btn btn-teal" onclick="printLabels()" style="padding:8px 20px">&#128424; Print labels</button>
       </div>
     </div>
   </div>
