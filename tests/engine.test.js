@@ -243,6 +243,106 @@ for (let t = 0; t < JOBS; t++) {
   run(`job ${t} (${lib.cuttingMethod}, kerf ${kerf}, rotation ${lib.allowRotation})`, lib, pieces, kerf);
 }
 
+// ── Linear cutting (bars, tube, extrusion) ────────────────────────
+// Every part placed once, in a single row along its bar, the kerf between
+// neighbours, inside the end trims, stock limits respected, the offcut and
+// percentages consistent, and never more bars than a plain first-fit-
+// decreasing would use, nor fewer than the 1D lower bound allows.
+console.log('Linear jobs');
+function ffdBars(pieces, L, k, mult) {
+  const items = [];
+  pieces.forEach(p => { for (let i = 0; i < p.qty * mult; i++) items.push(p.w); });
+  items.sort((a, b) => b - a);
+  const used = [];
+  for (const it of items) {
+    let i = used.findIndex(u => u + k + it <= L + 1e-9);
+    if (i < 0) { used.push(it); } else used[i] += k + it;
+  }
+  return used.length;
+}
+function checkLinear(name, lib, pieces, res, kerf, mult) {
+  const t = lib.trim || 0;
+  const need = pieces.reduce((s, p) => s + p.qty * mult, 0);
+  const got = res.sheets.reduce((s, sh) => s + sh.placed.length, 0) + res.unplaced.length;
+  ok(got === need, name, `${got} parts accounted for, expected ${need}`);
+  ok(res.linear === true && res.kerf === kerf && res.trim === t, name, 'result not marked linear with its kerf and trim');
+  const seen = new Set();
+  const lengths = E.stockSizes(lib).map(z => z.w);
+  const byLen = {};
+  for (const sh of res.sheets) {
+    ok(lengths.includes(sh.sheetW), name, `bar ${sh.sheetW} is not a stock length`);
+    byLen[sh.sheetW] = (byLen[sh.sheetW] || 0) + 1;
+    let end = t;
+    sh.placed.forEach((p, i) => {
+      const key = p.pieceIndex + ':' + p.instanceIndex;
+      ok(!seen.has(key), name, 'part placed twice');
+      seen.add(key);
+      ok(p.y === 0 && p.h === 1, name, 'part not in the single row');
+      ok(Math.abs(p.w - pieces[p.pieceIndex].w) < 1e-9, name, 'part length changed');
+      ok(p.x >= end + (i ? kerf : 0) - 1e-6, name, `parts closer than the ${kerf} kerf`);
+      end = p.x + p.w;
+    });
+    ok(end <= sh.sheetW - t + 1e-6, name, 'part runs into the end trim');
+    const off = sh.offcut ? sh.offcut.w : 0;
+    ok(Math.abs(sh.sheetW - t - end - (off ? kerf : 0) - off) < 1e-6 || (off === 0 && sh.sheetW - t - end <= kerf + 1e-6),
+       name, 'offcut length does not add up');
+    ok(sh.utilPercent + sh.usablePercent + sh.scrapPercent === 100 || sh.scrapPercent === 0, name, 'percentages do not add up');
+  }
+  for (const z of E.stockSizes(lib)) if (z.max != null) ok((byLen[z.w] || 0) <= z.max, name, `used more ${z.w} bars than the ${z.max} in stock`);
+  const sizes = E.stockSizes(lib);
+  if (!res.unplaced.length && sizes.length === 1) {
+    const L = sizes[0].w - 2 * t;
+    const lb = Math.ceil(pieces.reduce((s, p) => s + (p.w + kerf) * p.qty * mult, 0) / (L + kerf) - 1e-9);
+    ok(res.sheets.length >= lb, name, `${res.sheets.length} bars is below the lower bound ${lb}`);
+    const f = ffdBars(pieces, L, kerf, mult);
+    ok(res.sheets.length <= f, name, `${res.sheets.length} bars, first-fit-decreasing needs only ${f}`);
+  }
+}
+{
+  // Hand-worked: 7 rails and 3 posts from 6m and 3m flat, 10mm end trim, 2mm kerf.
+  const lib = { id: 'lin-1', name: 'Flat 50x6', kind: 'linear', trim: 10, kerf: 2,
+                sizes: [{ w: 6000, h: 1, price: 20 }, { w: 3000, h: 1, price: 11 }] };
+  const pieces = [{ w: 1000, h: 1, qty: 7, label: 'Rail' }, { w: 450, h: 1, qty: 3, label: 'Post' }];
+  ctx.setKerf(4);
+  const res = E.packJob(lib, pieces, null, 1);
+  checkLinear('rails and posts', lib, pieces, res, 2, 1);
+  ok(JSON.stringify(res.sizeMap) === JSON.stringify({ '6000×1': 1, '3000×1': 1 }), 'rails and posts', 'expected one 6m and one 3m bar (£31), got ' + JSON.stringify(res.sizeMap));
+  const long = res.sheets.find(s => s.sheetW === 6000);
+  ok(long.placed[0].x === 10 && long.offcut.w === 66 && !long.usableOffcut, 'rails and posts', 'first cut after the trim, 66mm offcut kept as scrap');
+  const short = res.sheets.find(s => s.sheetW === 3000);
+  ok(short.offcut.w === 524 && !!short.usableOffcut, 'rails and posts', '524mm offcut on the 3m bar should be kept');
+}
+{
+  // Exact fill: four 1497mm parts and three 4mm kerfs are exactly 6000mm.
+  const lib = { id: 'lin-2', name: 'Box', kind: 'linear', sizes: [{ w: 6000, h: 1, price: 0 }] };
+  ctx.setKerf(4);
+  const res = E.packJob(lib, [{ w: 1497, h: 1, qty: 8, label: 'Leg' }], null, 1);
+  checkLinear('exact fill', lib, [{ w: 1497, qty: 8 }], res, 4, 1);
+  ok(res.sheets.length === 2 && res.sheets.every(s => !s.offcut), 'exact fill', 'four parts should exactly fill each bar with no offcut');
+}
+{
+  // Stock limit: only 2 of the 6m bars, so the rest must come from 7.5m.
+  const lib = { id: 'lin-3', name: 'Angle', kind: 'linear',
+                sizes: [{ w: 6000, h: 1, price: 18, max: 2 }, { w: 7500, h: 1, price: 30 }] };
+  ctx.setKerf(3);
+  const pieces = [{ w: 2900, h: 1, qty: 8, label: 'Brace' }];
+  const res = E.packJob(lib, pieces, null, 1);
+  checkLinear('stock limit', lib, pieces, res, 3, 1);
+  ok((res.sizeMap['6000×1'] || 0) === 2 && res.sizeMap['7500×1'] === 2, 'stock limit', 'expected 2×6m and 2×7.5m, got ' + JSON.stringify(res.sizeMap));
+}
+for (let t = 0; t < 40; t++) {
+  const kerf = [0, 1.5, 3, 4.8][ri(0, 3)];
+  const sizes = [];
+  for (let i = 0, n = ri(1, 3); i < n; i++) sizes.push({ w: [3000, 4800, 6000, 6500, 7500][ri(0, 4)] + (i ? i : 0), h: 1, price: rnd() < 0.5 ? ri(10, 60) : 0, max: rnd() < 0.2 ? ri(2, 6) : null });
+  const lib = { id: 'lin-r' + t, name: 'Bar', kind: 'linear', sizes, trim: rnd() < 0.3 ? [5, 10, 25][ri(0, 2)] : 0, kerf: rnd() < 0.3 ? 2 : undefined };
+  const pieces = [];
+  for (let i = 0, n = ri(1, 9); i < n; i++) pieces.push({ w: ri(80, 2800) + (rnd() < 0.2 ? 0.5 : 0), h: 1, qty: ri(1, 9), label: 'L' + i });
+  const mult = rnd() < 0.2 ? 3 : 1;
+  ctx.setKerf(kerf);
+  const res = E.packJob(lib, pieces, null, mult);
+  checkLinear(`linear job ${t} (kerf ${lib.kerf != null ? lib.kerf : kerf})`, lib, pieces, res, lib.kerf != null ? lib.kerf : kerf, mult);
+}
+
 // ── Speed ─────────────────────────────────────────────────────────
 // Before the fix, the offcut search alone took 244s on a sheet of 366 small
 // parts, and the whole job never finished. The budget is generous so slow CI

@@ -50,6 +50,22 @@ const rates = Object.assign({}, Q.QUOTE_DEFAULTS, {
   eq(t.length, 1200 + 800 + 2 * (2440 + 1220), 'saw with edge trim: trim cuts plus the part cuts on the trimmed sheet');
 }
 
+{
+  // Bars: one cut per part that does not end at the bar end, plus one to square
+  // a trimmed end. Timed per cut, not by length.
+  const bar = { linear: true, libMat: { name: 'SHS', kind: 'linear', sizes: [{ w: 6000, h: 1, price: 30 }] },
+    sizeMap: { '6000×1': 2 },
+    sheets: [{ sheetW: 6000, sheetH: 1, trim: 10, placed: [{ x: 10, y: 0, w: 2000, h: 1 }, { x: 2014, y: 0, w: 2000, h: 1 }] },
+             { sheetW: 6000, sheetH: 1, trim: 0, placed: [{ x: 0, y: 0, w: 2998, h: 1 }, { x: 3002, y: 0, w: 2998, h: 1 }] }] };
+  const c = Q.quoteCutting(bar, 4);
+  eq(c.cuts, 3 + 1, 'bars: squaring cut + 2 part cuts, then 1 cut on the exactly-filled bar');
+  eq(c.length, 0, 'bars: no cut length');
+  const f = Q.quoteFigures([bar], rates, { kerf: 4 });
+  eq(f.mats[0].machineMin, 4 * 45 / 60, 'bars: 45 seconds a cut by default');
+  eq(f.mats[0].method, 'linear', 'bars flagged for the quote wording');
+  eq(f.materialPrice, 72, 'two 6m bars at 30 with 20% markup');
+}
+
 // ── Money, whole sheets ──
 {
   const f = Q.quoteFigures([freeResult], rates, { kerf: 4, jobQty: 2, extras: [{ d: 'Delivery', a: 25 }, { d: '', a: '' }] });

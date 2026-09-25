@@ -325,6 +325,10 @@ if(cnPrefersDark())document.documentElement.setAttribute('data-theme','dark');
           <div style="width:110px"><label class="lbl" for="offcut-short">Short side (<span class="u-len">mm</span>)</label><input type="text" inputmode="decimal" id="offcut-short" value="300" oninput="saveSettings()"/></div>
           <div style="font-size:12px;color:var(--muted);padding-bottom:8px" id="offcut-hint">Default 1000 &times; 300mm</div>
         </div>
+        <div style="display:flex;gap:11px;align-items:flex-end;flex-wrap:wrap;margin-top:10px">
+          <div style="width:110px"><label class="lbl" for="offcut-bar">Bar offcuts (<span class="u-len">mm</span>)</label><input type="text" inputmode="decimal" id="offcut-bar" value="500" oninput="saveSettings()"/></div>
+          <div style="font-size:12px;color:var(--muted);padding-bottom:8px" id="offcut-bar-hint">Shortest bar or tube offcut worth keeping</div>
+        </div>
       </div>
       <div class="settings-section">
         <div class="settings-title">&#9729; CutNest Master Library <span style="background:var(--amber);color:var(--teal2);font-size:10px;font-weight:800;padding:2px 7px;border-radius:10px;margin-left:5px;vertical-align:middle">PRO</span></div>
@@ -347,21 +351,26 @@ if(cnPrefersDark())document.documentElement.setAttribute('data-theme','dark');
       <p class="modal-sub">Add your materials with sheet sizes and prices. Works for steel, timber, MDF, acrylic, glass &mdash; any sheet material.</p>
       <div id="lib-entries"></div>
       <div id="lib-limit-notice" style="display:none;background:#fff3cd;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;font-size:13px;color:#92400e;margin-bottom:8px">
-        &#128274; Free plan: up to 5 materials. <button onclick="showUpgradeModal('&#128230;','Unlock Full Library','Upgrade to Pro for unlimited library entries plus the 23-grade CutNest Master Library pre-loaded with UK steel, timber, acrylic grades and prices.')" style="background:none;border:none;color:var(--teal3);cursor:pointer;font-weight:700;text-decoration:underline;font-size:13px">Upgrade to Pro &rarr;</button>
+        &#128274; Free plan: up to 5 materials. <button onclick="showUpgradeModal('&#128230;','Unlock Full Library','Upgrade to Pro for unlimited library entries plus the CutNest Master Library: 23 UK sheet grades and 9 bar, tube and timber sections, pre-loaded with prices.')" style="background:none;border:none;color:var(--teal3);cursor:pointer;font-weight:700;text-decoration:underline;font-size:13px">Upgrade to Pro &rarr;</button>
       </div>
       <div class="add-form" id="add-form-wrap">
-        <div class="add-form-title">&#10133; Add New Material</div>
+        <div class="add-form-title">&#10133; Add New Material
+          <span class="af-kind" role="group" aria-label="Kind of material">
+            <button type="button" class="cut-method-btn active" data-kind="sheet" aria-pressed="true" onclick="setAddKind('sheet')">Sheet</button>
+            <button type="button" class="cut-method-btn" data-kind="linear" aria-pressed="false" onclick="setAddKind('linear')">Bar / tube / length</button>
+          </span>
+        </div>
         <div class="af-row1">
-          <div><label class="lbl">Name *</label><input type="text" id="n-name" placeholder="e.g. S/S 2mm 304 Brushed"/></div>
-          <div><label class="lbl">Material</label><input type="text" id="n-mat" placeholder="Stainless Steel"/></div>
-          <div><label class="lbl">Thickness</label><input type="text" id="n-thk" placeholder="2mm"/></div>
+          <div><label class="lbl" for="n-name">Name *</label><input type="text" id="n-name" placeholder="e.g. S/S 2mm 304 Brushed"/></div>
+          <div><label class="lbl" for="n-mat">Material</label><input type="text" id="n-mat" placeholder="Stainless Steel"/></div>
+          <div><label class="lbl" for="n-thk" id="n-thk-l">Thickness</label><input type="text" id="n-thk" placeholder="2mm"/></div>
         </div>
         <div class="af-row2">
-          <div><label class="lbl" for="n-w1">Size 1 W (<span class="u-len">mm</span>) *</label><input type="text" inputmode="decimal" id="n-w1" placeholder="2450"/></div>
-          <div><label class="lbl" for="n-h1">Size 1 H (<span class="u-len">mm</span>) *</label><input type="text" inputmode="decimal" id="n-h1" placeholder="1150"/></div>
+          <div><label class="lbl" for="n-w1"><span id="n-w1-l">Size 1 W</span> (<span class="u-len">mm</span>) *</label><input type="text" inputmode="decimal" id="n-w1" placeholder="2450"/></div>
+          <div class="af-sheet-only"><label class="lbl" for="n-h1">Size 1 H (<span class="u-len">mm</span>) *</label><input type="text" inputmode="decimal" id="n-h1" placeholder="1150"/></div>
           <div><label class="lbl" for="n-pr1">Price <span class="u-cur">&pound;</span></label><input type="number" id="n-pr1" placeholder="205"/></div>
-          <div><label class="lbl" for="n-w2">Size 2 W</label><input type="text" inputmode="decimal" id="n-w2" placeholder="opt"/></div>
-          <div><label class="lbl" for="n-h2">Size 2 H</label><input type="text" inputmode="decimal" id="n-h2" placeholder="opt"/></div>
+          <div><label class="lbl" for="n-w2" id="n-w2-l">Size 2 W</label><input type="text" inputmode="decimal" id="n-w2" placeholder="opt"/></div>
+          <div class="af-sheet-only"><label class="lbl" for="n-h2">Size 2 H</label><input type="text" inputmode="decimal" id="n-h2" placeholder="opt"/></div>
           <div><label class="lbl" for="n-pr2">Price <span class="u-cur">&pound;</span></label><input type="number" id="n-pr2" placeholder="opt"/></div>
           <div><button class="btn btn-teal" style="padding:7px 10px;margin-top:16px" onclick="addLibEntry()">+ Add</button></div>
         </div>

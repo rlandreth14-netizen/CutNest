@@ -582,6 +582,100 @@ const tests = {
     expect(!page.errors.length && !free.errors.length, 'page errors: ' + page.errors.concat(free.errors).join(' | '));
   },
 
+  async 'bars: free starter pack, paste lengths, cutting plan, CSV and cut sheets'() {
+    const page = await freshPage();
+    await page.goto(base + '/app.html');
+    await page.click('text=Bar & Tube');
+    await page.waitForFunction(() => library.length > 0 && mats[0].selectedMatId && isLinear(library[0]));
+    expect(await page.isVisible('[aria-label="Piece 1 length in mm"]'), 'bar material should ask for a length');
+    expect(!(await page.isVisible('[aria-label="Piece 1 height in mm"]')), 'bar material should not ask for a height');
+    await page.click('text=Paste list');
+    await page.fill('#paste-input', 'Top rail, 2400, 4\nLeg 900 x 8\n4 off 1150\nBrace 650 6');
+    expect(/Add 4 rows/.test(await page.textContent('#paste-confirm')), 'paste should read 4 length rows');
+    await page.click('#paste-confirm');
+    await calculateAndWait(page);
+    const r = await page.evaluate(() => {
+      const res = calcResult.results[0];
+      return { linear: res.linear, bars: res.sheets.length, placed: res.sheets.reduce((a, s) => a + s.placed.length, 0),
+               order: document.getElementById('order-line-text').textContent, label: document.getElementById('s-sheets').previousElementSibling.textContent,
+               groups: document.querySelectorAll('.bar-group').length };
+    });
+    expect(r.linear && r.placed === 22, 'all 22 parts should be cut from bars: ' + JSON.stringify(r));
+    expect(/mm SHS 40x40x3/.test(r.order) && !/×1mm/.test(r.order), 'order line should list bar lengths: ' + r.order);
+    expect(r.label === 'Bars' && r.groups >= 1, 'results should talk about bars');
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.click('.res-acts >> text=CSV')]);
+    const csv = fs.readFileSync(await dl.path(), 'utf8');
+    expect(/Bar 1,/.test(csv) && !/x1 /.test(csv), 'CSV should list parts by bar');
+    const cut = await page.evaluate(() => buildCutSheetsHtml());
+    expect(/cutting list/.test(cut) && /Pull from stock/.test(cut) && /Mark from end/.test(cut), 'cut sheets should carry the saw list');
+    expect(!page.errors.length, 'page errors: ' + page.errors.join(' | '));
+  },
+
+  async 'bars: Pro adds a bar material, mixes it with sheet, quotes, labels, shares'() {
+    const page = await freshPage({ pro: true });
+    await page.goto(base + '/app.html');
+    await page.waitForFunction(() => isPro && library.length > 20);
+    await page.click('button[aria-label="Stock library"]');
+    await page.click('#add-form-wrap [data-kind="linear"]');
+    expect(!(await page.isVisible('#n-h1')), 'bar form should hide the height');
+    await page.fill('#n-name', 'Flat 50x6 test');
+    await page.fill('#n-w1', '6000'); await page.fill('#n-pr1', '20');
+    await page.fill('#n-w2', '3000'); await page.fill('#n-pr2', '11');
+    await page.click('#add-form-wrap >> text=+ Add');
+    const id = await page.evaluate(() => pending.find(e => e.name === 'Flat 50x6 test').id);
+    await page.evaluate(i => toggleEdit(i), id);
+    await page.fill(`#trim-${id}`, '10');
+    await page.fill(`#kerf-${id}`, '2');
+    await page.click('text=Save Library');
+    await page.waitForFunction(i => { const e = library.find(l => l.id === i); return e && e.kind === 'linear' && e.trim === 10 && e.kerf === 2; }, id);
+    await page.evaluate(i => {
+      mats = [{ id: 'mat-1', selectedMatId: 601, pieces: [{ w: 800, h: 600, qty: 2, label: 'Door' }] },
+              { id: 'mat-2', selectedMatId: i, pieces: [{ w: 1000, h: '', qty: 7, label: 'Rail' }, { w: 450, h: '', qty: 3, label: 'Post' }] }];
+      renderAll();
+    }, id);
+    await page.fill('#job-ref', 'JOB-BAR');
+    await calculateAndWait(page);
+    const r = await page.evaluate(() => {
+      const b = calcResult.results[1];
+      return { sm: b.sizeMap, kerf: b.kerf, first: b.sheets[0].placed[0].x, v: optimalityVerdict(b), label: document.getElementById('s-sheets').previousElementSibling.textContent };
+    });
+    expect(JSON.stringify(r.sm) === JSON.stringify({ '6000×1': 1, '3000×1': 1 }), 'Pro should pick one 6m and one 3m bar (cheapest): ' + JSON.stringify(r.sm));
+    expect(r.kerf === 2 && r.first === 10, 'bar kerf and end trim should be used');
+    expect(r.label === 'Sheets & bars', 'mixed job should say sheets and bars');
+    const q = await page.evaluate(() => { ensureQuoteJob(); return currentFigures().mats[1]; });
+    // 6m bar: squaring cut + 7 parts; 3m bar: squaring cut + 3 parts (none end exactly at the bar end).
+    expect(q.method === 'linear' && q.cuts === (1 + 7) + (1 + 3) && q.cutLength === 0, 'bar quote should count saw cuts: ' + JSON.stringify([q.method, q.cuts]));
+    const labels = await page.evaluate(() => buildLabelsHtml('L7160', 0));
+    expect(labels.includes('Bar 1 \u00b7 Part 1') || labels.includes('Bar 1 · Part 1'), 'labels should number bar parts');
+    expect(!/450×1mm|1000×1mm/.test(labels) && !/Rail[\s\S]{0,400}GRAIN LOCKED/.test(labels), 'bar labels show lengths and no grain flag');
+    const dxf = await page.evaluate(() => buildDXF(calcResult.results.filter(r => !r.linear)));
+    expect(dxf.includes('MDF') && !dxf.includes('Flat 50x6'), 'DXF should hold only the sheet layout');
+    // Share link round trip keeps the bar material.
+    let url = null;
+    await page.evaluate(() => { navigator.share = undefined; });
+    await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+    await page.click('.res-acts >> text=Share');
+    url = await page.evaluate(() => navigator.clipboard.readText());
+    expect(/\?job=/.test(url), 'share link should be copied');
+    const p2 = await freshPage({ pro: true });
+    await p2.goto(url.replace(/^https?:\/\/[^/]+/, base));
+    await p2.waitForFunction(() => mats.length === 2 && library.some(l => l._transient && l.kind === 'linear'));
+    const shared = await p2.evaluate(() => { const l = library.find(x => x._transient && x.kind === 'linear'); return { kerf: l.kerf, trim: l.trim, sizes: l.sizes.map(z => z.w + 'x' + z.h), pieces: mats[1].pieces.length }; });
+    expect(shared.kerf === 2 && shared.trim === 10 && shared.sizes.join() === '6000x1,3000x1' && shared.pieces === 2, 'shared bar material wrong: ' + JSON.stringify(shared));
+    expect(!page.errors.length && !p2.errors.length, 'page errors: ' + page.errors.concat(p2.errors).join(' | '));
+  },
+
+  async 'bars: a part longer than every bar is reported, not lost'() {
+    const page = await freshPage({ pro: true });
+    await page.goto(base + '/app.html');
+    await page.waitForFunction(() => isPro && library.length > 20);
+    await page.evaluate(() => { mats = [{ id: 'mat-1', selectedMatId: 805, pieces: [{ w: 6500, h: '', qty: 1, label: 'Beam' }, { w: 1000, h: '', qty: 2, label: 'Stub' }] }]; renderAll(); });
+    await calculateAndWait(page);
+    const txt = await page.textContent('#mat-visuals');
+    expect(/1 PIECE NOT PLACED/.test(txt) && /Longer than every stock length/.test(txt), 'long part should be reported');
+    expect(await page.evaluate(() => calcResult.results[0].sheets.reduce((a, s) => a + s.placed.length, 0)) === 2, 'the parts that fit are still cut');
+  },
+
   async 'landing page, FAQ and legal pages'() {
     const page = await freshPage({ viewport: { width: 390, height: 800 } });
     await page.goto(base + '/');

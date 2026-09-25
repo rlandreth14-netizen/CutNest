@@ -37,9 +37,12 @@ const QUOTE_DEFAULTS = {
 // material has not been given its own. Deliberately middle-of-the-road: a
 // laser on thin steel or a router in MDF for free placement, a panel saw with
 // positioning time for guillotine. Every shop should set its own.
+// Bar stock is priced per saw cut (a bandsaw through a steel section takes
+// most of a minute), so its speed plays no part.
 const CUT_DEFAULTS = {
   free: { speed: 4000, sec: 3 },
-  guillotine: { speed: 20000, sec: 30 }
+  guillotine: { speed: 20000, sec: 30 },
+  linear: { speed: 0, sec: 45 }
 };
 
 function quoteSettings() {
@@ -68,7 +71,7 @@ function cleanQuoteSettings(raw) {
 }
 
 function cutRates(libMat) {
-  const d = CUT_DEFAULTS[libMat && libMat.cuttingMethod === 'guillotine' ? 'guillotine' : 'free'];
+  const d = CUT_DEFAULTS[isLinear(libMat) ? 'linear' : libMat && libMat.cuttingMethod === 'guillotine' ? 'guillotine' : 'free'];
   const speed = +(libMat && libMat.cutSpeed) > 0 ? +libMat.cutSpeed : d.speed;
   const sec = libMat && libMat.cutSec != null && libMat.cutSec !== '' && +libMat.cutSec >= 0 ? +libMat.cutSec : d.sec;
   return { speed: speed, sec: sec, own: +(libMat && libMat.cutSpeed) > 0 };
@@ -83,6 +86,16 @@ function quoteCutting(r, kerf) {
   const lib = r.libMat || {};
   const saw = lib.cuttingMethod === 'guillotine';
   let length = 0, cuts = 0, parts = 0;
+  if (r.linear) {
+    // One saw cut to square each trimmed end, and one after every part that
+    // does not finish exactly at the end of the bar.
+    (r.sheets || []).forEach(function (sh) {
+      parts += sh.placed.length;
+      if (sh.trim) cuts++;
+      sh.placed.forEach(function (p) { if (p.x + p.w < sh.sheetW - 1e-6) cuts++; });
+    });
+    return { length: 0, cuts: cuts, parts: parts, sheets: (r.sheets || []).length };
+  }
   (r.sheets || []).forEach(function (sh) {
     parts += sh.placed.length;
     if (saw) {
@@ -113,7 +126,7 @@ function quoteFigures(results, q, opt) {
     const lib = r.libMat || {};
     const rates = cutRates(lib);
     const c = quoteCutting(r, kerf);
-    const machineMin = c.length / rates.speed + c.cuts * rates.sec / 60;
+    const machineMin = (rates.speed > 0 ? c.length / rates.speed : 0) + c.cuts * rates.sec / 60;
     const handleMin = c.sheets * (+q.sheetMin || 0) + c.parts * (+q.partSec || 0) / 60;
     const sizes = [];
     let cost = 0, usedArea = 0;
@@ -143,7 +156,7 @@ function quoteFigures(results, q, opt) {
     const materialCost = _r2(cost);
     const materialPrice = q.charge === 'used' ? _r2(cost * markup) : _r2(sizes.reduce(function (s, z) { return s + z.amount; }, 0));
     return {
-      name: lib.name || '', thickness: lib.thickness || '', method: lib.cuttingMethod === 'guillotine' ? 'guillotine' : 'free',
+      name: lib.name || '', thickness: lib.thickness || '', method: r.linear ? 'linear' : lib.cuttingMethod === 'guillotine' ? 'guillotine' : 'free',
       id: lib.id, sizes: sizes, usedArea: usedArea, materialCost: materialCost, materialPrice: materialPrice,
       cutLength: c.length, cuts: c.cuts, parts: c.parts, sheets: c.sheets,
       speed: rates.speed, sec: rates.sec, machineMin: machineMin, handleMin: handleMin,
@@ -247,10 +260,10 @@ function renderQuoteForm() {
   const q = quoteSettings(), qj = ensureQuoteJob(), f = currentFigures(), cur = esc(currency());
   const matRows = f.mats.map(function (m, i) {
     return `<tr>
-      <td>${esc(matTitle(m))}<div class="q-sub">${m.method === 'guillotine' ? 'Saw / guillotine' : 'CNC / free placement'} · ${m.parts} part${m.parts !== 1 ? 's' : ''}, ${m.sheets} sheet${m.sheets !== 1 ? 's' : ''}</div></td>
-      <td class="num">${esc(quoteLen(m.cutLength))}</td>
+      <td>${esc(matTitle(m))}<div class="q-sub">${m.method === 'linear' ? 'Bar / cut to length' : m.method === 'guillotine' ? 'Saw / guillotine' : 'CNC / free placement'} \u00b7 ${m.parts} part${m.parts !== 1 ? 's' : ''}, ${m.sheets} ${m.method === 'linear' ? (m.sheets !== 1 ? 'bars' : 'bar') : (m.sheets !== 1 ? 'sheets' : 'sheet')}</div></td>
+      <td class="num">${m.method === 'linear' ? '\u2014' : esc(quoteLen(m.cutLength))}</td>
       <td class="num">${m.cuts}</td>
-      <td><input type="text" inputmode="decimal" class="q-num" id="q-speed-${i}" value="${esc(speedShow(m.speed))}" aria-label="Cutting speed for ${esc(m.name)} in ${speedUnit()}" oninput="setMatCutRate(${i},'speed',this.value)"/></td>
+      <td>${m.method === 'linear' ? '<span class="q-sub">per cut</span>' : `<input type="text" inputmode="decimal" class="q-num" id="q-speed-${i}" value="${esc(speedShow(m.speed))}" aria-label="Cutting speed for ${esc(m.name)} in ${speedUnit()}" oninput="setMatCutRate(${i},'speed',this.value)"/>`}</td>
       <td><input type="text" inputmode="decimal" class="q-num" id="q-sec-${i}" value="${esc(String(m.sec))}" aria-label="Seconds per cut for ${esc(m.name)}" oninput="setMatCutRate(${i},'sec',this.value)"/></td>
       <td class="num" id="q-mtime-${i}">${esc(quoteMins(m.machineMin))}</td>
     </tr>`;
@@ -280,7 +293,7 @@ function renderQuoteForm() {
         <thead><tr><th>Material</th><th class="num">Cut length</th><th class="num">Cuts</th><th>Speed (${speedUnit()})</th><th>Secs / cut</th><th class="num">Machine</th></tr></thead>
         <tbody>${matRows}</tbody>
       </table></div>
-      <p class="q-hint">Saw jobs use the real cut sequence. CNC jobs count each part's outline and one pierce per part. Speeds are saved to each material in your Library.</p>
+      <p class="q-hint">Saw jobs use the real cut sequence. CNC jobs count each part's outline and one pierce per part. Bars are timed per saw cut. Speeds are saved to each material in your Library.</p>
     </div>
 
     <div class="q-sec">
@@ -289,7 +302,7 @@ function renderQuoteForm() {
         <div><label class="lbl" for="q-mrate">Machine ${cur}/hour</label>${_qin('q-mrate', q.machineRate, 'inputmode="decimal" oninput="setQuoteNum(\'machineRate\',this.value)"')}</div>
         <div><label class="lbl" for="q-lrate">Labour ${cur}/hour</label>${_qin('q-lrate', q.labourRate, 'inputmode="decimal" oninput="setQuoteNum(\'labourRate\',this.value)"')}</div>
         <div><label class="lbl" for="q-setup">Setup ${cur} per job</label>${_qin('q-setup', q.setup, 'inputmode="decimal" oninput="setQuoteNum(\'setup\',this.value)"')}</div>
-        <div><label class="lbl" for="q-sheetmin">Handling min / sheet</label>${_qin('q-sheetmin', q.sheetMin, 'inputmode="decimal" oninput="setQuoteNum(\'sheetMin\',this.value)"')}</div>
+        <div><label class="lbl" for="q-sheetmin">Handling min / sheet or bar</label>${_qin('q-sheetmin', q.sheetMin, 'inputmode="decimal" oninput="setQuoteNum(\'sheetMin\',this.value)"')}</div>
         <div><label class="lbl" for="q-partsec">Handling secs / part</label>${_qin('q-partsec', q.partSec, 'inputmode="decimal" oninput="setQuoteNum(\'partSec\',this.value)"')}</div>
         <div><label class="lbl" for="q-markup">Material markup %</label>${_qin('q-markup', q.markup, 'inputmode="decimal" oninput="setQuoteNum(\'markup\',this.value)"')}</div>
       </div>
@@ -469,7 +482,7 @@ function quotePartsList() {
         parts[k].qty++;
       });
     });
-    return { title: matTitle({ name: r.libMat.name, thickness: r.libMat.thickness }), parts: Object.keys(parts).map(function (k) { return parts[k]; }).sort(function (a, b) { return a.i - b.i; }) };
+    return { title: matTitle({ name: r.libMat.name, thickness: r.libMat.thickness }), linear: !!r.linear, parts: Object.keys(parts).map(function (k) { return parts[k]; }).sort(function (a, b) { return a.i - b.i; }) };
   });
 }
 
@@ -488,9 +501,10 @@ function buildQuoteHtml() {
     if (q.charge === 'used') {
       lines.push({ d: t, sub: 'Material for ' + m.parts + ' part' + (m.parts !== 1 ? 's' : '') + ' (' + areaTxt(m.usedArea) + ')', qty: 1, amt: m.materialPrice });
     } else {
-      m.sizes.forEach(function (z) { lines.push({ d: t + ' sheet', sub: dims(z.w, z.h), qty: z.count, unit: z.unitPrice, amt: z.amount }); });
+      m.sizes.forEach(function (z) { lines.push({ d: t + (m.method === 'linear' ? ' length' : ' sheet'), sub: m.method === 'linear' ? len(z.w) : dims(z.w, z.h), qty: z.count, unit: z.unitPrice, amt: z.amount }); });
     }
-    lines.push({ d: 'Cutting — ' + t, sub: (m.method === 'guillotine' ? 'Saw: ' + m.cuts + ' cuts, ' : 'CNC: ' + m.cuts + ' part' + (m.cuts !== 1 ? 's' : '') + ', ') + quoteLen(m.cutLength) + ' cut length', qty: 1, amt: m.cutting });
+    lines.push({ d: 'Cutting \u2014 ' + t, sub: m.method === 'linear' ? 'Saw: ' + m.cuts + ' cut' + (m.cuts !== 1 ? 's' : '') + ', ' + m.parts + ' part' + (m.parts !== 1 ? 's' : '')
+      : (m.method === 'guillotine' ? 'Saw: ' + m.cuts + ' cuts, ' : 'CNC: ' + m.cuts + ' part' + (m.cuts !== 1 ? 's' : '') + ', ') + quoteLen(m.cutLength) + ' cut length', qty: 1, amt: m.cutting });
   });
   if (q.layout !== 'summary' && f.handling) lines.push({ d: 'Handling', sub: 'Loading, unloading and stacking', qty: 1, amt: f.handling });
   if (f.setup) lines.push({ d: 'Setup', qty: 1, amt: f.setup });
@@ -501,8 +515,8 @@ function buildQuoteHtml() {
   }).join('');
   const bizLines = [b.address].concat([b.phone, b.email, b.web].filter(Boolean).join(' · ')).concat(b.taxNo ? [(q.taxLabel || 'Tax') + ' no. ' + b.taxNo] : []).filter(Boolean);
   const partsHtml = q.partsList ? quotePartsList().map(function (g) {
-    return `<h3>Parts — ${esc(g.title)}</h3><table class="parts"><thead><tr><th>Part</th><th class="n">Size (${esc(unitLabel())})</th><th class="n">Qty</th></tr></thead><tbody>${
-      g.parts.map(function (p) { return `<tr><td>${esc(p.label)}</td><td class="n">${esc(lenNum(p.w))} × ${esc(lenNum(p.h))}</td><td class="n">${p.qty}</td></tr>`; }).join('')}</tbody></table>`;
+    return `<h3>Parts \u2014 ${esc(g.title)}</h3><table class="parts"><thead><tr><th>Part</th><th class="n">${g.linear ? 'Length' : 'Size'} (${esc(unitLabel())})</th><th class="n">Qty</th></tr></thead><tbody>${
+      g.parts.map(function (p) { return `<tr><td>${esc(p.label)}</td><td class="n">${esc(lenNum(p.w))}${g.linear ? '' : ' \u00d7 ' + esc(lenNum(p.h))}</td><td class="n">${p.qty}</td></tr>`; }).join('')}</tbody></table>`;
   }).join('') : '';
   const title = 'Quote ' + (qj.no || '') + (qj.customer ? ' — ' + qj.customer : '');
   return `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${esc(title)}</title><style>
@@ -572,7 +586,7 @@ function quoteText() {
   f.mats.forEach(function (m) {
     if (q.layout === 'summary') { out.push('Supply and cut ' + matTitle(m) + ' (' + m.parts + ' parts): ' + money(m.materialPrice + m.cutting + m.handling)); return; }
     if (q.charge === 'used') out.push(matTitle(m) + ' material: ' + money(m.materialPrice));
-    else m.sizes.forEach(function (z) { out.push(matTitle(m) + ' ' + dims(z.w, z.h) + ': ' + z.count + ' × ' + money(z.unitPrice) + ' = ' + money(z.amount)); });
+    else m.sizes.forEach(function (z) { out.push(matTitle(m) + ' ' + (m.method === 'linear' ? len(z.w) : dims(z.w, z.h)) + ': ' + z.count + ' \u00d7 ' + money(z.unitPrice) + ' = ' + money(z.amount)); });
     out.push('Cutting ' + matTitle(m) + ': ' + money(m.cutting));
   });
   if (q.layout !== 'summary' && f.handling) out.push('Handling: ' + money(f.handling));

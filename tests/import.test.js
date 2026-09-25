@@ -5,10 +5,11 @@
 'use strict';
 const fs = require('fs'), path = require('path'), vm = require('vm'), zlib = require('zlib');
 
-const ctx = { TextDecoder, TextEncoder, DecompressionStream, Blob, Response, Uint8Array, DataView, console };
+const ctx = { TextDecoder, TextEncoder, DecompressionStream, Blob, Response, Uint8Array, DataView, console, settings: { units: 'mm' } };
 vm.createContext(ctx);
-vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', 'import.js'), 'utf8') +
-  '\nthis.I = { splitDelimited, detectDelimiter, headerMap, grainCell, readXlsxRows };', ctx);
+vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', 'units.js'), 'utf8') + '\n' +
+  fs.readFileSync(path.join(__dirname, '..', 'js', 'import.js'), 'utf8') +
+  '\nthis.I = { splitDelimited, detectDelimiter, headerMap, grainCell, readXlsxRows, parseLengthList };', ctx);
 const I = ctx.I;
 
 let checks = 0, failures = 0;
@@ -97,6 +98,24 @@ function sampleXlsx() {
   eq(rows[1], ['Door & Frame', '800', '600', '4', 'Lock'], 'xlsx data row (entities, inline string)');
   eq(rows[2], ['Shelf', '450.5', '380', '6'], 'xlsx decimals');
   eq(rows[3], ['', '700', '280'], 'xlsx gap in columns');
+
+  // ── Length lists for bar stock ──
+  const L = function (t) { return JSON.parse(JSON.stringify(I.parseLengthList(t).rows.map(function (r) { return [r.label, r.w, r.qty]; }))); };
+  eq(L('1200'), [['', 1200, 1]], 'length only');
+  eq(L('1200 4'), [['', 1200, 4]], 'length and qty');
+  eq(L('1200 x 4'), [['', 1200, 4]], 'length x qty');
+  eq(L('4 off 1200'), [['', 1200, 4]], 'N off length');
+  eq(L('Rail 1200 4'), [['Rail', 1200, 4]], 'label length qty');
+  eq(L('Rail, 1200, 4\nPost, 450, 3'), [['Rail', 1200, 4], ['Post', 450, 3]], 'comma separated');
+  eq(L('2.4m x 6'), [['', 2400, 6]], 'metres');
+  eq(L('Top rail, 2400, 4\nLeg 900 x 8\n4 off 1150'), [['Top rail', 2400, 4], ['Leg', 900, 8], ['', 1150, 4]], 'mixed formats in one paste');
+  eq(L('Part\tLength\tQty\nTop rail\t1,450\t2'), [['Top rail', 1450, 2]], 'header row, thousands separator');
+  eq(L('Qty,Cut length (mm),Name\n3,600,Brace'), [['Brace', 600, 3]], 'header in any order');
+  eq(I.parseLengthList('Rail 12ab').errors.length, 1, 'unreadable line reported');
+  ctx.settings.units = 'in';
+  eq(L('23 5/8 4'), [['', 23.625 * 25.4, 4]], 'inches with a fraction');
+  eq(L('8\' 6, 2'), [['', 102 * 25.4, 2]], 'feet and inches');
+  ctx.settings.units = 'mm';
 
   console.log(`import: ${checks} checks, ${failures} failed`);
   process.exit(failures ? 1 : 0);

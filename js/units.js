@@ -66,7 +66,7 @@ function areaTxt(mm2) {
 
 // Parse what the user typed into millimetres. Accepts, in either mode:
 //   600   600.5   23.625   23 5/8   23-5/8   5/8   8' 6   8ft 6 1/2
-// and an explicit unit overrides the setting: 600mm, 60cm, 24", 24in.
+// and an explicit unit overrides the setting: 600mm, 60cm, 2.4m, 24", 24in.
 // Returns NaN for anything it cannot read.
 function parseLen(v) {
   if (typeof v === 'number') return isFinite(v) ? (isInch() ? v * MM_PER_IN : v) : NaN;
@@ -76,6 +76,7 @@ function parseLen(v) {
   let m;
   if ((m = s.match(/^(.*?)\s*(mm|millimet(?:er|re)s?)$/))) { unit = 'mm'; s = m[1]; }
   else if ((m = s.match(/^(.*?)\s*(cm|centimet(?:er|re)s?)$/))) { unit = 'cm'; s = m[1]; }
+  else if ((m = s.match(/^(.*?\d)\s*(m|met(?:er|re)s?)$/))) { unit = 'm'; s = m[1]; }
   else if ((m = s.match(/^(.*?)\s*("|''|inches|inch|in)$/))) { unit = 'in'; s = m[1]; }
   let feet = 0;
   if ((m = s.match(/^(\d+(?:\.\d+)?)\s*(?:'|ft|feet|foot)\s*-?\s*(.*)$/))) {
@@ -93,7 +94,7 @@ function parseLen(v) {
   }
   n += feet * 12;
   const u = unit || (isInch() ? 'in' : 'mm');
-  return u === 'in' ? n * MM_PER_IN : u === 'cm' ? n * 10 : n;
+  return u === 'in' ? n * MM_PER_IN : u === 'cm' ? n * 10 : u === 'm' ? n * 1000 : n;
 }
 
 // ── CURRENCY ──

@@ -30,6 +30,11 @@ function loadStarterPack(type) {
       {id:Date.now()+2,allowRotation:false,cuttingMethod:'guillotine',name:'Plywood 18mm (Hardwood Face)',material:'Timber',thickness:'18mm',size1:{w:2440,h:1220,price:45},size2:{w:0,h:0,price:0}},
       {id:Date.now()+3,allowRotation:true,cuttingMethod:'guillotine',name:'MDF 12mm',material:'Timber',thickness:'12mm',size1:{w:2440,h:1220,price:22},size2:{w:1220,h:610,price:12}}
     ],
+    bar: [
+      {id:Date.now()+1,kind:'linear',name:'SHS 40x40x3',material:'Mild Steel',thickness:'40x40x3',sizes:[{w:7500,price:38},{w:6000,price:32}]},
+      {id:Date.now()+2,kind:'linear',name:'Equal Angle 40x40x5',material:'Mild Steel',thickness:'40x40x5',sizes:[{w:6000,price:28}]},
+      {id:Date.now()+3,kind:'linear',name:'Flat Bar 50x6',material:'Mild Steel',thickness:'50x6',sizes:[{w:6000,price:20}]}
+    ],
     acrylic: [
       {id:Date.now()+1,allowRotation:true,cuttingMethod:'free',name:'Acrylic 3mm Clear',material:'Acrylic',thickness:'3mm',size1:{w:2440,h:1220,price:55},size2:{w:1220,h:610,price:30}},
       {id:Date.now()+2,allowRotation:true,cuttingMethod:'free',name:'Acrylic 5mm Clear',material:'Acrylic',thickness:'5mm',size1:{w:2440,h:1220,price:85},size2:{w:1220,h:610,price:45}},
@@ -50,6 +55,11 @@ function loadStarterPack(type) {
       {id:Date.now()+2,allowRotation:false,cuttingMethod:'guillotine',name:'Birch Plywood 3/4"',material:'Timber',thickness:'3/4"',sizes:[{w:IN(96),h:IN(48),price:75}]},
       {id:Date.now()+3,allowRotation:true,cuttingMethod:'guillotine',name:'MDF 1/2"',material:'Timber',thickness:'1/2"',sizes:[{w:IN(96),h:IN(48),price:35},{w:IN(48),h:IN(24),price:12}]}
     ],
+    bar: [
+      {id:Date.now()+1,kind:'linear',name:'Square Tube 1-1/2" 11ga',material:'Mild Steel',thickness:'1-1/2" 11ga',sizes:[{w:IN(240),price:62},{w:IN(288),price:74}]},
+      {id:Date.now()+2,kind:'linear',name:'Angle 1-1/2 x 1-1/2 x 3/16',material:'Mild Steel',thickness:'1-1/2 x 3/16',sizes:[{w:IN(240),price:45}]},
+      {id:Date.now()+3,kind:'linear',name:'Flat Bar 2 x 1/4',material:'Mild Steel',thickness:'2 x 1/4',sizes:[{w:IN(240),price:36}]}
+    ],
     acrylic: [
       {id:Date.now()+1,allowRotation:true,cuttingMethod:'free',name:'Acrylic 1/8" Clear',material:'Acrylic',thickness:'1/8"',sizes:[{w:IN(96),h:IN(48),price:150},{w:IN(48),h:IN(24),price:42}]},
       {id:Date.now()+2,allowRotation:true,cuttingMethod:'free',name:'Acrylic 1/4" Clear',material:'Acrylic',thickness:'1/4"',sizes:[{w:IN(96),h:IN(48),price:260},{w:IN(48),h:IN(24),price:72}]},
@@ -65,8 +75,8 @@ function loadStarterPack(type) {
   // Turret-punch users (rare default) can raise it in Settings — the copy there
   // tells them to. Only override if the user hasn't already chosen a kerf.
   if (!settings.kerfTouched) {
-    const kerfByTrade = isInch() ? { metal: 3.175, timber: 3.175, acrylic: 2.38125 }   // 1/8", 1/8", 3/32"
-                                 : { metal: 4, timber: 4, acrylic: 3 };
+    const kerfByTrade = isInch() ? { metal: 3.175, timber: 3.175, acrylic: 2.38125, bar: 1.5875 }   // 1/8", 1/8", 3/32", 1/16"
+                                 : { metal: 4, timber: 4, acrylic: 3, bar: 2 };
     const k = kerfByTrade[type];
     if (k != null) {
       settings.kerf = k; KERF = k;
@@ -151,6 +161,7 @@ function renderAll() {
         <button onclick="loadStarterPack('metal')" style="background:var(--teal);border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;padding:13px 26px;border-radius:10px;cursor:pointer;letter-spacing:.5px;transition:.2s;box-shadow:0 4px 14px rgba(15,76,92,.25)" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''">🔩 Sheet Metal</button>
         <button onclick="loadStarterPack('timber')" style="background:var(--teal);border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;padding:13px 26px;border-radius:10px;cursor:pointer;letter-spacing:.5px;transition:.2s;box-shadow:0 4px 14px rgba(15,76,92,.25)" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''">🪵 Timber &amp; Joinery</button>
         <button onclick="loadStarterPack('acrylic')" style="background:var(--teal);border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;padding:13px 26px;border-radius:10px;cursor:pointer;letter-spacing:.5px;transition:.2s;box-shadow:0 4px 14px rgba(15,76,92,.25)" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''">🔵 Acrylic &amp; Plastics</button>
+        <button onclick="loadStarterPack('bar')" style="background:var(--teal);border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;padding:13px 26px;border-radius:10px;cursor:pointer;letter-spacing:.5px;transition:.2s;box-shadow:0 4px 14px rgba(15,76,92,.25)" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''">📏 Bar &amp; Tube</button>
       </div>
       <div style="display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-bottom:20px;font-size:12px;color:var(--muted)">
         <span>✓ Starter prices included</span>
@@ -189,10 +200,10 @@ function buildBlock(m, idx) {
   // can jump straight to their section instead of scrolling a flat mixed list.
   // Order is fixed; empty groups are skipped; categories with only one bucket
   // fall back to a plain flat list so we never show a single pointless heading.
-  const GROUP_ORDER = ['Metal','Timber','Plastic & Other','Other'];
+  const GROUP_ORDER = ['Metal','Timber','Plastic & Other','Bar, tube & lengths','Other'];
   const buckets = {};
   library.forEach(function(l){
-    const cat = materialCategory(l.material, l.name);
+    const cat = isLinear(l) ? 'Bar, tube & lengths' : materialCategory(l.material, l.name);
     (buckets[cat] = buckets[cat] || []).push(l);
   });
   const usedGroups = GROUP_ORDER.filter(function(g){ return buckets[g] && buckets[g].length; });
@@ -209,7 +220,16 @@ function buildBlock(m, idx) {
 
   // size info
   let sizeHtml = '';
-  if (libMat) {
+  const bar = isLinear(libMat);
+  if (bar) {
+    sizeHtml = `
+      <div class="sz-info-row">
+        ${sizeBadgesHtml(libMat)}
+        ${cleanTrim(libMat.trim) ? `<div class="sz-badge" title="Taken off each end of every bar before cutting"><span class="sl">End trim</span><span class="sv">${esc(len(cleanTrim(libMat.trim)))}</span></div>` : ''}
+        <div class="sz-badge" title="${libMat.kerf != null ? 'This material\u2019s own saw kerf (Library)' : 'The kerf in Settings'}"><span class="sl">Saw kerf</span><span class="sv">${esc(len(linearKerf(libMat)))}</span></div>
+        <div class="sz-auto-note">The optimiser picks the best mix of lengths</div>
+      </div>`;
+  } else if (libMat) {
     sizeHtml = `
       <div class="sz-info-row">
         ${sizeBadgesHtml(libMat)}
@@ -241,7 +261,34 @@ function buildBlock(m, idx) {
   }
 
   // pieces rows — spreadsheet-style keyboard flow: Label→W→H→Qty→Enter=new row
-  const pRows = m.pieces.map((p, pi) => `
+  const pRows = bar ? m.pieces.map((p, pi) => `
+    <tr id="prow-${m.id}-${pi}">
+      <td style="color:var(--muted);font-size:11px;text-align:center;width:26px" data-label="#">${pi+1}</td>
+      <td data-label="Label">
+        <input type="text" data-f="label" value="${esc(p.label||'')}" placeholder="Label (optional)" aria-label="Piece ${pi+1} label"
+          style="min-width:90px;font-size:12px" oninput="updatePiece('${m.id}',${pi},'label',this.value)" onfocus="this.select()"
+          onkeydown="handlePieceKey(event,'${m.id}',${pi},'label')"/>
+      </td>
+      <td data-label="Length (${unitLabel()})">
+        <input type="text" inputmode="${isInch() ? 'text' : 'decimal'}" data-f="w" value="${lenInput(p.w)}" placeholder="Length"
+          aria-label="Piece ${pi+1} length in ${unitLabel()}" style="width:${isInch() ? 104 : 90}px;text-align:center"
+          oninput="updatePiece('${m.id}',${pi},'w',parseLen(this.value))" onfocus="this.select()"
+          onkeydown="handlePieceKey(event,'${m.id}',${pi},'w')"/>
+      </td>
+      <td data-label="Qty" style="white-space:nowrap;width:108px">
+        <div class="qty-wrap-mobile">
+          <button class="qty-btn" onclick="stepQty('${m.id}',${pi},-1)" type="button" aria-label="Decrease piece ${pi+1} quantity">−</button>
+          <input class="qty-input-mobile" aria-label="Piece ${pi+1} quantity" type="number" value="${p.qty||1}" min="1" max="9999"
+            oninput="updatePiece('${m.id}',${pi},'qty',Math.max(1,+this.value))" onfocus="this.select()"
+            onkeydown="handlePieceKey(event,'${m.id}',${pi},'qty')"/>
+          <button class="qty-btn" onclick="stepQty('${m.id}',${pi},1)" type="button" aria-label="Increase piece ${pi+1} quantity">+</button>
+        </div>
+      </td>
+      <td style="white-space:nowrap;padding:4px 2px" data-label="Actions">
+        <button onclick="duplicatePiece('${m.id}',${pi})" title="Duplicate piece" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:2px 5px" aria-label="Duplicate">⧉</button>
+        <button class="btn-del" onclick="removePiece('${m.id}',${pi})" aria-label="Remove piece ${pi+1}">&#10005;</button>
+      </td>
+    </tr>`).join('') : m.pieces.map((p, pi) => `
     <tr id="prow-${m.id}-${pi}">
       <td style="color:var(--muted);font-size:11px;text-align:center;width:26px" data-label="#">${pi+1}</td>
       <td data-label="Label">
@@ -304,7 +351,7 @@ function buildBlock(m, idx) {
             <div class="mat-cap-title">
               Material ${idx+1}${libMat ? ' — ' + esc(libMat.name) : ''}
             </div>
-            <div class="mat-cap-subtitle">Select material then enter the pieces to cut from it</div>
+            <div class="mat-cap-subtitle">${bar ? 'Enter the lengths to cut from this bar stock' : 'Select material then enter the pieces to cut from it'}</div>
           </div>
         </div>
         ${mats.length > 1
@@ -335,7 +382,9 @@ function buildBlock(m, idx) {
         </div>
         <div class="pieces-table-wrap" style="overflow-x:auto">
           <table>
-            <thead><tr><th style="width:26px">#</th><th>Label</th><th>W (${unitLabel()})</th><th>H (${unitLabel()})</th><th style="width:90px">Qty</th><th style="width:74px">Grain</th><th style="width:52px"></th></tr></thead>
+            <thead><tr>${bar
+              ? `<th style="width:26px">#</th><th>Label</th><th>Length (${unitLabel()})</th><th style="width:90px">Qty</th><th style="width:52px"></th>`
+              : `<th style="width:26px">#</th><th>Label</th><th>W (${unitLabel()})</th><th>H (${unitLabel()})</th><th style="width:90px">Qty</th><th style="width:74px">Grain</th><th style="width:52px"></th>`}</tr></thead>
             <tbody id="ptbody-${m.id}">${pRows}</tbody>
           </table>
         </div>
@@ -563,11 +612,20 @@ async function importCutListFile(input) {
 
 const PASTE_ROW_LIMIT = 500;   // same ceiling as the shared-link importer
 let _pasteTargetMat = null;
+// Is the paste window filling a bar / length material?
+function pasteIsLinear() {
+  const m = mats.find(function (x) { return x.id === _pasteTargetMat; });
+  return !!m && isLinear(library.find(function (l) { return l.id == m.selectedMatId; }));
+}
+function parsePasteFor(text) { return pasteIsLinear() ? parseLengthList(text) : parsePastedPieces(text); }
 
 function openPaste(matId) {
   _pasteTargetMat = matId;
   const ex = document.getElementById('paste-examples');
-  if (ex) ex.innerHTML = isInch()
+  if (ex && pasteIsLinear()) ex.innerHTML = isInch()
+    ? '23 5/8 &nbsp;&middot;&nbsp; 23 5/8 x 4 &nbsp;&middot;&nbsp; 4 off 96<br>Rail, 48, 4 &nbsp;&middot;&nbsp; 8\' 6 x 2 &nbsp;&middot;&nbsp; 1200mm x 3'
+    : '1200 &nbsp;&middot;&nbsp; 1200 x 4 &nbsp;&middot;&nbsp; 4 off 1200<br>Rail, 1200, 4 &nbsp;&middot;&nbsp; 2.4m x 6 &nbsp;&middot;&nbsp; a spreadsheet with a Length column';
+  else if (ex) ex.innerHTML = isInch()
     ? '23 5/8 x 15 3/4 x 4 &nbsp;&middot;&nbsp; 23.625, 15.75, 4<br>Door Front, 24, 18, 4 &nbsp;&middot;&nbsp; 4 off 24 x 18<br>24" x 18" qty 4 &nbsp;&middot;&nbsp; 600mm x 400mm <span style="color:var(--muted)">(mm on the line wins)</span>'
     : '600x400x4 &nbsp;&middot;&nbsp; 600 x 400 x 4 &nbsp;&middot;&nbsp; 600,400,4<br>Door Front,800,600,4 &nbsp;&middot;&nbsp; 4 off 600x400<br>600x400 qty 4 &nbsp;&middot;&nbsp; 24" x 18" <span style="color:var(--muted)">(inches on the line win)</span>';
   const ta = document.getElementById('paste-input');
@@ -589,7 +647,8 @@ function renderPastePreview() {
   const out = document.getElementById('paste-preview');
   const btn = document.getElementById('paste-confirm');
   if (!ta || !out) return;
-  const res = parsePastedPieces(ta.value);
+  const bar = pasteIsLinear();
+  const res = parsePasteFor(ta.value);
   if (!ta.value.trim()) {
     out.innerHTML = '<div style="color:var(--muted);font-size:13px">Paste or type your list above and it will be parsed here before anything is added.</div>';
     if (btn) { btn.disabled = true; btn.style.opacity = '.5'; btn.textContent = 'Add pieces'; }
@@ -612,10 +671,10 @@ function renderPastePreview() {
     html += '<div style="font-size:12px;color:var(--teal);font-weight:700;margin-bottom:6px">\u2713 ' + res.rows.length +
             ' row' + (res.rows.length !== 1 ? 's' : '') + ' \u00b7 ' + totalCuts + ' total cut' + (totalCuts !== 1 ? 's' : '') + '</div>';
     html += '<div style="max-height:180px;overflow:auto;border:1px solid var(--bdr);border-radius:8px"><table style="font-size:12px">' +
-            '<thead><tr><th>Label</th><th>W (' + unitLabel() + ')</th><th>H (' + unitLabel() + ')</th><th>Qty</th><th></th></tr></thead><tbody>' +
+            '<thead><tr><th>Label</th>' + (bar ? '<th>Length (' + unitLabel() + ')</th>' : '<th>W (' + unitLabel() + ')</th><th>H (' + unitLabel() + ')</th>') + '<th>Qty</th><th></th></tr></thead><tbody>' +
             res.rows.slice(0, 100).map(function (r) {
               const bad = r.warn ? ' style="background:#fff5f5;color:#b91c1c;font-weight:600"' : '';
-              return '<tr' + bad + '><td>' + esc(r.label || '\u2014') + '</td><td>' + esc(lenNum(r.w)) + '</td><td>' + esc(lenNum(r.h)) + '</td><td>' + r.qty +
+              return '<tr' + bad + '><td>' + esc(r.label || '\u2014') + '</td><td>' + esc(lenNum(r.w)) + '</td>' + (bar ? '' : '<td>' + esc(lenNum(r.h)) + '</td>') + '<td>' + r.qty +
                      '</td><td style="font-size:11px">' + (r.warn ? '\u26a0 ' + esc(r.warn) : '') + '</td></tr>';
             }).join('') + '</tbody></table></div>';
     if (res.rows.length > 100) html += '<div style="font-size:11px;color:var(--muted);margin-top:5px">(showing first 100)</div>';
@@ -639,18 +698,19 @@ function confirmPaste() {
   const ta = document.getElementById('paste-input');
   const m = mats.find(function (x) { return x.id === _pasteTargetMat; });
   if (!ta || !m) return;
-  const res = parsePastedPieces(ta.value);
+  const bar = pasteIsLinear();
+  const res = parsePasteFor(ta.value);
   if (!res.rows.length) return;
   pushUndo();
   const replace = (document.getElementById('paste-replace') || {}).checked;
   // Blank starter rows are noise once real pieces arrive.
-  const existing = replace ? [] : m.pieces.filter(function (p) { return p.w > 0 && p.h > 0; });
+  const existing = replace ? [] : realPieces(m);
   // Hard cap, matching the shared-link importer. Without it a stray paste of a
   // 10,000-line file would be accepted whole, then rendered as 10,000 table
   // rows and written to localStorage on every keystroke.
   const room = Math.max(0, PASTE_ROW_LIMIT - existing.length);
   m.pieces = existing.concat(res.rows.slice(0, room).map(function (r) {
-    const p = { w: r.w, h: r.h, qty: r.qty, label: r.label };   // drop the warn flag
+    const p = { w: r.w, h: bar ? '' : r.h, qty: r.qty, label: r.label };   // drop the warn flag
     if (r.grain) p.grain = r.grain;
     return p;
   }));
@@ -733,8 +793,11 @@ function saveAllOffcuts() {
   if (!calcResult || !calcResult.results) return;
   const jr = ((document.getElementById('job-ref') || {}).value || '').trim();
   let added = 0, skipped = 0;
+  let bars = 0;
   calcResult.results.forEach(function (r) {
     const matId = r.libMat && r.libMat.id;
+    // Offcut stock is for sheets; bar offcuts are listed on the cutting plan.
+    if (r.linear) { bars += r.sheets.filter(function (sh) { return sh.usableOffcut; }).length; return; }
     r.sheets.forEach(function (sh) {
       // Only offcuts big enough to be worth keeping, and never off a remnant
       // sheet — that piece is already in stock, re-adding it double-counts.
@@ -747,6 +810,7 @@ function saveAllOffcuts() {
   if (added) showToast('\u2713 ' + added + ' offcut' + (added !== 1 ? 's' : '') + ' saved to stock' +
                        (skipped ? ' (' + skipped + ' already there)' : ''));
   else if (skipped) showToast('Those offcuts are already in your stock');
+  else if (bars) showToast('Offcut stock is for sheets \u2014 the bar offcuts to keep are marked on the cutting plan', 4000);
   else showToast('No reclaimable offcuts on this job');
 }
 
@@ -904,7 +968,9 @@ function stepQty(matId, pi, delta) {
 }
 
 function handlePieceKey(e, matId, pi, field) {
-  const FIELDS = ['label', 'w', 'h', 'qty'];
+  const _m = mats.find(function(x){ return x.id === matId; });
+  const bar = !!_m && isLinear(library.find(function(l){ return l.id == _m.selectedMatId; }));
+  const FIELDS = bar ? ['label', 'w', 'qty'] : ['label', 'w', 'h', 'qty'];
   const isEnter = e.key === 'Enter';
   const isTab   = e.key === 'Tab' && !e.shiftKey;
   const isShiftTab = e.key === 'Tab' && e.shiftKey;
@@ -931,7 +997,7 @@ function handlePieceKey(e, matId, pi, field) {
       // If focus somehow starts on Label, Enter jumps straight into Width.
       focusPieceField(matId, pi, 'w');
     } else if (field === 'w') {
-      focusPieceField(matId, pi, 'h');
+      focusPieceField(matId, pi, bar ? 'qty' : 'h');
     } else if (field === 'h') {
       focusPieceField(matId, pi, 'qty');
     } else if (field === 'qty') {
@@ -1008,8 +1074,13 @@ function showToast(msg, duration) {
 }
 // "3 pieces · 12 total cuts" — counts only rows with a real size, so a blank
 // starter row is not a piece and does not add a cut.
+// The pieces of a material block that are real parts: a size (a length for bar stock).
+function realPieces(m) {
+  const bar = isLinear(library.find(function(l){ return l.id == m.selectedMatId; }));
+  return m.pieces.filter(function(p){ return p.w > 0 && (bar || p.h > 0); });
+}
 function pieceCountText(m) {
-  const real = m.pieces.filter(function(p){ return p.w > 0 && p.h > 0; });
+  const real = realPieces(m);
   const cuts = real.reduce(function(a, p){ return a + (+p.qty || 1); }, 0);
   return real.length + ' piece' + (real.length !== 1 ? 's' : '') + ' \u00b7 ' + cuts + ' total cut' + (cuts !== 1 ? 's' : '');
 }
@@ -1089,6 +1160,7 @@ function buildCutSheetsHtml() {
 
   let pages = '';
   calcResult.results.forEach(function (r) {
+    if (r.linear) { pages += barCutPagesHtml(r, co, jr, dateStr); return; }
     const libMat = r.libMat;
     const buy = boughtSheets(r.sheets).length;
     r.sheets.forEach(function (sh, si) {
@@ -1242,6 +1314,23 @@ function buildCutSheetsHtml() {
   *{box-sizing:border-box}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#10202a;margin:0;background:#fff}
   .page{page-break-after:always;break-after:page;padding:6px 0 0}
+  .bar-strip{position:relative;height:34px;border:1.5px solid #9dbac4;border-radius:3px;overflow:hidden;background:repeating-linear-gradient(-45deg,#f2f7f9,#f2f7f9 2px,#fff 2px,#fff 7px)}
+  .bar-part{position:absolute;top:0;bottom:0;border:1.5px solid;box-sizing:border-box;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .bar-part span{color:#fff;font-size:9px;line-height:1.1;text-align:center;white-space:nowrap}
+  .bar-trim{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,#9ca3af,#9ca3af 2px,#d1d5db 2px,#d1d5db 5px)}
+  .bar-off{position:absolute;top:0;bottom:0;border-left:1.5px dashed #9dbac4;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#6a8a96}
+  .bar-off.keep{background:repeating-linear-gradient(45deg,#fff,#fff 5px,#e7f7f0 5px,#e7f7f0 10px);border-left-color:#059669;color:#047857}
+  .bp{border:1.5px solid #10202a;border-radius:6px;padding:8px 10px;margin:0 0 10px;break-inside:avoid}
+  .bp-h{display:flex;justify-content:space-between;gap:10px;font-size:12px;margin-bottom:6px}
+  .bp-h b.n{font-size:18px}
+  .bp-cuts{display:flex;gap:14px;flex-wrap:wrap;margin-top:7px}
+  .bp-cuts table{border-collapse:collapse;font-size:10.5px}
+  .bp-cuts table{width:auto;min-width:430px}
+  .bp-cuts td,.bp-cuts th{border-bottom:1px solid #dbe5e9;padding:2px 10px 2px 0;text-align:left}
+  .bp-cuts th{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:#5a7682!important;background:none!important;font-weight:700}
+  .bp-cuts td.c,.bp-cuts th.c{text-align:right}
+  .pull{font-size:12px;margin:0 0 10px;padding:7px 10px;background:#f2f7f9;border-radius:6px}
+  .tick{display:inline-block;width:11px;height:11px;border:1.3px solid #10202a;border-radius:2px;vertical-align:-1px;margin-right:4px}
   .page:last-child{page-break-after:auto;break-after:auto}
   .hd{border-bottom:2px solid #0f4c5c;padding-bottom:6px;margin-bottom:10px;overflow:hidden}
   .hd > div:first-child{float:left;max-width:68%}
@@ -1298,6 +1387,65 @@ function buildCutSheetsHtml() {
 </style></head><body>${pages}</body></html>`;
 }
 
+// Bars: one block per cutting pattern — how many bars to cut that way, the
+// bar drawn to scale, and the cut list in order with the length to set on the
+// saw stop and the mark from the bar end. Several patterns share a page.
+function barCutPagesHtml(r, co, jr, dateStr) {
+  const libMat = r.libMat, k = r.kerf != null ? r.kerf : KERF, trim = cleanTrim(libMat.trim);
+  const groups = barGroups(r);
+  const pull = Object.keys(r.sizeMap).map(function (key) { return r.sizeMap[key] + ' \u00d7 ' + stockKeyTxt(libMat, key); }).join(', ');
+  const letter = function (i) { return i < 26 ? String.fromCharCode(65 + i) : 'P' + (i + 1); };
+  const blocks = groups.map(function (g, gi) {
+    const sh = g.bars[0], n = g.bars.length;
+    const cuts = [];
+    if (trim) cuts.push({ what: 'Square the end', len: trim, mark: trim, waste: true });
+    sh.placed.forEach(function (p) {
+      cuts.push({ what: p.label || ('P' + (p.pieceIndex + 1)), len: p.w, mark: p.x + p.w, last: p.x + p.w >= sh.sheetW - 1e-6 });
+    });
+    const cols = [];
+    for (let i = 0; i < cuts.length; i += 12) cols.push(cuts.slice(i, i + 12));
+    const tables = cols.map(function (col, ci) {
+      return `<table><thead><tr><th>#</th><th>Part</th><th class="c">Cut to</th><th class="c">Mark from end</th><th>Done</th></tr></thead><tbody>${
+        col.map(function (c, i) {
+          return `<tr><td>${ci * 12 + i + 1}</td><td>${c.waste ? '<i>' + esc(c.what) + '</i>' : esc(c.what)}</td><td class="c"><b>${esc(len(c.len))}</b></td><td class="c">${c.last ? 'bar end' : esc(lenNum(c.mark))}</td><td><span class="tick"></span></td></tr>`;
+        }).join('')}</tbody></table>`;
+    }).join('');
+    const h = 80 + Math.min(cuts.length, 12) * 17;
+    return { h: h, html: `<div class="bp">
+      <div class="bp-h"><div><b class="n">${letter(gi)}</b> &nbsp;Cut <b>${n} bar${n > 1 ? 's' : ''}</b> of ${esc(len(sh.sheetW))} like this${n > 1 ? ' (bars ' + (g.first + 1) + '\u2013' + (g.first + n) + ')' : ' (bar ' + (g.first + 1) + ')'}</div>
+        <div>${sh.placed.length} parts \u00b7 ${sh.utilPercent}% used${sh.offcut ? ' \u00b7 ' + (sh.usableOffcut ? '<b>\u2713 KEEP offcut ' + esc(len(sh.offcut.w)) + '</b>' : 'offcut ' + esc(len(sh.offcut.w)) + ' (scrap)') : ''}</div></div>
+      ${barStripHtml(sh)}
+      <div class="bp-cuts">${tables}</div>
+    </div>` };
+  });
+  // Fill landscape pages with whole blocks.
+  const PAGE = 560;
+  let pages = '', cur = '', used = 0, pageNo = 0;
+  const flush = function (last) {
+    pageNo++;
+    pages += `<section class="page">
+      <header class="hd">
+        <div>
+          <div class="hd-t">${esc(libMat.name)}${libMat.thickness && libMat.name.indexOf(libMat.thickness) === -1 ? ' \u00b7 ' + esc(libMat.thickness) : ''} &mdash; cutting list${pageNo > 1 ? ' (continued)' : ''}</div>
+          <div class="hd-m">${r.sheets.length} ${stockWord(libMat, r.sheets.length)} &nbsp;\u00b7&nbsp; <b>Saw kerf ${esc(len(k))}</b>${trim ? ' &nbsp;\u00b7&nbsp; End trim ' + esc(len(trim)) : ''}</div>
+        </div>
+        <div class="hd-r">${co ? `<div class="hd-co">${esc(co)}</div>` : ''}${jr ? `<div class="hd-m">Job: ${esc(jr)}</div>` : ''}<div class="hd-m">${dateStr}</div></div>
+      </header>
+      ${pageNo === 1 ? `<div class="pull"><b>Pull from stock:</b> ${esc(pull)}</div>` : ''}
+      ${cur}
+      <div class="note">"Cut to" is the length to set on the saw stop, measured from the fresh cut end. "Mark from end" is for marking out the whole bar; the ${esc(len(k))} kerf goes on the waste side of each mark.</div>
+      <footer class="ft">CutNest \u00b7 cutnest.co.uk &nbsp;\u00b7&nbsp; Check the first part of each pattern before cutting the rest.</footer>
+    </section>`;
+    cur = ''; used = 0;
+  };
+  blocks.forEach(function (b) {
+    if (used && used + b.h > PAGE) flush();
+    cur += b.html; used += b.h;
+  });
+  if (cur || !pages) flush();
+  return pages;
+}
+
 function exportCutSheets() {
   if (!calcResult) { showToast('Calculate a job first'); return; }
   const html = buildCutSheetsHtml();
@@ -1351,11 +1499,11 @@ function labelItems() {
     r.sheets.forEach(function (sh, si) {
       sh.placed.slice().sort(function (a, b) { return (a.y - b.y) || (a.x - b.x); }).forEach(function (p, i) {
         seen[p.pieceIndex] = (seen[p.pieceIndex] || 0) + 1;
-        const locked = p.rot === false || (p.rot === undefined && libMat.allowRotation === false);
+        const locked = !r.linear && (p.rot === false || (p.rot === undefined && libMat.allowRotation === false));
         items.push({
           job: jr, material: libMat.name + (libMat.thickness && libMat.name.indexOf(libMat.thickness) === -1 ? ' ' + libMat.thickness : ''),
           label: p.label || ('P' + (p.pieceIndex + 1)), w: p.w, h: p.h, rotated: p.rotated, locked: locked,
-          sheet: si + 1, sheets: r.sheets.length, part: i + 1, remnant: !!sh.isRemnant,
+          sheet: si + 1, sheets: r.sheets.length, part: i + 1, remnant: !!sh.isRemnant, bar: !!r.linear,
           n: seen[p.pieceIndex], of: total[p.pieceIndex]
         });
       });
@@ -1379,9 +1527,9 @@ function buildLabelsHtml(layoutKey, skip) {
     page += `<div class="lb" style="left:${L.left + col * L.dx}mm;top:${L.top + row * L.dy}mm">
       <div class="top"><span>${esc(it.job || co || 'CutNest')}</span><span>${it.n} of ${it.of}</span></div>
       <div class="name">${esc(it.label)}</div>
-      <div class="dim">${esc(dims(it.w, it.h))}${it.rotated ? ' <span class="rot">\u21bb</span>' : ''}</div>
+      <div class="dim">${esc(it.bar ? len(it.w) : dims(it.w, it.h))}${it.rotated ? ' <span class="rot">\u21bb</span>' : ''}</div>
       <div class="mat">${esc(it.material)}</div>
-      <div class="bot"><span class="id">${it.remnant ? 'Remnant' : 'Sheet ' + it.sheet} \u00b7 Part ${it.part}</span>${it.locked ? '<span class="grain">GRAIN LOCKED</span>' : ''}</div>
+      <div class="bot"><span class="id">${it.remnant ? 'Remnant' : (it.bar ? 'Bar ' : 'Sheet ') + it.sheet} \u00b7 Part ${it.part}</span>${it.locked ? '<span class="grain">GRAIN LOCKED</span>' : ''}</div>
     </div>`;
     slot++;
   });
@@ -1471,11 +1619,12 @@ function optimalityVerdict(res) {
     const sheets = res.sheets;
     if (!sheets.length) return null;
     const T = sheets[0].trim || 0;     // bound is on the usable, trimmed area
-    const W = sheets[0].sheetW - 2 * T, H = sheets[0].sheetH - 2 * T;
+    // Bars are trimmed at the ends only, and may have their own saw kerf.
+    const W = sheets[0].sheetW - 2 * T, H = res.linear ? sheets[0].sheetH : sheets[0].sheetH - 2 * T;
     const queue = [];
     sheets.forEach(function(sh){ sh.placed.forEach(function(p){ queue.push({w:p.w, h:p.h}); }); });
     if (!queue.length || queue.length > 400) return null;   // keep it cheap
-    const lb = packingLowerBound(queue, W, H, KERF, res.allowRotation !== false);
+    const lb = packingLowerBound(queue, W, H, res.kerf != null ? res.kerf : KERF, res.allowRotation !== false);
     return { used: sheets.length, floor: lb, optimal: sheets.length <= lb };
   } catch (e) { return null; }
 }
@@ -1500,6 +1649,14 @@ function withoutPrices(libMat) {
 // What a free calculation of this material leaves out, in the user's words.
 function gatedFeatures(libMat, m) {
   const out = [];
+  if (isLinear(libMat)) {
+    const bs = stockSizes(libMat);
+    if (bs.length > FREE_SHEET_SIZES) out.push('stock lengths after the first ' + FREE_SHEET_SIZES);
+    if (bs.some(function(z){ return z.max != null; })) out.push('stock limits');
+    const bu = bs.slice(0, FREE_SHEET_SIZES);
+    if (bu.length > 1 && bu.every(function(s){ return +s.price > 0; })) out.push('cost-optimised choice of lengths');
+    return out;
+  }
   if (libMat.allowRotation === false) out.push('grain lock');
   if (libMat.cuttingMethod === 'guillotine') out.push('guillotine mode');
   if (m && m.remnant && m.remnant.w && m.remnant.h) out.push('your remnant');
@@ -1651,7 +1808,9 @@ function packMaterial(libMat, pieces, remnant, jobQty) {
 
     _packPending.set(id, { timer: timer, ok: done, fail: runOnMainThread });
     try {
-      w.postMessage({ id: id, kerf: KERF, settings: settings, libMat: libMat,
+      // Only what the engine reads: the whole settings object now carries a quote logo.
+      const engineSettings = { minOffcutLong: settings.minOffcutLong, minOffcutShort: settings.minOffcutShort, minBarOffcut: settings.minBarOffcut };
+      w.postMessage({ id: id, kerf: KERF, settings: engineSettings, libMat: libMat,
                       pieces: pieces, remnant: remnant, jobQty: jobQty });
     } catch (e) {
       clearTimeout(timer); _packPending.delete(id);
@@ -1686,6 +1845,12 @@ async function _doCalculate() {
     // upgrade); the free calculation just runs without them and says so.
     const libMat = isPro ? storedMat : freeTierMat(storedMat);
     const gated = isPro ? [] : gatedFeatures(storedMat, m);
+    if (isLinear(storedMat)) {
+      const out = await calcLinear(m, libMat, gated, jobQty, errors);
+      if (out === 'cancelled') return;
+      if (out) results.push(out);
+      continue;
+    }
     // Grain per piece is Pro: on the free plan every piece follows the material.
     const valid = m.pieces.filter(p=>p.w>0&&p.h>0&&p.qty>0)
       .map(function(p){ if (isPro || !p.grain) return p; const c = Object.assign({}, p); delete c.grain; return c; });
@@ -1778,7 +1943,7 @@ async function _doCalculate() {
   // sizes" — the wrong diagnosis entirely. Name the real cause.
   results.forEach(function(r){
     if (r.unplaced && r.unplaced.length && r.sheets.filter(function(s){return !s.isRemnant;}).length >= 150) {
-      errors.push(`${esc(r.libMat.name)}: this job needs more than 150 sheets. Split it into smaller jobs — the remaining pieces are listed as not placed.`);
+      errors.push(`${esc(r.libMat.name)}: this job needs more than 150 ${stockWord(r.libMat, 2)}. Split it into smaller jobs — the remaining pieces are listed as not placed.`);
     }
   });
 
@@ -1793,6 +1958,38 @@ async function _doCalculate() {
   if (staleEl) staleEl.style.display = 'none';
   saveToHistory();
   renderOutput();
+}
+
+// One bar / length material: check every part fits the longest usable stock
+// length, then pack in the worker like a sheet material. Returns the result,
+// null (reported in `errors`), or 'cancelled'.
+async function calcLinear(m, libMat, gated, jobQty, errors) {
+  const n = mats.indexOf(m) + 1;
+  const valid = m.pieces.filter(function(p){ return p.w > 0 && p.qty > 0; })
+    .map(function(p){ return { w: +p.w, h: LINEAR_H, qty: p.qty, label: p.label || '' }; });
+  if (!valid.length) { errors.push(`Material ${n} (${esc(libMat.name)}): Please add at least one length.`); return null; }
+  const trimMm = cleanTrim(libMat.trim);
+  const lens = stockSizes(libMat).map(function(z){ return z.w - 2 * trimMm; }).filter(function(x){ return x > 0; });
+  if (!lens.length) { errors.push(`${esc(libMat.name)}: no stock length set. Open Library → Edit ${esc(libMat.name)} and add a length.`); return null; }
+  const longest = Math.max.apply(null, lens);
+  const fitting = [], oversized = [];
+  valid.forEach(function(p){
+    if (p.w <= longest + FIT_EPS) { fitting.push(p); return; }
+    oversized.push({ w: p.w, h: LINEAR_H, qty: +p.qty || 1, label: p.label, reason: 'too-long', minSheet: { w: p.w + 2 * trimMm, h: LINEAR_H } });
+    errors.push(`${esc(libMat.name)}: "${esc(p.label || len(p.w))}" (${esc(len(p.w))}) is longer than the longest bar (${esc(len(longest))}${trimMm ? ' usable after the end trims' : ''}).`);
+  });
+  if (!fitting.length) return { libMat: libMat, sheets: [], unplaced: [], sizeMap: {}, oversized: oversized, gated: gated, linear: true, kerf: linearKerf(libMat) };
+  const packed = await packMaterial(isPro ? libMat : withoutPrices(libMat), fitting, null, jobQty);
+  if (packed.cancelled || _calcCancelled) {
+    if (calcResult) document.getElementById('output').style.display = 'block';
+    showToast('Calculation cancelled');
+    return 'cancelled';
+  }
+  if (packed.err) { errors.push(`${esc(libMat.name)}: could not calculate (${esc(packed.err)}).`); return null; }
+  const res = packed.res;
+  if (!res || res.noValidSize) { errors.push(`${esc(libMat.name)}: no valid stock length. Open Library → Edit ${esc(libMat.name)}.`); return null; }
+  res.oversized = oversized;
+  return Object.assign({ libMat: libMat }, res, { gated: gated });
 }
 
 function showErr(msg) {
@@ -1817,6 +2014,15 @@ function showErr(msg) {
 // easy to miss, and an oversized piece removed the whole material from the
 // results. These helpers give every surface — screen, CSV, PDF — one consistent,
 // unmissable block naming each piece and the minimum sheet that would take it.
+// Sheets and bars share the result format (a bar is a strip LINEAR_H high), so
+// every place that shows a size asks the material which way to say it.
+function partTxt(libMat, w, h) { return isLinear(libMat) ? len(w) : dims(w, h); }
+function stockKeyTxt(libMat, key) { return isLinear(libMat) ? len(String(key).split('\u00d7')[0]) : dimKey(key); }
+function stockWord(libMat, n, cap) {
+  const w = isLinear(libMat) ? (n === 1 ? 'bar' : 'bars') : (n === 1 ? 'sheet' : 'sheets');
+  return cap ? w.charAt(0).toUpperCase() + w.slice(1) : w;
+}
+
 function groupUnplaced(unplaced){
   const by = {};
   (unplaced||[]).forEach(function(p){
@@ -1832,8 +2038,15 @@ function groupUnplaced(unplaced){
 function notPlacedLines(libMat, unplaced, oversized, stockShort){
   const allowRot = libMat.allowRotation !== false;
   const out = [];
+  const bar = isLinear(libMat);
   (oversized||[]).forEach(function(o){
     const ms = o.minSheet || minSheetFor(o.w, o.h, allowRot);
+    if (bar) {
+      out.push({ label: o.label || len(o.w), w:o.w, h:o.h, qty:o.qty,
+        why: 'Longer than every stock length' + (cleanTrim(libMat.trim) ? ' (after the end trims)' : ''),
+        fix: 'Add a stock length of at least ' + len(ms.w) + ' in Library, or split the part' });
+      return;
+    }
     out.push({
       label: o.label || dims(o.w, o.h),
       w:o.w, h:o.h, qty:o.qty,
@@ -1847,11 +2060,11 @@ function notPlacedLines(libMat, unplaced, oversized, stockShort){
   });
   groupUnplaced(unplaced).forEach(function(u){
     out.push({
-      label: u.label || dims(u.w, u.h),
+      label: u.label || partTxt(libMat, u.w, u.h),
       w:u.w, h:u.h, qty:u.qty,
-      why: stockShort ? 'Not enough sheets in stock' : 'Packer ran out of sheets for this job',
-      fix: stockShort ? 'Raise or clear "Max sheets" on a size in Library, or add another size'
-                      : 'Split the job, or add another sheet size in Library'
+      why: stockShort ? 'Not enough ' + stockWord(libMat, 2) + ' in stock' : 'Packer ran out of ' + stockWord(libMat, 2) + ' for this job',
+      fix: stockShort ? (bar ? 'Raise or clear "Max bars" on a length in Library, or add another length' : 'Raise or clear "Max sheets" on a size in Library, or add another size')
+                      : (bar ? 'Split the job, or add another stock length in Library' : 'Split the job, or add another sheet size in Library')
     });
   });
   return out;
@@ -1874,12 +2087,12 @@ function notPlacedHtml(libMat, unplaced, oversized, stockShort){
     <div style="padding:11px 13px">
       ${rows.map(function(r){
         return `<div style="padding:7px 0;border-bottom:1px solid #fbdcdc">
-          <div style="font-size:13px;font-weight:700;color:var(--red)">${esc(r.label)} — ${esc(dims(r.w, r.h))} ×${r.qty}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--red)">${esc(r.label)} — ${esc(partTxt(libMat, r.w, r.h))} ×${r.qty}</div>
           <div style="font-size:12px;color:var(--text2);margin-top:2px">${esc(r.why)}</div>
           <div style="font-size:12px;color:var(--teal);font-weight:600;margin-top:2px">→ ${esc(r.fix)}</div>
         </div>`;
       }).join('')}
-      <div style="font-size:11px;color:var(--muted);margin-top:9px">These pieces are NOT included in the sheet count or cost above.</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:9px">These pieces are NOT included in the ${stockWord(libMat, 1)} count or cost above.</div>
     </div>
   </div>`;
 }
@@ -1911,17 +2124,15 @@ function renderOutput() {
       const matchedSize = sizeByDims(libMat, sw, sh);
       const unitPrice = matchedSize && matchedSize.price > 0 ? matchedSize.price : 0;
       const lineTotal = unitPrice * cnt;
-      quoteLines.push(`${libMat.name}: ${cnt} sheet${cnt>1?'s':''} — ${dimKey(dim)}${unitPrice ? ' @ '+money(unitPrice)+' each' : ''}`);
-      return `<div class="pres-size-chip"><b>${cnt}</b> × ${esc(dimKey(dim))}${unitPrice ? `<span style="color:var(--green);margin-left:5px">${money(lineTotal, 0)}</span>` : ''}</div>`;
+      quoteLines.push(`${libMat.name}: ${cnt} ${stockWord(libMat, cnt)} — ${stockKeyTxt(libMat, dim)}${unitPrice ? ' @ '+money(unitPrice)+' each' : ''}`);
+      return `<div class="pres-size-chip"><b>${cnt}</b> × ${esc(stockKeyTxt(libMat, dim))}${unitPrice ? `<span style="color:var(--green);margin-left:5px">${money(lineTotal, 0)}</span>` : ''}</div>`;
     }).join('');
 
     // Per-material utilisation: how much of the stock this material consumed,
     // rounded to the nearest 10%. You still BUY (and handle) whole sheets — the
     // count and cost above are the real figures — but this tells you at a glance
     // how well the material was used. Area-weighted so big sheets count more.
-    const matUsedArea = sheets.reduce((a,sh)=>a + sh.placed.reduce((aa,p)=>aa+p.w*p.h,0), 0);
-    const matStockArea = sheets.reduce((a,sh)=>a + sh.sheetW*sh.sheetH, 0);
-    const matUtil10 = matStockArea > 0 ? Math.round((matUsedArea/matStockArea)*100) : 0;
+    const matUtil10 = materialUtil(_r);
     const utilCol = matUtil10 >= 70 ? 'var(--green)' : matUtil10 >= 45 ? 'var(--yel)' : 'var(--red)';
 
     return `<div class="pres-card">
@@ -1929,8 +2140,8 @@ function renderOutput() {
         <div class="pres-name">${esc(libMat.name)}<span class="pres-thk">${esc(libMat.thickness||'')}</span></div>
         ${gatedNoticeHtml(_r.gated)}
         ${verdict ? (verdict.optimal
-          ? `<div style="display:inline-flex;align-items:center;gap:5px;background:#d1fae5;border:1px solid #6ee7b7;color:#065f46;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:700;margin-bottom:7px" title="Checked against a mathematical lower bound: no arrangement of these parts can fit on fewer sheets.">✓ PROVABLY OPTIMAL — no nest can use fewer sheets</div>`
-          : `<div style="display:inline-flex;align-items:center;gap:5px;background:var(--sky);border:1px solid var(--bdr2);color:var(--muted);border-radius:6px;padding:3px 9px;font-size:11px;font-weight:600;margin-bottom:7px" title="The theoretical floor is a mathematical bound. It is often not physically achievable — a gap of one sheet usually means the bound is loose, not that a better nest exists.">Best nest found · theoretical floor ${verdict.floor} sheet${verdict.floor!==1?'s':''}</div>`) : ''}
+          ? `<div style="display:inline-flex;align-items:center;gap:5px;background:#d1fae5;border:1px solid #6ee7b7;color:#065f46;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:700;margin-bottom:7px" title="Checked against a mathematical lower bound: no arrangement of these parts can fit on fewer ${stockWord(libMat, 2)}.">✓ PROVABLY OPTIMAL — no ${isLinear(libMat) ? 'cutting plan' : 'nest'} can use fewer ${stockWord(libMat, 2)}</div>`
+          : `<div style="display:inline-flex;align-items:center;gap:5px;background:var(--sky);border:1px solid var(--bdr2);color:var(--muted);border-radius:6px;padding:3px 9px;font-size:11px;font-weight:600;margin-bottom:7px" title="The theoretical floor is a mathematical bound. It is often not physically achievable — a gap of one ${stockWord(libMat, 1)} usually means the bound is loose, not that a better plan exists.">Best ${isLinear(libMat) ? 'plan' : 'nest'} found · theoretical floor ${verdict.floor} ${stockWord(libMat, verdict.floor)}</div>`) : ''}
         ${(function(){
           // If this material used a remnant that came from stock, that piece has
           // now been cut — offer to take it out so it is never offered twice.
@@ -1952,7 +2163,7 @@ function renderOutput() {
       <div class="pres-right">
         <div style="text-align:center">
           <div class="pres-count">${total}</div>
-          <div class="pres-unit">sheet${total!==1?'s':''}</div>
+          <div class="pres-unit">${stockWord(libMat, total)}</div>
           ${total ? `<div class="pres-util" style="font-size:11px;font-weight:700;color:${utilCol};margin-top:3px">${matUtil10}% used</div>` : ''}
         </div>
       </div>
@@ -2011,7 +2222,7 @@ function renderOutput() {
       Object.entries(r.sizeMap).forEach(function(e){
         // Add the thickness unless the name already says it ("MDF 18mm").
         const thk = r.libMat.thickness && r.libMat.name.indexOf(r.libMat.thickness) === -1 ? ' ' + r.libMat.thickness : '';
-        parts.push(e[1] + ' × ' + dimKey(e[0]) + ' ' + r.libMat.name + thk);
+        parts.push(e[1] + ' × ' + stockKeyTxt(r.libMat, e[0]) + ' ' + r.libMat.name + thk);
       });
     });
     if (parts.length) { orderTxt.textContent = parts.join('  ·  '); orderEl.style.display = 'block'; }
@@ -2024,8 +2235,10 @@ function renderOutput() {
   // Kerf is hidden in the header on mobile, so the single most cost-affecting
   // assumption was invisible on a phone. State it on the results themselves.
   const ra = document.getElementById('results-assumptions');
+  const barKerfs = results.filter(r => r.linear && r.kerf != null && r.kerf !== KERF).map(r => r.kerf);
   if (ra) ra.textContent = 'Calculated with a ' + len(KERF) + ' blade kerf'
-    + (results.some(r=>r.libMat.allowRotation===false) ? ' \u00b7 grain locked on some materials' : '');
+    + (barKerfs.length ? ' \u00b7 ' + barKerfs.filter((k, i, a) => a.indexOf(k) === i).map(k => len(k)).join(', ') + ' saw kerf on bars' : '')
+    + (results.some(r=>!r.linear && r.libMat.allowRotation===false) ? ' \u00b7 grain locked on some materials' : '');
 
   const totalSheets = results.reduce((s,r)=>s+boughtSheets(r.sheets).length,0);
   const totalPlaced = results.reduce((s,r)=>s+r.sheets.reduce((a,sh)=>a+sh.placed.length,0),0);
@@ -2033,9 +2246,23 @@ function renderOutput() {
   // Area-weighted, matching the per-material card exactly. The old unweighted
   // mean of per-sheet percentages let one nearly-empty small sheet swing the
   // headline number away from the figure shown on the card right above it.
-  const allUsedArea  = results.reduce((a,r)=>a + r.sheets.reduce((x,sh)=>x + sh.placed.reduce((y,p)=>y+p.w*p.h,0),0), 0);
-  const allStockArea = results.reduce((a,r)=>a + r.sheets.reduce((x,sh)=>x + sh.sheetW*sh.sheetH,0), 0);
-  const avgUtil = allStockArea > 0 ? Math.round((allUsedArea/allStockArea)*100) : 0;
+  // Bars are length-weighted; a job with both kinds averages the materials.
+  const kinds = { sheet: results.some(r => !r.linear), bar: results.some(r => r.linear) };
+  let avgUtil;
+  if (kinds.sheet && kinds.bar) {
+    const withStock = results.filter(r => r.sheets.length);
+    avgUtil = withStock.length ? Math.round(withStock.reduce((a, r) => a + materialUtil(r), 0) / withStock.length) : 0;
+  } else {
+    const allUsedArea  = results.reduce((a,r)=>a + r.sheets.reduce((x,sh)=>x + sh.placed.reduce((y,p)=>y+p.w*p.h,0),0), 0);
+    const allStockArea = results.reduce((a,r)=>a + r.sheets.reduce((x,sh)=>x + sh.sheetW*sh.sheetH,0), 0);
+    avgUtil = allStockArea > 0 ? Math.round((allUsedArea/allStockArea)*100) : 0;
+  }
+  const sheetsLabel = document.getElementById('s-sheets').previousElementSibling;
+  if (sheetsLabel) sheetsLabel.textContent = kinds.bar ? (kinds.sheet ? 'Sheets & bars' : 'Bars') : 'Sheets';
+  const pt = document.querySelector('.pricing-ttl');
+  if (pt) pt.textContent = kinds.bar ? (kinds.sheet ? 'Stock required per material' : 'Bars required per material') : 'Sheets required per material';
+  const rt = document.querySelector('.results-title');
+  if (rt && rt.firstChild && rt.firstChild.nodeType === 3) rt.firstChild.textContent = '\u{1F4CB} ' + (kinds.bar ? (kinds.sheet ? 'Stock Usage ' : 'Bar Usage ') : 'Sheet Usage ');
   const reclaimable = results.reduce((s,r)=>s+r.sheets.filter(sh=>sh.usableOffcut).length,0);
   document.getElementById('s-sheets').textContent = totalSheets;
   document.getElementById('s-placed').textContent = totalPlaced;
@@ -2053,7 +2280,16 @@ function renderOutput() {
   if (totalSheetsAll > 3) {
     let navHtml = '<div class="sheet-nav no-print">';
     let sheetIdx = 0;
-    results.forEach(({libMat, sheets}) => {
+    results.forEach((r) => {
+      const {libMat, sheets} = r;
+      if (r.linear) {
+        barGroups(r).forEach((g) => {
+          const id = 'sheet-anchor-' + sheetIdx;
+          navHtml += `<button class="sheet-nav-btn" onclick="document.getElementById('${id}').scrollIntoView({behavior:'smooth',block:'start'})">${esc(libMat.name.split(' ').slice(0,2).join(' '))} B${g.first + 1}${g.bars.length > 1 ? '\u2013' + (g.first + g.bars.length) : ''}</button>`;
+          sheetIdx++;
+        });
+        return;
+      }
       sheets.forEach((sh, si) => {
         const id = 'sheet-anchor-' + sheetIdx;
         navHtml += `<button class="sheet-nav-btn" onclick="document.getElementById('${id}').scrollIntoView({behavior:'smooth',block:'start'})">${esc(libMat.name.split(' ').slice(0,2).join(' '))} S${si+1}</button>`;
@@ -2082,9 +2318,17 @@ function renderOutput() {
   const MAX_H = isNarrow ? 300 : 420;
 
   let globalSheetIdx = 0;
-  results.forEach(({libMat, sheets, unplaced, oversized, stockShort}) => {
+  results.forEach((_res) => {
+    const {libMat, sheets, unplaced, oversized, stockShort} = _res;
     const sec = document.createElement('div');
     sec.className = 'detail-section';
+    if (_res.linear) {
+      const groups = barGroups(_res);
+      sec.innerHTML = barSectionHtml(_res, groups, globalSheetIdx) + notPlacedHtml(libMat, unplaced, oversized, stockShort);
+      globalSheetIdx += groups.length;
+      visWrap.appendChild(sec);
+      return;
+    }
     const buyCount = boughtSheets(sheets).length;
     const remCount = sheets.length - buyCount;
     let html = `<div class="ds-title"><div class="ds-bar"></div>${esc(libMat.name)} — ${buyCount} sheet${buyCount!==1?'s':''} to order${remCount?` + ${remCount} remnant`:''}`
@@ -2184,8 +2428,22 @@ function renderOutput() {
 
   // Full table
   let rows='';
-  results.forEach(({libMat, sheets}) => {
+  results.forEach(({libMat, sheets, linear}) => {
     sheets.forEach((sh,si)=>{
+      if (linear) {
+        sh.placed.forEach(p=>{
+          rows+=`<tr>
+          <td style="font-weight:600;color:var(--navy);font-size:12px">${esc(libMat.name)}</td>
+          <td style="color:var(--muted)">B${si+1}</td>
+          <td style="color:var(--muted);font-size:12px">${esc(len(sh.sheetW))}</td>
+          <td><div style="display:flex;align-items:center;gap:5px"><div style="width:9px;height:9px;border-radius:2px;background:${COLORS[p.pieceIndex%COLORS.length]};flex-shrink:0"></div>${esc(p.label||'P'+(p.pieceIndex+1))}</div></td>
+          <td style="color:var(--muted)">${esc(lenNum(p.w))}</td><td style="color:var(--muted)">\u2014</td>
+          <td style="color:var(--muted)">${esc(lenNum(p.x))}</td><td style="color:var(--muted)">\u2014</td>
+          <td style="color:var(--muted)">\u2014</td>
+        </tr>`;
+        });
+        return;
+      }
       sh.placed.forEach(p=>{
         rows+=`<tr>
           <td style="font-weight:600;color:var(--navy);font-size:12px">${esc(libMat.name)}</td>
@@ -2201,6 +2459,84 @@ function renderOutput() {
   });
   document.getElementById('placement-body').innerHTML = rows;
   document.getElementById('output').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// ── BAR RESULTS ───────────────────────────────
+// Utilisation of one material's stock: by area for sheets, by length for bars.
+function materialUtil(r) {
+  const used = r.sheets.reduce((a,sh)=>a + sh.placed.reduce((aa,p)=>aa+p.w*p.h,0), 0);
+  const stock = r.sheets.reduce((a,sh)=>a + sh.sheetW*sh.sheetH, 0);
+  return stock > 0 ? Math.round(used / stock * 100) : 0;
+}
+// Bars cut to the same pattern, in order: [{ bars: [sheet...], first: index }].
+function barGroups(r) {
+  const out = [], by = {};
+  r.sheets.forEach(function (sh, i) {
+    const k = sh.pattern || ('#' + i);
+    if (!by[k]) { by[k] = { bars: [], first: i }; out.push(by[k]); }
+    by[k].bars.push(sh);
+  });
+  return out;
+}
+// Saw marks along a bar, measured from its end: where each cut is made.
+function barCutMarks(sh, kerf) {
+  const marks = [];
+  if (sh.trim) marks.push(sh.trim);
+  sh.placed.forEach(function (p) {
+    const end = p.x + p.w;
+    if (end < sh.sheetW - 1e-6) marks.push(end);   // no cut where a part ends at the bar end
+  });
+  return marks;
+}
+// One bar drawn to scale: parts, kerfs, end trims and the offcut.
+function barStripHtml(sh, opts) {
+  opts = opts || {};
+  const L = sh.sheetW, pct = function (v) { return (v / L * 100).toFixed(3) + '%'; };
+  let h = '';
+  if (sh.trim) {
+    h += `<div class="bar-trim" style="left:0;width:${pct(sh.trim)}"></div><div class="bar-trim" style="right:0;width:${pct(sh.trim)}"></div>`;
+  }
+  if (sh.offcut) {
+    h += `<div class="bar-off${sh.usableOffcut ? ' keep' : ''}" style="left:${pct(sh.offcut.x)};width:${pct(sh.offcut.w)}" title="${sh.usableOffcut ? 'Keep offcut' : 'Offcut'} ${esc(len(sh.offcut.w))}">${sh.offcut.w / L > 0.09 ? `<span>${sh.usableOffcut ? 'KEEP ' : ''}${esc(len(sh.offcut.w))}</span>` : ''}</div>`;
+  }
+  sh.placed.forEach(function (p) {
+    const col = opts.print ? '#0f4c5c' : COLORS[p.pieceIndex % COLORS.length];
+    const name = p.label || ('P' + (p.pieceIndex + 1));
+    h += `<div class="bar-part" style="left:${pct(p.x)};width:${pct(p.w)};background:${col}${opts.print ? '' : 'd9'};border-color:${col}" title="${esc(name)}: ${esc(len(p.w))}">${p.w / L > 0.075 ? `<span>${esc(name)}<br><b>${esc(lenNum(p.w))}</b></span>` : ''}</div>`;
+  });
+  return `<div class="bar-strip">${h}</div>`;
+}
+function barSectionHtml(r, groups, anchorStart) {
+  const libMat = r.libMat, buy = boughtSheets(r.sheets).length, k = r.kerf != null ? r.kerf : KERF;
+  let html = `<div class="ds-title"><div class="ds-bar"></div>${esc(libMat.name)}${libMat.thickness && libMat.name.indexOf(libMat.thickness) === -1 ? ' ' + esc(libMat.thickness) : ''} — ${buy} ${stockWord(libMat, buy)} to order`
+    + `<span style="margin-left:auto;display:flex;gap:5px;flex-wrap:wrap">`
+    + `<span class="mode-chip">📏 Cut to length</span><span class="mode-chip">Saw kerf ${esc(len(k))}</span>`
+    + (cleanTrim(libMat.trim) ? `<span class="mode-chip">End trim ${esc(len(cleanTrim(libMat.trim)))}</span>` : '')
+    + `</span></div>`;
+  groups.forEach(function (g, gi) {
+    const sh = g.bars[0], n = g.bars.length;
+    const pieces = {};
+    sh.placed.forEach(function (p) {
+      const key = p.pieceIndex + '|' + p.w;
+      if (!pieces[key]) pieces[key] = { n: 0, p: p };
+      pieces[key].n++;
+    });
+    const marks = barCutMarks(sh, k);
+    html += `<div class="bar-group" id="sheet-anchor-${anchorStart + gi}">
+      <div class="bar-head">
+        <span class="bar-count">${n} ×</span>
+        <span><b>${esc(len(sh.sheetW))}</b> bar${n > 1 ? 's' : ''} cut the same way</span>
+        <span class="bar-meta">${sh.placed.length} part${sh.placed.length !== 1 ? 's' : ''} each · ${sh.utilPercent}% used${sh.offcut ? ` · ${sh.usableOffcut ? '<b style="color:var(--green)">keep offcut ' + esc(len(sh.offcut.w)) + '</b>' : 'offcut ' + esc(len(sh.offcut.w))}` : ''}</span>
+      </div>
+      ${barStripHtml(sh)}
+      <div class="bar-legend">${Object.keys(pieces).map(function (key) {
+        const e = pieces[key], p = e.p;
+        return `<span class="bar-li"><i style="background:${COLORS[p.pieceIndex % COLORS.length]}"></i>${e.n > 1 ? '<b>' + e.n + '×</b> ' : ''}${esc(p.label || 'P' + (p.pieceIndex + 1))} <span>${esc(len(p.w))}</span></span>`;
+      }).join('')}</div>
+      ${marks.length ? `<div class="bar-marks">Marks from the bar end: ${marks.map(function (v) { return esc(lenNum(v)); }).join(' \u00b7 ')} <span>(${esc(unitLabel())}, kerf on the waste side)</span></div>` : ''}
+    </div>`;
+  });
+  return html;
 }
 
 // ── COPY & EXPORT ─────────────────────────────
@@ -2226,7 +2562,7 @@ function exportPDF() {
   let body = `<div class="hdr"><div class="hdr-logo">CutNest</div><div class="hdr-meta">${esc(co)}Job: ${esc(jr)}  ·  ${dt}  ·  Kerf: ${esc(len(KERF))}</div></div>`;
 
   // Summary table
-  body += `<table class="sum-tbl"><thead><tr><th>Material</th><th>Sheets</th><th>Size</th><th>Cost</th></tr></thead><tbody>`;
+  body += `<table class="sum-tbl"><thead><tr><th>Material</th><th>Qty</th><th>Size</th><th>Cost</th></tr></thead><tbody>`;
   let grandTotal = 0;
   calcResult.results.forEach(({libMat, sheets, sizeMap}) => {
     Object.entries(sizeMap).forEach(([dim,cnt]) => {
@@ -2234,7 +2570,7 @@ function exportPDF() {
       const sz = sizeByDims(libMat, sw, sh);
       const lineTotal = sz && sz.price > 0 ? sz.price * cnt : 0;
       grandTotal += lineTotal;
-      body += `<tr><td>${esc(libMat.name)} ${esc(libMat.thickness||'')}</td><td>${cnt}</td><td>${esc(dimKey(dim))}</td><td>${lineTotal>0?money(lineTotal):'—'}</td></tr>`;
+      body += `<tr><td>${esc(libMat.name)}${libMat.thickness && libMat.name.indexOf(libMat.thickness) === -1 ? ' ' + esc(libMat.thickness) : ''}</td><td>${cnt} ${stockWord(libMat, cnt)}</td><td>${esc(stockKeyTxt(libMat, dim))}</td><td>${lineTotal>0?money(lineTotal):'—'}</td></tr>`;
     });
   });
   if (grandTotal > 0) body += `<tr class="total-row"><td colspan="3">Total Material Cost</td><td>${money(grandTotal)}</td></tr>`;
@@ -2246,6 +2582,28 @@ function exportPDF() {
     const _v = optimalityVerdict(_r);
     const pdfBuy = boughtSheets(sheets).length;
     const pdfRem = sheets.length - pdfBuy;
+    if (_r.linear) {
+      const k = _r.kerf != null ? _r.kerf : KERF;
+      body += `<div class="mat-sec"><div class="mat-hdr">${esc(libMat.name)} — ${pdfBuy} ${stockWord(libMat, pdfBuy)} to order · saw kerf ${esc(len(k))}${cleanTrim(libMat.trim) ? ' · end trim ' + esc(len(cleanTrim(libMat.trim))) : ''}</div>`;
+      barGroups(_r).forEach(function (g) {
+        const sh = g.bars[0];
+        const marks = barCutMarks(sh, k);
+        body += `<div class="sh-block"><div class="sh-title">${g.bars.length} × ${esc(len(sh.sheetW))} bar${g.bars.length > 1 ? 's' : ''} (bar ${g.first + 1}${g.bars.length > 1 ? '\u2013' + (g.first + g.bars.length) : ''}) · ${sh.placed.length} parts each · ${sh.utilPercent}% used${sh.offcut ? ' · ' + (sh.usableOffcut ? 'KEEP offcut ' : 'offcut ') + esc(len(sh.offcut.w)) : ''}</div>`
+          + barStripHtml(sh)
+          + `<div class="bar-cut">Cut: ${sh.placed.map(function (p) { return esc((p.label || 'P' + (p.pieceIndex + 1)) + ' ' + len(p.w)); }).join(' \u00b7 ')}</div>`
+          + (marks.length ? `<div class="bar-cut">Marks from the bar end: ${marks.map(function (v) { return esc(lenNum(v)); }).join(' \u00b7 ')} (${esc(unitLabel())})</div>` : '')
+          + `</div>`;
+      });
+      if (_v && _v.optimal) body += `<div style="font-size:10px;color:#065f46;font-weight:700;padding:3px 0">✓ Provably optimal — no cutting plan uses fewer bars.</div>`;
+      const npB = notPlacedLines(libMat, unplaced, oversized, _r.stockShort);
+      if (npB.length) {
+        body += `<div class="np-box"><div class="np-hdr">⚠ ${notPlacedCount(unplaced, oversized)} piece(s) NOT placed — not included in the bars or cost above</div><table class="sum-tbl" style="margin-bottom:0"><thead><tr><th>Part</th><th>Length</th><th>Qty</th><th>Why</th><th>What to do</th></tr></thead><tbody>`
+          + npB.map(function (r) { return `<tr><td>${esc(r.label)}</td><td>${esc(len(r.w))}</td><td>${r.qty}</td><td>${esc(r.why)}</td><td>${esc(r.fix)}</td></tr>`; }).join('')
+          + `</tbody></table></div>`;
+      }
+      body += `</div>`;
+      return;
+    }
     body += `<div class="mat-sec"><div class="mat-hdr">${esc(libMat.name)} — ${pdfBuy} sheet${pdfBuy!==1?'s':''} to order${pdfRem?` + ${pdfRem} remnant`:''}</div>`;
     sheets.forEach((sh,si) => {
       const scale = Math.min(480/sh.sheetW, 200/sh.sheetH, 0.32);
@@ -2283,8 +2641,14 @@ function exportPDF() {
 
   // Placement detail table
   body += `<div class="mat-sec"><div class="mat-hdr">Placement Detail</div><table class="sum-tbl"><thead><tr><th>Material</th><th>Sheet</th><th>Part</th><th>W (${unitLabel()})</th><th>H (${unitLabel()})</th><th>X</th><th>Y</th><th>Rotated</th></tr></thead><tbody>`;
-  calcResult.results.forEach(({libMat,sheets}) => {
+  calcResult.results.forEach(({libMat,sheets,linear}) => {
     sheets.forEach((sh,si) => {
+      if (linear) {
+        sh.placed.forEach(p => {
+          body += `<tr><td>${esc(libMat.name)}</td><td>Bar ${si+1}</td><td>${esc(p.label||'P'+(p.pieceIndex+1))}</td><td>${esc(lenNum(p.w))}</td><td>\u2014</td><td>${esc(lenNum(p.x))}</td><td>\u2014</td><td></td></tr>`;
+        });
+        return;
+      }
       sh.placed.forEach(p => {
         body += `<tr><td>${esc(libMat.name)}</td><td>${si+1}</td><td>${esc(p.label||'P'+(p.pieceIndex+1))}</td><td>${esc(lenNum(p.w))}</td><td>${esc(lenNum(p.h))}</td><td>${esc(lenNum(p.x))}</td><td>${esc(lenNum(p.y))}</td><td>${p.rotated?'Yes':''}</td></tr>`;
       });
@@ -2312,6 +2676,13 @@ function exportPDF() {
     .np-hdr{background:#dc2626;color:#fff;font-weight:700;font-size:11px;padding:6px 10px}
     .np-box .sum-tbl{margin:0}
     .np-box .sum-tbl th{background:#7f1d1d}
+    .bar-strip{position:relative;height:30px;border:1.5px solid #9dcad6;border-radius:3px;overflow:hidden;background:repeating-linear-gradient(-45deg,rgba(15,76,92,.06),rgba(15,76,92,.06) 2px,transparent 2px,transparent 7px)}
+    .bar-part{position:absolute;top:0;bottom:0;border:1.5px solid;box-sizing:border-box;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .bar-part span{color:#fff;font-size:8px;line-height:1.1;text-align:center;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+    .bar-trim{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,#9ca3af,#9ca3af 2px,#d1d5db 2px,#d1d5db 5px)}
+    .bar-off{position:absolute;top:0;bottom:0;border-left:1.5px dashed #9dcad6;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#6a9aaa}
+    .bar-off.keep{background:repeating-linear-gradient(45deg,#d1fae5,#d1fae5 4px,#a7f3d0 4px,#a7f3d0 8px);border-left-color:#059669;color:#065f46}
+    .bar-cut{font-size:9.5px;color:#2a5a6a;margin-top:4px}
     @media print{body{padding:10px}.sh-block{break-inside:avoid}div{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
   </style></head><body>${body}<div style="margin-top:24px;padding-top:12px;border-top:1px solid #e2ecef;font-size:10px;color:#9dcad6;text-align:center">Generated by CutNest — cutnest.co.uk</div></body></html>`;
 
@@ -2342,13 +2713,16 @@ function shareJob() {
     // NOT the user's whole library — that keeps the URL short enough to send.
     const slimMats = mats.map(function(m){
       const libMat = library.find(function(l){return l.id == m.selectedMatId;});
+      const bar = isLinear(libMat);
       return {
         name: libMat ? libMat.name : '',
+        kind: bar ? 'linear' : undefined,
+        kerf: bar && libMat.kerf != null ? libMat.kerf : undefined,
         cuttingMethod: libMat ? (libMat.cuttingMethod||'free') : 'free',
         allowRotation: libMat ? (libMat.allowRotation !== false) : true,
         sizes: libMat ? stockSizes(libMat) : [],
         trim: libMat ? cleanTrim(libMat.trim) : 0,
-        pieces: m.pieces.filter(function(p){return p.w>0 && p.h>0;})
+        pieces: realPieces(m)
       };
     }).filter(function(m){return m.pieces.length;});
 
@@ -2432,25 +2806,30 @@ function exportCSV() {
       const sz = sizeByDims(libMat, sw, sh);
       const lineTotal = sz && sz.price > 0 ? sz.price * c : 0;
       csvTotal += lineTotal;
-      return [`${c}x ${libMat.name} ${dimKey(dim)}`, lineTotal > 0 ? money(lineTotal) : ''];
+      return [`${c}x ${libMat.name} ${stockKeyTxt(libMat, dim)}`, lineTotal > 0 ? money(lineTotal) : ''];
     })
   );
   const rows = [
     [`CutNest — ${new Date().toLocaleDateString()}`],[`Job: ${(document.getElementById('job-ref')||{}).value||'Untitled'}`],[`Blade Kerf: ${len(KERF)}`],[`Units: ${isInch() ? 'inches' : 'mm'}`],
-    ...calcResult.results.filter(r => cleanTrim(r.libMat.trim)).map(r => [`Edge trim: ${r.libMat.name} ${len(cleanTrim(r.libMat.trim))} per edge (X/Y are from the untrimmed sheet corner)`]),
+    ...calcResult.results.filter(r => r.linear && r.kerf != null && r.kerf !== KERF).map(r => [`Saw kerf: ${r.libMat.name} ${len(r.kerf)}`]),
+    ...calcResult.results.filter(r => cleanTrim(r.libMat.trim)).map(r => r.linear
+      ? [`End trim: ${r.libMat.name} ${len(cleanTrim(r.libMat.trim))} each end (positions are from the uncut bar end)`]
+      : [`Edge trim: ${r.libMat.name} ${len(cleanTrim(r.libMat.trim))} per edge (X/Y are from the untrimmed sheet corner)`]),
     [],
-    ['SHEET USAGE SUMMARY'],['Material & Size','Cost'],
+    ['STOCK USAGE SUMMARY'],['Material & Size','Cost'],
     ...summaryRows,
     ...(csvTotal > 0 ? [['TOTAL MATERIAL COST', money(csvTotal)]] : []),
     [],['PLACEMENT DETAIL'],
     ['Material','Sheet #','Sheet Size','Label','W ('+unitLabel()+')','H ('+unitLabel()+')','X ('+unitLabel()+')','Y ('+unitLabel()+')','Rotated'],
-    ...calcResult.results.flatMap(({libMat,sheets})=>sheets.flatMap((sh,si)=>sh.placed.map(p=>[libMat.name,si+1,`${lenCsv(sh.sheetW)}x${lenCsv(sh.sheetH)}`+(sh.isRemnant?' (remnant)':''),p.label||`P${p.pieceIndex+1}`,lenCsv(p.w),lenCsv(p.h),lenCsv(p.x),lenCsv(p.y),p.rotated?'Yes':'No']))),
+    ...calcResult.results.flatMap(({libMat,sheets,linear})=>sheets.flatMap((sh,si)=>sh.placed.map(p=>linear
+      ? [libMat.name,'Bar '+(si+1),`${lenCsv(sh.sheetW)} bar`,p.label||`P${p.pieceIndex+1}`,lenCsv(p.w),'',lenCsv(p.x),'','']
+      : [libMat.name,si+1,`${lenCsv(sh.sheetW)}x${lenCsv(sh.sheetH)}`+(sh.isRemnant?' (remnant)':''),p.label||`P${p.pieceIndex+1}`,lenCsv(p.w),lenCsv(p.h),lenCsv(p.x),lenCsv(p.y),p.rotated?'Yes':'No']))),
   ];
   // Every not-placed piece — oversized AND unplaced — with the reason and the
   // minimum sheet that would take it. An export must never hide a dropped piece.
   const npAll = calcResult.results.flatMap(({libMat,unplaced,oversized,stockShort}) =>
     notPlacedLines(libMat, unplaced, oversized, stockShort).map(r =>
-      [libMat.name, r.label, lenCsv(r.w), lenCsv(r.h), r.qty, r.why, r.fix]));
+      [libMat.name, r.label, lenCsv(r.w), isLinear(libMat) ? '' : lenCsv(r.h), r.qty, r.why, r.fix]));
   if(npAll.length){
     rows.push([],['*** PIECES NOT PLACED — NOT INCLUDED IN THE SHEETS OR COST ABOVE ***'],
       ['Material','Label','W ('+unitLabel()+')','H ('+unitLabel()+')','Qty','Why','What to do'],...npAll);
@@ -2611,7 +2990,9 @@ function buildDXF(results) {
 function exportDXF() {
   if (!isPro) { showUpgradeModal('&#128208;','DXF Export','Pro exports a machine-ready DXF of your cut layout &mdash; drop it straight into your CNC, laser or router CAM. Real dimensions, every part on its own layer.'); return; }
   if (!calcResult || !calcResult.results) return;
-  const dxf = buildDXF(calcResult.results);
+  const sheetResults = calcResult.results.filter(function (r) { return !r.linear; });
+  if (!sheetResults.length) { showToast('DXF is for sheet layouts. Bars are cut to length \u2014 use Cut sheets for the saw list', 4200); return; }
+  const dxf = buildDXF(sheetResults);
   const jr = (document.getElementById('job-ref')||{}).value||'cutlist';
   const safe = jr.replace(/[^a-z0-9]/gi,'-').toLowerCase();
   // image/vnd.dxf is the registered type; some browsers save an unknown type
@@ -2633,7 +3014,7 @@ function exportDXF() {
 // one JSON file: materials and prices (including edited Pro grades), which Pro
 // grades were hidden, offcut stock and settings. Never the licence key.
 const BACKUP_KIND = 'cutnest-backup';
-const BACKUP_SETTINGS = ['kerf', 'kerfTouched', 'companyName', 'minOffcutLong', 'minOffcutShort', 'units', 'currency', 'currencyTouched', 'quote'];
+const BACKUP_SETTINGS = ['kerf', 'kerfTouched', 'companyName', 'minOffcutLong', 'minOffcutShort', 'minBarOffcut', 'units', 'currency', 'currencyTouched', 'quote'];
 
 function backupLibrary() {
   flushEditForms();
@@ -2703,6 +3084,7 @@ async function restoreLibrary(input) {
     if (typeof st.companyName === 'string') settings.companyName = st.companyName.slice(0, 80);
     if (st.minOffcutLong != null) settings.minOffcutLong = Math.max(0, Math.min(6000, +st.minOffcutLong || 0));
     if (st.minOffcutShort != null) settings.minOffcutShort = Math.max(0, Math.min(6000, +st.minOffcutShort || 0));
+    if (st.minBarOffcut != null) settings.minBarOffcut = Math.max(0, Math.min(20000, +st.minBarOffcut || 0));
     if (st.units === 'in' || st.units === 'mm') settings.units = st.units;
     if (CURRENCIES.indexOf(st.currency) !== -1) { settings.currency = st.currency; settings.currencyTouched = !!st.currencyTouched; }
     if (st.quote && typeof st.quote === 'object') settings.quote = cleanQuoteSettings(st.quote);
@@ -2804,8 +3186,10 @@ function renderLibEntries() {
       <div id="ev-${e.id}"${_libOpen.has(e.id) ? ' style="display:none"' : ''}>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">${sizeBadgesHtml(e)}</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
-          <span class="mode-chip">${e.cuttingMethod==='guillotine'?'⊞ Guillotine'+(isPro?'':' (Pro)'):'⊡ Free placement'}</span>
-          ${e.allowRotation===false?'<span class="mode-chip grain-on">🔒 Grain locked'+(isPro?'':' (Pro)')+'</span>':''}
+          ${isLinear(e)
+            ? `<span class="mode-chip">📏 Cut to length</span>${e.kerf != null ? `<span class="mode-chip">Saw kerf ${esc(len(e.kerf))}</span>` : ''}${cleanTrim(e.trim) ? `<span class="mode-chip">End trim ${esc(len(cleanTrim(e.trim)))}</span>` : ''}`
+            : `<span class="mode-chip">${e.cuttingMethod==='guillotine'?'⊞ Guillotine'+(isPro?'':' (Pro)'):'⊡ Free placement'}</span>
+          ${e.allowRotation===false?'<span class="mode-chip grain-on">🔒 Grain locked'+(isPro?'':' (Pro)')+'</span>':''}`}
         </div>
       </div>
       <div id="ee-${e.id}" style="display:${_libOpen.has(e.id) ? 'block' : 'none'}">
@@ -2813,11 +3197,28 @@ function renderLibEntries() {
           <div class="edit-basic-grid">
             <div><label class="lbl">Name</label><input type="text" data-f="name" value="${esc(e.name)}" oninput="upd(${jid},'name',this.value)"/></div>
             <div><label class="lbl">Material</label><input type="text" data-f="material" value="${esc(e.material||'')}" oninput="upd(${jid},'material',this.value)"/></div>
-            <div><label class="lbl">Thickness</label><input type="text" data-f="thickness" value="${esc(e.thickness||'')}" oninput="upd(${jid},'thickness',this.value)"/></div>
+            <div><label class="lbl">${isLinear(e) ? 'Profile / size' : 'Thickness'}</label><input type="text" data-f="thickness" value="${esc(e.thickness||'')}" oninput="upd(${jid},'thickness',this.value)"/></div>
           </div>
         </div>
         ${sizeEditorHtml(e, jid)}
-        <div class="cut-opts">
+        ${isLinear(e) ? `<div class="cut-opts">
+          <div class="cut-opt-box">
+            <label class="lbl" for="trim-${esc(String(e.id))}">End trim (${unitLabel()} each end)
+              <span class="kerf-tip-icon" tabindex="0" role="img" aria-label="Help: Cut off each end of every bar before parts are cut, to square up or remove damaged ends. 0 = none." data-tip="Cut off each end of every bar before parts are cut, to square up or remove damaged ends. 0 = none.">?</span>
+            </label>
+            <input type="text" inputmode="${isInch() ? 'text' : 'decimal'}" id="trim-${esc(String(e.id))}" data-f="trim" value="${lenInput(cleanTrim(e.trim))}" placeholder="0" oninput="upd(${jid},'trim',parseLen(this.value) || 0)" style="margin-top:4px"/>
+          </div>
+          <div class="cut-opt-box">
+            <label class="lbl" for="kerf-${esc(String(e.id))}">Saw kerf (${unitLabel()})
+              <span class="kerf-tip-icon" tabindex="0" role="img" aria-label="Help: The width of the blade that cuts these bars (a bandsaw is about 1.5 to 2mm). Leave blank to use the kerf in Settings." data-tip="The width of the blade that cuts these bars (a bandsaw is about 1.5 to 2mm). Leave blank to use the kerf in Settings.">?</span>
+            </label>
+            <input type="text" inputmode="${isInch() ? 'text' : 'decimal'}" id="kerf-${esc(String(e.id))}" data-f="kerf" value="${e.kerf != null ? lenNum(e.kerf) : ''}" placeholder="${esc(lenNum(KERF))} (Settings)" oninput="upd(${jid},'kerf',this.value.trim() === '' ? undefined : parseLen(this.value))" style="margin-top:4px"/>
+          </div>
+        </div>
+        <div style="text-align:right;margin-top:9px"><button class="btn-sm-gr" onclick="toggleEdit(${jid})">✓ Done</button></div>
+      </div>
+    </div>` : ''}
+        ${isLinear(e) ? '' : `<div class="cut-opts">
           <div class="cut-opt-box">
             <label class="lbl">Cutting Method
               <span class="kerf-tip-icon" tabindex="0" role="img" aria-label="Help: Free = pieces nested anywhere (CNC punch, laser, router, plasma). Guillotine = straight edge-to-edge cuts only (panel saw, guillotine shear)." data-tip="Free = pieces nested anywhere (CNC punch, laser, router, plasma). Guillotine = straight edge-to-edge cuts only (panel saw, guillotine shear).">?</span>
@@ -2846,7 +3247,7 @@ function renderLibEntries() {
         ${isPro ? '' : `<div style="font-size:12px;color:#92400e;background:#fffbeb;border:1px solid var(--amber);border-radius:7px;padding:7px 10px;margin-top:8px">&#128274; Guillotine mode and grain lock are Pro features. <button onclick="showUpgradeModal('&#128274;','Grain lock &amp; guillotine mode','Pro keeps grain direction on brushed, veneered and patterned sheet, and nests for saws and shears with a numbered edge-to-edge cut sequence.')" style="background:none;border:none;color:var(--teal);font-weight:700;cursor:pointer;padding:0;font-size:12px;text-decoration:underline;font-family:inherit">Upgrade</button></div>`}
         <div style="text-align:right;margin-top:9px"><button class="btn-sm-gr" onclick="toggleEdit(${jid})">✓ Done</button></div>
       </div>
-    </div>`; }).join('') + hiddenMastersHtml();
+    </div>`}`; }).join('') + hiddenMastersHtml();
 }
 // Which library entries have their edit form open, so adding or removing a
 // sheet size (which re-renders the list) keeps the form open.
@@ -2855,23 +3256,32 @@ const _libOpen = new Set();
 // "Size 1 · 2450 × 1150 mm · £105 · max 6" badges for the library and job views.
 function sizeBadgesHtml(libMat) {
   const sizes = (libMat && libMat.sizes || []).filter(function(z){ return +z.w > 0 && +z.h > 0; });
-  if (!sizes.length) return '<div class="sz-badge" style="border-color:var(--red)"><span class="sl" style="color:var(--red)">No sheet size</span><span class="sv" style="color:var(--red)">Add one in Library</span></div>';
+  const bar = isLinear(libMat);
+  if (!sizes.length) return '<div class="sz-badge" style="border-color:var(--red)"><span class="sl" style="color:var(--red)">No ' + (bar ? 'stock length' : 'sheet size') + '</span><span class="sv" style="color:var(--red)">Add one in Library</span></div>';
   return sizes.map(function(z, i){
     const locked = !isPro && i >= FREE_SHEET_SIZES;
     const extra = [];
     if (+z.price > 0) extra.push(currency() + (+z.price));
     if (z.max != null && z.max !== '') extra.push(isPro ? 'max ' + z.max : 'max ' + z.max + ' (Pro)');
     return '<div class="sz-badge"' + (locked ? ' style="opacity:.5" title="Pro: the free plan uses the first ' + FREE_SHEET_SIZES + ' sizes"' : '') + '>' +
-      '<span class="sl">Size ' + (i + 1) + (extra.length ? ' · ' + esc(extra.join(' · ')) : '') + (locked ? ' · Pro' : '') + '</span>' +
-      '<span class="sv">' + esc(dims(+z.w, +z.h)) + '</span></div>';
+      '<span class="sl">' + (bar ? 'Length ' : 'Size ') + (i + 1) + (extra.length ? ' · ' + esc(extra.join(' · ')) : '') + (locked ? ' · Pro' : '') + '</span>' +
+      '<span class="sv">' + esc(bar ? len(+z.w) : dims(+z.w, +z.h)) + '</span></div>';
   }).join('');
 }
 
 // One row per sheet size: width, height, price, and (Pro) how many are available.
 function sizeEditorHtml(e, jid) {
-  const sizes = e.sizes && e.sizes.length ? e.sizes : [{ w: '', h: '', price: '', max: null }];
+  const bar = isLinear(e);
+  const sizes = e.sizes && e.sizes.length ? e.sizes : [{ w: '', h: bar ? LINEAR_H : '', price: '', max: null }];
   const rows = sizes.map(function(z, i){
     const locked = !isPro && i >= FREE_SHEET_SIZES;
+    if (bar) return `<div class="size-row size-row-bar" data-sz="${i}"${locked ? ' style="opacity:.55"' : ''}>
+      <div class="size-no">${i + 1}</div>
+      <div><label class="lbl">Length (${unitLabel()})</label><input type="text" inputmode="${isInch() ? 'text' : 'decimal'}" data-f="w" value="${lenInput(z.w)}" aria-label="Stock length ${i + 1} in ${unitLabel()}" oninput="updSz(${jid},${i},'w',this.value)"/></div>
+      <div><label class="lbl">Price ${currency()}</label><input type="number" data-f="price" value="${+z.price > 0 ? +z.price : ''}" min="0" step="0.01" placeholder="0" aria-label="Stock length ${i + 1} price" oninput="updSz(${jid},${i},'price',this.value)"/></div>
+      <div><label class="lbl" title="How many bars of this length you can use. Leave blank for no limit.">Max bars</label><input type="number" data-f="max" value="${z.max != null && z.max !== '' ? z.max : ''}" min="1" placeholder="${isPro ? 'no limit' : 'Pro'}" aria-label="Stock length ${i + 1} maximum bars available" oninput="updSz(${jid},${i},'max',this.value)"${isPro ? '' : ' disabled'}/></div>
+      <button type="button" class="btn-del" onclick="removeSizeRow(${jid},${i})" aria-label="Remove length ${i + 1}"${sizes.length > 1 ? '' : ' disabled style="visibility:hidden"'}>✕</button>
+    </div>`;
     return `<div class="size-row" data-sz="${i}"${locked ? ' style="opacity:.55"' : ''}>
       <div class="size-no">${i + 1}</div>
       <div><label class="lbl">W (${unitLabel()})</label><input type="text" inputmode="${isInch() ? 'text' : 'decimal'}" data-f="w" value="${lenInput(z.w)}" aria-label="Size ${i + 1} width in ${unitLabel()}" oninput="updSz(${jid},${i},'w',this.value)"/></div>
@@ -2883,10 +3293,10 @@ function sizeEditorHtml(e, jid) {
   }).join('');
   const full = sizes.length >= MAX_SHEET_SIZES;
   return `<div class="se-box" style="margin-top:8px">
-    <div class="se-title">📐 Sheet sizes <span style="font-weight:400;text-transform:none;letter-spacing:0">— the optimiser picks the best mix</span></div>
+    <div class="se-title">${bar ? '📏 Stock lengths' : '📐 Sheet sizes'} <span style="font-weight:400;text-transform:none;letter-spacing:0">— the optimiser picks the best mix</span></div>
     ${rows}
-    <button type="button" class="btn-add-remnant" style="margin-top:6px" onclick="addSizeRow(${jid})"${full ? ' disabled' : ''}>+ Add sheet size${!isPro && sizes.length >= FREE_SHEET_SIZES ? ' &#128274;' : ''}${full ? ' (max ' + MAX_SHEET_SIZES + ')' : ''}</button>
-    ${!isPro && sizes.length > FREE_SHEET_SIZES ? `<div style="font-size:11.5px;color:#92400e;margin-top:6px">&#128274; The free plan uses the first ${FREE_SHEET_SIZES} sizes. Pro uses all of them.</div>` : ''}
+    <button type="button" class="btn-add-remnant" style="margin-top:6px" onclick="addSizeRow(${jid})"${full ? ' disabled' : ''}>+ Add ${bar ? 'stock length' : 'sheet size'}${!isPro && sizes.length >= FREE_SHEET_SIZES ? ' &#128274;' : ''}${full ? ' (max ' + MAX_SHEET_SIZES + ')' : ''}</button>
+    ${!isPro && sizes.length > FREE_SHEET_SIZES ? `<div style="font-size:11.5px;color:#92400e;margin-top:6px">&#128274; The free plan uses the first ${FREE_SHEET_SIZES} ${bar ? 'lengths' : 'sizes'}. Pro uses all of them.</div>` : ''}
   </div>`;
 }
 
@@ -2899,7 +3309,9 @@ function flushEditForms() {
     if (!ed || ed.style.display === 'none') return;
     const trimEl = ed.querySelector('input[data-f="trim"]');
     if (trimEl) e.trim = parseLen(trimEl.value) || 0;
-    ed.querySelectorAll('input[type=text][data-f]').forEach(function(inp){
+    const kerfEl = ed.querySelector('input[data-f="kerf"]');
+    if (kerfEl) e.kerf = kerfEl.value.trim() === '' ? undefined : parseLen(kerfEl.value);
+    ed.querySelectorAll('.edit-basic input[type=text][data-f]').forEach(function(inp){
       const f = inp.getAttribute('data-f'), v = inp.value.trim();
       if (f === 'name') e.name = v || e.name; else e[f] = v;
     });
@@ -2911,6 +3323,7 @@ function flushEditForms() {
         const f = inp.getAttribute('data-f');
         e.sizes[i][f] = (f === 'w' || f === 'h') ? (parseLen(inp.value) || '') : inp.value;
       });
+      if (isLinear(e)) e.sizes[i].h = LINEAR_H;
     });
   });
 }
@@ -2925,7 +3338,7 @@ function updSz(id, i, f, v) {
   const e = pending.find(x => x.id === id);
   if (!e) return;
   if (!e.sizes) e.sizes = [];
-  if (!e.sizes[i]) e.sizes[i] = { w: '', h: '', price: 0, max: null };
+  if (!e.sizes[i]) e.sizes[i] = { w: '', h: isLinear(e) ? LINEAR_H : '', price: 0, max: null };
   // Lengths are typed in the user's units and stored in mm.
   e.sizes[i][f] = (f === 'w' || f === 'h') ? (parseLen(v) || '') : v;
 }
@@ -2935,11 +3348,12 @@ function addSizeRow(id) {
   flushEditForms();
   if (!e.sizes) e.sizes = [];
   if (!isPro && e.sizes.length >= FREE_SHEET_SIZES) {
+    if (isLinear(e)) { showUpgradeModal('\u{1F4CF}', 'More stock lengths', 'The free plan uses 2 stock lengths per material. Pro uses up to ' + MAX_SHEET_SIZES + ', with a limit on how many bars of each you have, and picks the cheapest mix.'); return; }
     showUpgradeModal('\u{1F4D0}', 'More sheet sizes', 'The free plan uses 2 sheet sizes per material. Pro uses up to ' + MAX_SHEET_SIZES + ', with a limit on how many of each you have, and picks the cheapest mix.');
     return;
   }
   if (e.sizes.length >= MAX_SHEET_SIZES) return;
-  e.sizes.push({ w: '', h: '', price: '', max: null });
+  e.sizes.push({ w: '', h: isLinear(e) ? LINEAR_H : '', price: '', max: null });
   _libOpen.add(id);
   renderLibEntries();
   const rows = document.querySelectorAll('#ee-' + CSS.escape(String(id)) + ' .size-row');
@@ -2954,22 +3368,44 @@ function removeSizeRow(id, i) {
   renderLibEntries();
 }
 function delPending(id){pending=pending.filter(x=>x.id!==id);renderLibEntries();}
+// The add form makes a sheet material or a bar / length material.
+let _addKind = 'sheet';
+function setAddKind(k) {
+  _addKind = k === 'linear' ? 'linear' : 'sheet';
+  const bar = _addKind === 'linear';
+  document.querySelectorAll('#add-form-wrap [data-kind]').forEach(function(b){
+    const on = b.getAttribute('data-kind') === _addKind;
+    b.classList.toggle('active', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  const wrap = document.getElementById('add-form-wrap'); if (wrap) wrap.classList.toggle('af-bar', bar);
+  const set = function(id, txt){ const el = document.getElementById(id); if (el) el.textContent = txt; };
+  set('n-w1-l', bar ? 'Length 1' : 'Size 1 W'); set('n-w2-l', bar ? 'Length 2' : 'Size 2 W'); set('n-thk-l', bar ? 'Profile / size' : 'Thickness');
+  const ph = function(id, v){ const el = document.getElementById(id); if (el) el.placeholder = v; };
+  ph('n-name', bar ? 'e.g. SHS 40x40x3' : 'e.g. S/S 2mm 304 Brushed');
+  ph('n-mat', bar ? 'Mild Steel' : 'Stainless Steel');
+  ph('n-thk', bar ? '40x40x3' : '2mm');
+  ph('n-w1', bar ? lenNum(6000) : lenNum(2450));
+  ph('n-w2', bar ? lenNum(7500) : 'opt');
+  ph('n-pr1', bar ? '32' : '205');
+}
 function addLibEntry(){
+  const bar = _addKind === 'linear';
   const name=document.getElementById('n-name').value.trim();
-  const w1=parseLen(document.getElementById('n-w1').value), h1=parseLen(document.getElementById('n-h1').value);
-  if(!name||!w1||!h1){alert('Name, Size 1 Width and Height are required.');return;}
+  const w1=parseLen(document.getElementById('n-w1').value), h1=bar ? LINEAR_H : parseLen(document.getElementById('n-h1').value);
+  if(!name||!w1||!h1){alert(bar ? 'Name and Length 1 are required.' : 'Name, Size 1 Width and Height are required.');return;}
   const pr1=+document.getElementById('n-pr1').value||0;
   const pr2=+document.getElementById('n-pr2').value||0;
   pending.push({
     id:Date.now(), name,
+    kind: bar ? 'linear' : undefined,
     material:document.getElementById('n-mat').value.trim(),
     thickness:document.getElementById('n-thk').value.trim(),
     grade:'',
     cuttingMethod:'free',
-    allowRotation:true,
+    allowRotation:!bar,
     sizes: cleanSizes([
       { w: w1, h: h1, price: pr1 },
-      { w: parseLen(document.getElementById('n-w2').value) || '', h: parseLen(document.getElementById('n-h2').value) || '', price: pr2 }
+      { w: parseLen(document.getElementById('n-w2').value) || '', h: bar ? LINEAR_H : (parseLen(document.getElementById('n-h2').value) || ''), price: pr2 }
     ])
   });
   ['n-name','n-mat','n-thk','n-w1','n-h1','n-pr1','n-w2','n-h2','n-pr2'].forEach(id=>document.getElementById(id).value='');
@@ -3145,6 +3581,17 @@ const MASTER_LIBRARY = [
   {id:605,allowRotation:false,cuttingMethod:'guillotine',name:'Composite Decking Board',material:'Decking',thickness:'25mm',size1:{w:3600,h:145,price:8},size2:{w:4800,h:145,price:10}},
   {id:701,allowRotation:true,cuttingMethod:'free',name:'Acrylic 3mm Clear',material:'Acrylic',thickness:'3mm',size1:{w:2440,h:1220,price:55},size2:{w:1220,h:610,price:30}},
   {id:702,allowRotation:true,cuttingMethod:'free',name:'Acrylic 5mm Clear',material:'Acrylic',thickness:'5mm',size1:{w:2440,h:1220,price:85},size2:{w:1220,h:610,price:45}},
+  // Bar, tube and section, cut to length. Kerf is a bandsaw / cold saw for
+  // steel and a mitre saw for timber. Prices are indicative, ex VAT.
+  {id:801,kind:'linear',kerf:2,name:'SHS 40x40x3',material:'Mild Steel',thickness:'40x40x3',sizes:[{w:7500,price:38},{w:6000,price:32}]},
+  {id:802,kind:'linear',kerf:2,name:'SHS 50x50x3',material:'Mild Steel',thickness:'50x50x3',sizes:[{w:7500,price:48},{w:6000,price:40}]},
+  {id:803,kind:'linear',kerf:2,name:'RHS 60x40x3',material:'Mild Steel',thickness:'60x40x3',sizes:[{w:7500,price:50},{w:6000,price:42}]},
+  {id:804,kind:'linear',kerf:2,name:'Equal Angle 40x40x5',material:'Mild Steel',thickness:'40x40x5',sizes:[{w:6000,price:28},{w:7500,price:34}]},
+  {id:805,kind:'linear',kerf:2,name:'Flat Bar 50x6',material:'Mild Steel',thickness:'50x6',sizes:[{w:6000,price:20}]},
+  {id:806,kind:'linear',kerf:2,name:'S/S 304 Box 40x40x1.5',material:'Stainless Steel',thickness:'40x40x1.5',sizes:[{w:6000,price:75}]},
+  {id:807,kind:'linear',kerf:2,name:'Aluminium Box 25x25x2',material:'Aluminium',thickness:'25x25x2',sizes:[{w:6000,price:28}]},
+  {id:808,kind:'linear',kerf:3,name:'CLS Timber 38x63',material:'Timber',thickness:'38x63',sizes:[{w:2400,price:3.5},{w:3000,price:4.4},{w:3600,price:5.3},{w:4800,price:7}]},
+  {id:809,kind:'linear',kerf:3,name:'Sawn C24 47x100',material:'Timber',thickness:'47x100',sizes:[{w:3000,price:7},{w:3600,price:8.4},{w:4800,price:11.2}]},
 ];
 
 let isPro=false,settings={kerf:4,companyName:''};
@@ -3369,7 +3816,7 @@ function updateProUI(){
   const amw=document.getElementById('add-mat-wrap');
   if(amw)amw.style.display=(isPro&&mats&&mats.length<5)?'block':'none';
   const mlt=document.getElementById('master-lib-txt');
-  if(mlt)mlt.textContent=isPro?'Active — '+MASTER_LIBRARY.length+' UK grades loaded':'Upgrade to Pro to unlock the master library';
+  if(mlt)mlt.textContent=isPro?'Active \u2014 '+MASTER_LIBRARY.filter(function(m){return m.kind!=='linear';}).length+' UK sheet grades and '+MASTER_LIBRARY.filter(function(m){return m.kind==='linear';}).length+' bar and tube sections loaded':'Upgrade to Pro to unlock the master library';
   updateLibLimitNotice();
 }
 
@@ -3441,12 +3888,14 @@ function refreshUnitLabels() {
   });
   const ph = { 'n-w1': 2450, 'n-h1': 1150 };
   Object.keys(ph).forEach(function(id){ const el = document.getElementById(id); if (el) el.placeholder = lenNum(ph[id]); });
+  setAddKind(_addKind);
 }
 // Put the stored (mm) settings into the Settings form in the user's units.
 function fillSettingsFields() {
   const kf = document.getElementById('kerf-setting'); if (kf) kf.value = lenNum(settings.kerf != null ? settings.kerf : 4);
   const ol = document.getElementById('offcut-long');  if (ol) ol.value = lenNum(settings.minOffcutLong != null ? settings.minOffcutLong : 1000);
   const os = document.getElementById('offcut-short'); if (os) os.value = lenNum(settings.minOffcutShort != null ? settings.minOffcutShort : 300);
+  const ob = document.getElementById('offcut-bar');   if (ob) ob.value = lenNum(settings.minBarOffcut != null ? settings.minBarOffcut : 500);
   const us = document.getElementById('units-setting'); if (us) us.value = isInch() ? 'in' : 'mm';
   const cs = document.getElementById('currency-setting'); if (cs) cs.value = currency();
 }
@@ -3455,6 +3904,7 @@ function loadSettings(){
   try{const r=localStorage.getItem(SETT_KEY);if(r)settings=Object.assign({kerf:4,companyName:'',minOffcutLong:1000,minOffcutShort:300},JSON.parse(r));}catch(e){}
   if(settings.minOffcutLong==null)settings.minOffcutLong=1000;
   if(settings.minOffcutShort==null)settings.minOffcutShort=300;
+  if(settings.minBarOffcut==null)settings.minBarOffcut=500;
   KERF=parseKerf(settings.kerf);
   const kd=document.getElementById('kerf-display');if(kd)kd.textContent=len(KERF);
 }
@@ -3511,6 +3961,8 @@ function saveSettings() {
   if (cn) settings.companyName = cn.value ? cn.value.trim() : '';
   if (ol) settings.minOffcutLong = Math.max(0, Math.min(6000, Math.round(parseLen(ol.value) || 0)));
   if (os) settings.minOffcutShort = Math.max(0, Math.min(6000, Math.round(parseLen(os.value) || 0)));
+  const ob = document.getElementById('offcut-bar');
+  if (ob) settings.minBarOffcut = Math.max(0, Math.min(20000, Math.round(parseLen(ob.value) || 0)));
   localStorage.setItem(SETT_KEY, JSON.stringify(settings));
   const kd = document.getElementById('kerf-display');
   if (kd) kd.textContent = len(KERF);
@@ -3557,10 +4009,17 @@ function normalizeLibEntry(e){
     material: (typeof e.material === 'string' ? e.material : '').slice(0, 60),
     thickness: (typeof e.thickness === 'string' ? e.thickness : '').slice(0, 30),
     grade: (typeof e.grade === 'string' ? e.grade : '').slice(0, 30),
-    cuttingMethod: (e.cuttingMethod === 'guillotine') ? 'guillotine' : 'free',
-    allowRotation: e.allowRotation !== false,
-    sizes: cleanSizes(Array.isArray(e.sizes) ? e.sizes : [e.size1, e.size2]),
+    // Bar / tube / length stock: stored as strips LINEAR_H high (see engine.js),
+    // so stock lengths are sizes with h = LINEAR_H and the sheet code handles them.
+    kind: e.kind === 'linear' ? 'linear' : undefined,
+    cuttingMethod: (e.kind !== 'linear' && e.cuttingMethod === 'guillotine') ? 'guillotine' : 'free',
+    allowRotation: e.kind === 'linear' ? false : e.allowRotation !== false,
+    sizes: cleanSizes((Array.isArray(e.sizes) ? e.sizes : [e.size1, e.size2]).map(function(z){
+      return e.kind === 'linear' && z ? Object.assign({}, z, { h: LINEAR_H }) : z;
+    })),
     trim: cleanTrim(e.trim),
+    // A bar material's own saw kerf (blank = the kerf in Settings).
+    kerf: e.kind === 'linear' && e.kerf != null && e.kerf !== '' && isFinite(+e.kerf) && +e.kerf >= 0 ? parseKerf(e.kerf) : undefined,
     // Quote builder: this material's cutting speed (mm/min) and seconds per cut or pierce.
     cutSpeed: +e.cutSpeed > 0 ? Math.min(1e6, Math.round(+e.cutSpeed)) : undefined,
     cutSec: e.cutSec != null && e.cutSec !== '' && +e.cutSec >= 0 ? Math.min(3600, +e.cutSec) : undefined,
@@ -3686,9 +4145,12 @@ function saveToHistory(){
     const jr=(document.getElementById('job-ref')||{}).value||'Untitled';
     const ts=calcResult.results.reduce(function(s,r){return s+boughtSheets(r.sheets).length;},0);
     const sm=calcResult.results.map(function(r){
-      return r.libMat.name+': '+Object.entries(r.sizeMap).map(function(e){return e[1]+'x '+dimKey(e[0]);}).join(', ');
+      return r.libMat.name+': '+Object.entries(r.sizeMap).map(function(e){return e[1]+'x '+stockKeyTxt(r.libMat, e[0]);}).join(', ');
     }).join(' | ');
-    const entry={id:Date.now(),jobRef:jr,totalSheets:ts,summary:sm,
+    const nS=calcResult.results.filter(function(r){return !r.linear;}).reduce(function(s,r){return s+boughtSheets(r.sheets).length;},0);
+    const nB=ts-nS;
+    const stockText=[nS||!nB ? nS+' sheet'+(nS!==1?'s':'') : '', nB ? nB+' bar'+(nB!==1?'s':'') : ''].filter(Boolean).join(', ');
+    const entry={id:Date.now(),jobRef:jr,totalSheets:ts,stockText:stockText,summary:sm,
       date:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}),
       mats:JSON.parse(JSON.stringify(mats))
     };
@@ -3715,7 +4177,7 @@ function renderHistoryEntries(){
     if(!h.length){wrap.innerHTML='<p style="color:var(--muted);font-size:13px">No jobs saved yet.</p>';return;}
     wrap.innerHTML=h.map(function(e){
       return '<div class="hist-entry"><div><div class="hist-ref">'+esc(e.jobRef)+'</div>'
-        +'<div class="hist-meta">'+e.date+' - '+e.totalSheets+' sheet'+(e.totalSheets!==1?'s':'')+'</div>'
+        +'<div class="hist-meta">'+esc(e.date)+' - '+esc(e.stockText || (e.totalSheets+' sheet'+(e.totalSheets!==1?'s':'')))+'</div>'
         +'<div class="hist-summary">'+esc(e.summary)+'</div></div>'
         +'<div class="hist-actions">'
         +'<button class="btn btn-teal" style="padding:6px 12px;font-size:12px" onclick="loadHistoryJob('+e.id+')">Load</button>'
@@ -4008,17 +4470,21 @@ document.addEventListener('DOMContentLoaded',function(){
       srcMats.forEach(function(sm, i){
         if (!sm || typeof sm !== 'object') return;
         const libId = 'shared-' + Date.now() + '-' + i;
-        library.push({
+        // normalizeLibEntry does the rest of the cleaning (kind, kerf, sizes).
+        library.push(normalizeLibEntry({
           id: libId,
           _transient: true,                         // not persisted unless user saves
           name: clampStr(sm.name, 60) || ('Shared material ' + (i+1)),
+          kind: sm.kind === 'linear' ? 'linear' : undefined,
+          kerf: sm.kind === 'linear' ? clampNum(sm.kerf, 0, 100) : undefined,
           material: '', thickness: '', grade: '',
           cuttingMethod: (sm.cuttingMethod === 'guillotine') ? 'guillotine' : 'free',
           allowRotation: sm.allowRotation !== false,
           // v3 links carry sizes[]; v1/v2 links carried size1/size2.
-          sizes: cleanSizes(Array.isArray(sm.sizes) ? sm.sizes.slice(0, MAX_SHEET_SIZES) : [cleanSize(sm.size1), cleanSize(sm.size2)]),
+          sizes: cleanSizes((Array.isArray(sm.sizes) ? sm.sizes.slice(0, MAX_SHEET_SIZES) : [cleanSize(sm.size1), cleanSize(sm.size2)])
+            .map(function(z){ return sm.kind === 'linear' && z ? Object.assign({}, z, { h: LINEAR_H }) : z; })),
           trim: cleanTrim(sm.trim)
-        });
+        }));
         newMats.push({
           id: 'mat-' + Date.now() + '-' + i,
           selectedMatId: libId,
