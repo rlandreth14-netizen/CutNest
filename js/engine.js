@@ -406,7 +406,8 @@ function deriveGuillotineCuts(placed, sheetW, sheetH, kerf) {
   let ok = true;
 
   function rec(x0, y0, x1, y1, items, depth) {
-    if (!ok || items.length <= 1) return;
+    if (!ok || !items.length) return;
+    if (items.length === 1) { freeLeaf(x0, y0, x1, y1, items[0], depth); return; }
 
     // A cut line is valid if every part lies wholly on one side of it, with at
     // least one part on each side. Candidates are the far edges of the parts.
@@ -451,6 +452,33 @@ function deriveGuillotineCuts(placed, sheetW, sheetH, kerf) {
       rec(x0, y0, x1, hit.c, hit.before, depth + 1);
       rec(x0, hit.c + K, x1, y1, hit.after, depth + 1);
     }
+  }
+
+  // One part left in its region: cut away the waste around it. Without these
+  // the sequence stopped when parts were separated, so a part that did not
+  // fill its strip was never cut free (and a sheet holding a single part had
+  // no cuts at all). Waste thinner than the kerf just turns to dust.
+  function freeLeaf(x0, y0, x1, y1, p, depth) {
+    const first = (x1 - x0) >= (y1 - y0) ? 'V' : 'H';
+    [first, first === 'V' ? 'H' : 'V'].forEach(function (axis) {
+      const lo = axis === 'V' ? p.x : p.y, hi = axis === 'V' ? p.x + p.w : p.y + p.h;
+      const r0 = axis === 'V' ? x0 : y0, r1 = axis === 'V' ? x1 : y1;
+      const at = [];
+      if (lo - K > r0 + EPS) at.push(lo - K);     // waste before the part
+      if (hi < r1 - EPS) at.push(hi);             // waste after it
+      at.forEach(function (c) {
+        if (axis === 'V') {
+          cuts.push({ no: ++n, axis: 'V', pos: c, from: y0, to: y1, depth: depth,
+                      label: 'Cut down at X = ' + Math.round(c) + 'mm' });
+        } else {
+          cuts.push({ no: ++n, axis: 'H', pos: c, from: x0, to: x1, depth: depth,
+                      label: 'Cut across at Y = ' + Math.round(c) + 'mm' });
+        }
+      });
+      // The part is now held in a narrower region for the other axis.
+      if (axis === 'V') { x0 = Math.max(x0, lo); x1 = Math.min(x1, hi); }
+      else { y0 = Math.max(y0, lo); y1 = Math.min(y1, hi); }
+    });
   }
 
   rec(0, 0, sheetW, sheetH, placed.slice(), 0);

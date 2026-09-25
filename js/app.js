@@ -1174,6 +1174,7 @@ function buildCutSheetsHtml() {
             }).join('');
             return `<table><thead><tr><th>#</th><th>Cut</th><th>At</th><th>Span</th></tr></thead><tbody>${rows}</tbody></table>`;
           }).join('')
+        : cuts ? `<table><tbody><tr><td class="nocut">No cuts needed — the part is the whole ${sawTrim ? 'trimmed ' : ''}sheet.</td></tr></tbody></table>`
         : `<table><tbody><tr><td class="nocut">This layout is not guillotine-cuttable \u2014 parts must be cut
              individually (normal for free placement: laser, router, plasma).</td></tr></tbody></table>`;
 

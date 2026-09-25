@@ -74,13 +74,33 @@ function checkLayout(name, lib, pieces, res, kerf) {
       ok(E.stockSizes(lib).some(z => z.w === s.sheetW && z.h === s.sheetH), name,
          `sheet ${s.sheetW}x${s.sheetH} is not one of the material's sizes`);
     }
-    if (lib.cuttingMethod === 'guillotine' && s.placed.length > 1) {
+    if (lib.cuttingMethod === 'guillotine') {
       // Cuts are worked out on the trimmed sheet, as the saw sees it.
       const t = s.trim || 0;
       const inner = s.placed.map(p => Object.assign({}, p, { x: p.x - t, y: p.y - t }));
-      ok(!!E.deriveGuillotineCuts(inner, s.sheetW - 2 * t, s.sheetH - 2 * t, kerf), name, 'guillotine sheet has no valid cut sequence');
+      const cuts = E.deriveGuillotineCuts(inner, s.sheetW - 2 * t, s.sheetH - 2 * t, kerf);
+      ok(!!cuts, name, 'guillotine sheet has no valid cut sequence');
+      if (cuts) checkCutFree(name, inner, cuts, s.sheetW - 2 * t, s.sheetH - 2 * t, kerf);
     }
   }
+}
+
+// Every part must come out of the cut sequence free of waste: each of its four
+// edges is a sheet edge or lies on a cut that runs the full length of that
+// edge. (Waste thinner than the kerf is sawdust and needs no cut.)
+function checkCutFree(name, parts, cuts, W, H, kerf) {
+  const E2 = 1e-6;
+  for (const p of parts) {
+    const along = (axis, lo, hi) => c => c.axis === axis && c.from <= lo + E2 && c.to >= hi - E2;
+    const nearOk = (axis, edge, lo, hi) => edge <= kerf + E2 ||
+      cuts.some(c => along(axis, lo, hi)(c) && edge - (c.pos + kerf) >= -E2 && edge - (c.pos + kerf) <= kerf + E2);
+    const farOk = (axis, edge, size, lo, hi) => Math.abs(size - edge) < E2 ||
+      cuts.some(c => along(axis, lo, hi)(c) && Math.abs(c.pos - edge) < E2);
+    const bad = !nearOk('V', p.x, p.y, p.y + p.h) ? 'left' : !farOk('V', p.x + p.w, W, p.y, p.y + p.h) ? 'right'
+      : !nearOk('H', p.y, p.x, p.x + p.w) ? 'top' : !farOk('H', p.y + p.h, H, p.x, p.x + p.w) ? 'bottom' : null;
+    if (bad) { fail(name, `part ${p.w}x${p.h} at ${p.x},${p.y}: its ${bad} edge is never cut`); return; }
+  }
+  checks++;
 }
 
 function checkStock(name, lib, res) {
