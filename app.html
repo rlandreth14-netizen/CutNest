@@ -23,8 +23,9 @@
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="CutNest"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link rel="preload" href="/fonts/barlow-400.woff2" as="font" type="font/woff2" crossorigin/>
+<link rel="preload" href="/fonts/barlow-condensed-800.woff2" as="font" type="font/woff2" crossorigin/>
+<link rel="stylesheet" href="/fonts/fonts.css"/>
 <!-- Google Analytics — CONSENT GATED.
      app.html previously loaded gtag.js unconditionally: no banner, no way to
      decline, while the privacy policy claimed consent as the legal basis.
@@ -48,7 +49,15 @@ try{
   if (localStorage.getItem('cn-cookie') === 'accepted' && !_dnt) loadAnalytics();
 }catch(e){}
 </script>
-<script>try{if(localStorage.getItem('cutnest-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
+<script>
+// Saved choice wins; with none, follow the device's light/dark setting.
+function cnPrefersDark(){
+  var t=null; try{t=localStorage.getItem('cutnest-theme');}catch(e){}
+  if(t==='dark')return true; if(t==='light')return false;
+  return !!(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);
+}
+if(cnPrefersDark())document.documentElement.setAttribute('data-theme','dark');
+</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -323,7 +332,10 @@ tr:hover td{background:rgba(232,244,248,.5)}
 /* ── KERF TOOLTIP ── */
 .kerf-tip{display:inline-flex;align-items:center;gap:5px}
 .kerf-tip-icon{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.2);color:rgba(255,255,255,.6);font-size:9px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;cursor:help;position:relative}
-.kerf-tip-icon:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--teal2);color:#fff;font-size:10px;font-weight:400;padding:5px 9px;border-radius:6px;white-space:nowrap;pointer-events:none;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.kerf-tip-icon:hover::after,.kerf-tip-icon:focus::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--teal2);color:#fff;font-size:10px;font-weight:400;padding:5px 9px;border-radius:6px;white-space:normal;width:max-content;max-width:240px;text-align:left;line-height:1.4;pointer-events:none;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.app-hdr .kerf-tip-icon:hover::after,.app-hdr .kerf-tip-icon:focus::after{bottom:auto;top:calc(100% + 8px);left:auto;right:-8px;transform:none}
+.lbl .kerf-tip-icon{background:var(--bdr2);color:var(--text2);margin-left:3px}
+.kerf-tip-icon:focus{outline:2px solid var(--amber);outline-offset:1px}
 
 /* ── QTY TOUCH CONTROLS ── */
 .qty-wrap-mobile{display:inline-flex;align-items:center;border:1.5px solid var(--bdr);border-radius:7px;overflow:hidden;background:var(--white);height:32px;width:fit-content;flex-shrink:0}
@@ -478,7 +490,8 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
 <div class="calc-overlay hidden" id="calc-overlay" role="status" aria-live="polite">
   <div class="spinner"></div>
   <div class="calc-overlay-text">Optimising layouts&hellip;</div>
-  <div class="calc-overlay-sub">Finding the most cost-effective arrangement</div>
+  <div class="calc-overlay-sub" id="calc-overlay-sub">Finding the most cost-effective arrangement</div>
+  <button type="button" id="calc-cancel" onclick="cancelCalculation()" style="display:none;margin-top:16px;background:none;border:1.5px solid rgba(255,255,255,.45);color:#fff;border-radius:8px;padding:7px 20px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.5px">Cancel</button>
 </div>
 
 <!-- HEADER -->
@@ -498,7 +511,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
   </a>
   <div class="app-hright">
     <div class="kerf-pill no-print">Kerf <b id="kerf-display">4mm</b>
-      <span class="kerf-tip-icon" data-tip="Blade/laser kerf — the width of material removed by each cut. Accounts for saw blade or laser beam width.">?</span>
+      <span class="kerf-tip-icon" tabindex="0" role="img" aria-label="Help: Blade/laser kerf — the width of material removed by each cut. Accounts for saw blade or laser beam width." data-tip="Blade/laser kerf — the width of material removed by each cut. Accounts for saw blade or laser beam width.">?</span>
     </div>
     <div class="sync-pill no-print"><div class="sdot" id="sdot"></div><span id="stxt">Loading&hellip;</span></div>
     <span id="pro-badge-hdr" style="display:none" class="pro-badge no-print">PRO</span>
@@ -514,7 +527,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
 
 <!-- PRO BANNER -->
 <div class="pro-banner no-print" id="pro-banner" style="display:none">
-  <div class="pro-banner-txt">You&rsquo;re on the <b>Free plan</b> &mdash; 1 material per job. Upgrade for unlimited materials, full material library and job history.</div>
+  <div class="pro-banner-txt">You&rsquo;re on the <b>Free plan</b> &mdash; 1 material per job. Pro adds up to 5 materials, grain lock, guillotine mode, offcut stock, DXF export and job history.</div>
   <a class="btn-upgrade" href="https://cutnest.lemonsqueezy.com/checkout/buy/a9fdfebb-ea08-4962-8aae-45e608f0cc6e" target="_blank">Upgrade to Pro &mdash; &pound;12/mo &rarr;</a>
 </div>
 
@@ -663,7 +676,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
 <!-- HISTORY MODAL -->
 <div class="overlay" id="history-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Job history">
   <div class="modal" style="max-width:660px">
-    <div class="modal-hdr"><div class="modal-title">&#128336; Job History</div><button class="modal-x" onclick="closeHistory()">&#10005;</button></div>
+    <div class="modal-hdr"><div class="modal-title">&#128336; Job History</div><button class="modal-x" onclick="closeHistory()" aria-label="Close">&#10005;</button></div>
     <div class="modal-body">
     <p class="modal-sub">Your last 50 jobs are saved automatically. Load any job to restore all pieces.</p>
     <div id="history-entries"></div>
@@ -740,7 +753,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
 <!-- LIBRARY MODAL -->
 <div class="overlay" id="lib-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Stock library">
   <div class="modal">
-    <div class="modal-hdr"><div class="modal-title">&#128230; Stock Library</div><button class="modal-x" onclick="closeLib()">&#10005;</button></div>
+    <div class="modal-hdr"><div class="modal-title">&#128230; Stock Library</div><button class="modal-x" onclick="closeLib()" aria-label="Close">&#10005;</button></div>
     <div class="modal-body">
       <p class="modal-sub">Add your materials with sheet sizes and prices. Works for steel, timber, MDF, acrylic, glass &mdash; any sheet material.</p>
       <div id="lib-entries"></div>
@@ -777,7 +790,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
   <div class="modal" style="max-width:440px">
     <div class="modal-hdr" style="background:linear-gradient(135deg,var(--teal2),var(--teal))">
       <div class="modal-title">&#11088; Upgrade to CutNest Pro</div>
-      <button class="modal-x" onclick="document.getElementById('upgrade-modal').style.display='none'">&#10005;</button>
+      <button class="modal-x" onclick="document.getElementById('upgrade-modal').style.display='none'" aria-label="Close">&#10005;</button>
     </div>
     <div class="modal-body" style="text-align:center;padding:26px 20px">
       <div style="font-size:34px;margin-bottom:11px" id="upgrade-icon">&#128274;</div>
@@ -794,14 +807,6 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
            consumer-protection problem, not just a broken link. -->
       <a href="https://cutnest.lemonsqueezy.com/checkout/buy/a9fdfebb-ea08-4962-8aae-45e608f0cc6e" target="_blank" style="display:block;background:linear-gradient(135deg,var(--amber),var(--amber2));color:var(--teal2);font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;padding:12px;border-radius:9px;text-decoration:none;margin-bottom:6px">Get Pro &mdash; &pound;12/month &rarr;</a>
     </div>
-  </div>
-</div>
-
-<!-- LEGAL MODAL -->
-<div class="overlay" id="legal-modal" style="display:none" role="dialog" aria-modal="true">
-  <div class="modal" style="max-width:620px">
-    <div class="modal-hdr"><div class="modal-title" id="legal-modal-title"></div><button class="modal-x" onclick="document.getElementById('legal-modal').style.display='none'">&#10005;</button></div>
-    <div class="modal-body" id="legal-modal-body" style="font-size:13px;line-height:1.8;color:var(--text2)"></div>
   </div>
 </div>
 
@@ -876,7 +881,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
   <div style="background:var(--white);border-radius:14px;max-width:98vw;max-height:96vh;overflow:auto;padding:16px;position:relative">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div id="zoom-title" style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:var(--teal)"></div>
-      <button onclick="document.getElementById('zoom-modal').style.display='none'" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1">✕</button>
+      <button aria-label="Close" onclick="document.getElementById('zoom-modal').style.display='none'" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1">✕</button>
     </div>
     <div id="zoom-canvas" style="overflow:auto"></div>
     <div id="zoom-legend" style="margin-top:14px;display:flex;flex-wrap:wrap;gap:6px"></div>
@@ -884,7 +889,7 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
 </div>
 <!-- COOKIE BANNER — shown only if no analytics choice has been made yet. -->
 <div id="cn-cookie-bar" class="no-print" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--teal2);border-top:2px solid var(--teal3);color:rgba(255,255,255,.85);padding:12px 16px;z-index:90;font-size:12.5px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;line-height:1.5">
-  <span style="flex:1;min-width:200px">CutNest saves your library and jobs in this browser (that&rsquo;s how it works offline). We&rsquo;d also like anonymised usage stats via Google Analytics. No ads, no cross-site tracking. <button onclick="openLegal('privacy')" style="background:none;border:none;color:var(--amber);cursor:pointer;font-size:12.5px;padding:0;text-decoration:underline;font-family:inherit">Privacy Policy</button></span>
+  <span style="flex:1;min-width:200px">CutNest saves your library and jobs in this browser (that&rsquo;s how it works offline). We&rsquo;d also like anonymised usage stats via Google Analytics. No ads, no cross-site tracking. <a href="/privacy.html" target="_blank" rel="noopener" style="color:var(--amber)">Privacy Policy</a></span>
   <span style="display:flex;gap:8px;flex-shrink:0">
     <button onclick="cnDeclineCookies()" style="background:none;border:1px solid rgba(255,255,255,.35);color:rgba(255,255,255,.85);font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;padding:7px 14px;border-radius:7px;cursor:pointer">Decline analytics</button>
     <button onclick="cnAcceptCookies()" style="background:var(--amber);border:none;color:var(--teal2);font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;padding:7px 16px;border-radius:7px;cursor:pointer">Accept</button>
@@ -893,8 +898,8 @@ input:focus,select:focus{border-color:var(--teal3);background:#fff;box-shadow:0 
 <footer style="text-align:center;padding:13px;font-size:11px;color:var(--muted);border-top:1px solid var(--bdr)" class="no-print">
   CutNest v1.0 &nbsp;&middot;&nbsp;
   <a href="/" style="color:var(--teal3)">cutnest.co.uk</a> &nbsp;&middot;&nbsp;
-  <button onclick="openLegal('terms')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:0;font-family:inherit">Terms</button> &nbsp;&middot;&nbsp;
-  <button onclick="openLegal('privacy')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:0;font-family:inherit">Privacy</button> &nbsp;&middot;&nbsp;
+  <a href="/terms.html" target="_blank" rel="noopener" style="color:var(--muted)">Terms</a> &nbsp;&middot;&nbsp;
+  <a href="/privacy.html" target="_blank" rel="noopener" style="color:var(--muted)">Privacy</a> &nbsp;&middot;&nbsp;
   <a href="mailto:hello@cutnest.co.uk" style="color:var(--muted)">hello@cutnest.co.uk</a>
 </footer>
 
@@ -2541,13 +2546,16 @@ function buildBlock(m, idx) {
           : `<div class="sz-badge" style="opacity:.4"><span class="sl">Size 2</span><span class="sv" style="color:var(--muted)">Not set</span></div>`}
         <div class="sz-auto-note">Optimizer picks best size per sheet</div>
       </div>
+      ${!isPro && (libMat.allowRotation === false || libMat.cuttingMethod === 'guillotine')
+        ? `<div style="font-size:11.5px;color:#92400e;background:#fffbeb;border:1px solid var(--amber);border-radius:7px;padding:6px 10px;margin-bottom:8px">&#128274; ${libMat.allowRotation === false && libMat.cuttingMethod === 'guillotine' ? 'Grain lock and guillotine mode are' : libMat.allowRotation === false ? 'Grain lock is' : 'Guillotine mode is'} Pro. On the free plan this material is calculated with free placement and rotation allowed. <button onclick="showUpgradeModal('&#128274;','Grain lock &amp; guillotine mode','Pro keeps grain direction on brushed, veneered and patterned sheet, and nests for saws and shears with a numbered edge-to-edge cut sequence.')" style="background:none;border:none;color:var(--teal);font-weight:700;cursor:pointer;padding:0;font-size:11.5px;text-decoration:underline;font-family:inherit">Unlock</button></div>`
+        : ''}
       ${m.remnant && m.remnant.w && m.remnant.h
         ? `<div class="remnant-active">
              <span>&#9000;</span>
-             <span>Remnant: ${m.remnant.w}&times;${m.remnant.h}mm &mdash; used first</span>
+             <span>Remnant: ${m.remnant.w}&times;${m.remnant.h}mm &mdash; ${isPro ? 'used first' : 'Pro only, not used on the free plan'}</span>
              <button class="remnant-remove" onclick="removeRemnant('${m.id}')">&times;</button>
            </div>`
-        : `<button class="btn-add-remnant" onclick="openRemnantInput('${m.id}')">+ Got a leftover piece? Add remnant</button>${offcutPickerHtml(m, libMat)}`
+        : `<button class="btn-add-remnant" onclick="openRemnantInput('${m.id}')">+ Got a leftover piece? Add remnant${isPro ? '' : ' &#128274;'}</button>${isPro ? offcutPickerHtml(m, libMat) : ''}`
       }
       <div class="remnant-form" id="remnant-form-${m.id}" style="display:none">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">Leftover sheet dimensions</div>
@@ -2570,6 +2578,7 @@ function buildBlock(m, idx) {
         <input type="text"
           value="${esc(p.label||'')}"
           placeholder="Label (optional)"
+          aria-label="Piece ${pi+1} label"
           style="min-width:90px;font-size:12px"
           oninput="updatePiece('${m.id}',${pi},'label',this.value)"
           onfocus="this.select()"
@@ -2579,6 +2588,7 @@ function buildBlock(m, idx) {
         <input type="number"
           value="${p.w||''}"
           placeholder="Width"
+          aria-label="Piece ${pi+1} width in mm"
           style="width:78px;text-align:center"
           oninput="updatePiece('${m.id}',${pi},'w',+this.value)"
           onfocus="this.select()"
@@ -2588,6 +2598,7 @@ function buildBlock(m, idx) {
         <input type="number"
           value="${p.h||''}"
           placeholder="Height"
+          aria-label="Piece ${pi+1} height in mm"
           style="width:78px;text-align:center"
           oninput="updatePiece('${m.id}',${pi},'h',+this.value)"
           onfocus="this.select()"
@@ -2595,20 +2606,21 @@ function buildBlock(m, idx) {
       </td>
       <td data-label="Qty" style="white-space:nowrap;width:108px">
         <div class="qty-wrap-mobile">
-          <button class="qty-btn" onclick="stepQty('${m.id}',${pi},-1)" type="button">−</button>
+          <button class="qty-btn" onclick="stepQty('${m.id}',${pi},-1)" type="button" aria-label="Decrease piece ${pi+1} quantity">−</button>
           <input class="qty-input-mobile"
+            aria-label="Piece ${pi+1} quantity"
             type="number"
             value="${p.qty||1}"
             min="1" max="9999"
             oninput="updatePiece('${m.id}',${pi},'qty',Math.max(1,+this.value))"
             onfocus="this.select()"
             onkeydown="handlePieceKey(event,'${m.id}',${pi},'qty')"/>
-          <button class="qty-btn" onclick="stepQty('${m.id}',${pi},1)" type="button">+</button>
+          <button class="qty-btn" onclick="stepQty('${m.id}',${pi},1)" type="button" aria-label="Increase piece ${pi+1} quantity">+</button>
         </div>
       </td>
       <td style="white-space:nowrap;padding:4px 2px" data-label="Actions">
         <button onclick="duplicatePiece('${m.id}',${pi})" title="Duplicate piece" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:2px 5px" aria-label="Duplicate">⧉</button>
-        <button class="btn-del" onclick="removePiece('${m.id}',${pi})" aria-label="Remove piece">&#10005;</button>
+        <button class="btn-del" onclick="removePiece('${m.id}',${pi})" aria-label="Remove piece ${pi+1}">&#10005;</button>
       </td>
     </tr>`).join('');
 
@@ -2634,7 +2646,7 @@ function buildBlock(m, idx) {
         <div class="mat-select-row">
           <div class="sel-wrap">
             <label class="lbl">Select material from library</label>
-            <select onchange="onMatSelect('${m.id}', this.value)">
+            <select onchange="onMatSelect('${m.id}', this.value)" aria-label="Material ${idx+1}">
               <option value="">— Choose a material —</option>
               ${opts}
             </select>
@@ -2648,7 +2660,7 @@ function buildBlock(m, idx) {
 
         <!-- Pieces -->
         <div class="pieces-label">Required Pieces for This Material
-          <span class="piece-count-badge">${m.pieces.filter(p=>p.w>0&&p.h>0).length} piece${m.pieces.filter(p=>p.w>0&&p.h>0).length!==1?'s':''} · ${m.pieces.reduce((s,p)=>s+(+p.qty||1),0)} total cuts</span>
+          <span class="piece-count-badge" id="pcount-${m.id}">${pieceCountText(m)}</span>
         </div>
         <div class="pieces-table-wrap" style="overflow-x:auto">
           <table>
@@ -2926,6 +2938,7 @@ function removeOffcut(id) {
 
 // Save every usable offcut from the current result in one go.
 function saveAllOffcuts() {
+  if (!isPro) { showUpgradeModal.apply(null, REMNANT_UPSELL); return; }
   if (!calcResult || !calcResult.results) return;
   const jr = ((document.getElementById('job-ref') || {}).value || '').trim();
   let added = 0, skipped = 0;
@@ -2947,6 +2960,7 @@ function saveAllOffcuts() {
 }
 
 function useOffcut(matId, offcutId) {
+  if (!isPro) { showUpgradeModal.apply(null, REMNANT_UPSELL); return; }
   const o = loadOffcuts().find(function (x) { return x.id === offcutId; });
   const m = mats.find(function (x) { return x.id === matId; });
   if (!o || !m) return;
@@ -2985,6 +2999,7 @@ function offcutPickerHtml(m, libMat) {
 
 // ── OFFCUT STOCK MODAL ──
 function openOffcuts() {
+  if (!isPro) { showUpgradeModal.apply(null, REMNANT_UPSELL); return; }
   renderOffcutList();
   const el = document.getElementById('offcut-modal');
   if (el) el.style.display = 'flex';
@@ -3089,6 +3104,7 @@ function stepQty(matId, pi, delta) {
       if (inp) inp.value = cur;
     }
   }
+  refreshPieceCount(m);
   saveState();
   if (calcResult) {
     const sb = document.getElementById('stale-banner');
@@ -3203,6 +3219,18 @@ function showToast(msg, duration) {
   clearTimeout(t._timer);
   t._timer = setTimeout(() => t.classList.remove('show'), duration || 2200);
 }
+// "3 pieces · 12 total cuts" — counts only rows with a real size, so a blank
+// starter row is not a piece and does not add a cut.
+function pieceCountText(m) {
+  const real = m.pieces.filter(function(p){ return p.w > 0 && p.h > 0; });
+  const cuts = real.reduce(function(a, p){ return a + (+p.qty || 1); }, 0);
+  return real.length + ' piece' + (real.length !== 1 ? 's' : '') + ' \u00b7 ' + cuts + ' total cut' + (cuts !== 1 ? 's' : '');
+}
+// Typing and the qty buttons skip the full re-render, so refresh the badge here.
+function refreshPieceCount(m) {
+  const el = document.getElementById('pcount-' + m.id);
+  if (el) el.textContent = pieceCountText(m);
+}
 function updatePiece(matId, pi, field, val) {
   const m = mats.find(m => m.id === matId);
   if (m) {
@@ -3215,6 +3243,7 @@ function updatePiece(matId, pi, field, val) {
       val = Math.max(1, Math.min(9999, Math.round(Number(val)) || 1));
     }
     m.pieces[pi][field] = val;
+    refreshPieceCount(m);
     saveState();
     if (calcResult) {
       const sb = document.getElementById('stale-banner');
@@ -3530,6 +3559,37 @@ function optimalityVerdict(res) {
 }
 
 
+// ── FREE-PLAN LIMITS ─────────────────────────
+// Grain lock and guillotine mode are Pro: a free calculation uses free
+// placement with rotation allowed. Prices are still shown, but the engine
+// only picks sheet sizes by price for Pro (withoutPrices strips them from the
+// copy handed to the packer).
+function freeTierMat(libMat) {
+  return Object.assign({}, libMat, { allowRotation: true, cuttingMethod: 'free' });
+}
+function withoutPrices(libMat) {
+  const strip = function(s){ return s ? Object.assign({}, s, { price: 0 }) : s; };
+  return Object.assign({}, libMat, { size1: strip(libMat.size1), size2: strip(libMat.size2) });
+}
+// What a free calculation of this material leaves out, in the user's words.
+function gatedFeatures(libMat, m) {
+  const out = [];
+  if (libMat.allowRotation === false) out.push('grain lock');
+  if (libMat.cuttingMethod === 'guillotine') out.push('guillotine mode');
+  if (m && m.remnant && m.remnant.w && m.remnant.h) out.push('your remnant');
+  const priced = [libMat.size1, libMat.size2].filter(function(s){ return s && +s.w > 0 && +s.h > 0; });
+  if (priced.length > 1 && priced.every(function(s){ return +s.price > 0; })) out.push('cost-optimised sheet choice');
+  return out;
+}
+function gatedNoticeHtml(gated) {
+  if (!gated || !gated.length) return '';
+  const list = gated.length > 1 ? gated.slice(0, -1).join(', ') + ' and ' + gated[gated.length - 1] : gated[0];
+  return `<div style="background:#fffbeb;border:1px solid var(--amber);border-radius:7px;padding:7px 10px;margin-bottom:7px;font-size:11.5px;color:#92400e;line-height:1.5">
+    <b>Free plan:</b> calculated without ${esc(list)}.${gated.indexOf('grain lock') !== -1 ? ' <b>Pieces may be rotated against the grain.</b>' : ''}
+    <a href="${LS_URL}" target="_blank" rel="noopener" style="color:var(--teal);font-weight:700;white-space:nowrap">Unlock with Pro &rarr;</a>
+  </div>`;
+}
+
 // ── CALCULATE ─────────────────────────────────
 // Ctrl+Enter and the stale banner's Recalculate button both call calculate()
 // directly, so disabling the Calculate button alone did not stop a second run
@@ -3548,12 +3608,26 @@ function calculate() {
   // Let the browser actually paint the overlay before we run the (synchronous,
   // CPU-heavy) pack. A double requestAnimationFrame guarantees one full paint
   // has happened; we fall back to setTimeout where rAF isn't available.
+  // Big jobs can take a while on a phone. Offer Cancel after a few seconds and
+  // say what is happening after fifteen, instead of an unexplained spinner.
+  _calcCancelled = false;
+  const subEl = document.getElementById('calc-overlay-sub');
+  const cancelEl = document.getElementById('calc-cancel');
+  const subDefault = 'Finding the most cost-effective arrangement';
+  if (subEl) subEl.textContent = subDefault;
+  if (cancelEl) cancelEl.style.display = 'none';
+  const tCancel = setTimeout(function(){ if (cancelEl) cancelEl.style.display = 'inline-block'; }, 3000);
+  const tSlow = setTimeout(function(){ if (subEl) subEl.textContent = 'Large job \u2014 still working. You can cancel and split it into smaller jobs.'; }, 15000);
+
   const runWork = async function() {
     try {
       await _doCalculate();
     } catch (e) {
       showErr('Something went wrong while calculating. Please try again.');
     } finally {
+      clearTimeout(tCancel); clearTimeout(tSlow);
+      if (cancelEl) cancelEl.style.display = 'none';
+      if (subEl) subEl.textContent = subDefault;
       if (overlay) overlay.classList.add('hidden');
       if (btn) btn.disabled = false;
       _calcBusy = false;
@@ -3579,8 +3653,18 @@ function calculate() {
 // Every failure path falls back to running on the main thread: no Worker
 // support, a blocked blob: URL under a strict CSP, a worker that throws, or one
 // that simply never answers. A slow answer is acceptable; no answer is not.
-let _packWorker = null, _packWorkerDead = false, _packSeq = 0;
+let _packWorker = null, _packWorkerDead = false, _packSeq = 0, _calcCancelled = false;
 const _packPending = new Map();
+
+// Stop a running calculation. The worker is thrown away (a fresh one is built
+// on the next Calculate); anything waiting on it resolves as cancelled.
+function cancelCalculation() {
+  _calcCancelled = true;
+  try { if (_packWorker) _packWorker.terminate(); } catch (e) {}
+  _packWorker = null;
+  _packPending.forEach(function (p) { clearTimeout(p.timer); p.ok({ res: null, err: null, cancelled: true }); });
+  _packPending.clear();
+}
 
 function _killPackWorker() {
   try { if (_packWorker) _packWorker.terminate(); } catch (e) {}
@@ -3651,13 +3735,10 @@ function packMaterial(libMat, pieces, remnant, jobQty) {
     if (!w) return runOnMainThread();
 
     const id = ++_packSeq;
-    const timer = setTimeout(function () {
-      // Wedged or blocked. Bin the worker and finish on the main thread rather
-      // than leaving the user watching a spinner that never stops.
-      _packPending.delete(id);
-      _killPackWorker();
-      runOnMainThread();
-    }, 25000);
+    // No timeout fallback to the main thread any more: a slow job re-run on the
+    // main thread froze the tab for longer than the worker would have taken.
+    // Long jobs now show a Cancel button instead (see calculate()).
+    const timer = null;
 
     _packPending.set(id, { timer: timer, ok: done, fail: runOnMainThread });
     try {
@@ -3689,8 +3770,13 @@ async function _doCalculate() {
   }
 
   for (const m of activeMats) {
-    const libMat = library.find(l => l.id == m.selectedMatId);
-    if (!libMat) { errors.push(`Material ${mats.indexOf(m)+1}: Please select a material.`); continue; }
+    const storedMat = library.find(l => l.id == m.selectedMatId);
+    if (!storedMat) { errors.push(`Material ${mats.indexOf(m)+1}: Please select a material.`); continue; }
+    // Free plan: grain lock, guillotine mode, remnants and cost-optimised sheet
+    // choice are Pro. The material keeps its settings (they come back on
+    // upgrade); the free calculation just runs without them and says so.
+    const libMat = isPro ? storedMat : freeTierMat(storedMat);
+    const gated = isPro ? [] : gatedFeatures(storedMat, m);
     const valid = m.pieces.filter(p=>p.w>0&&p.h>0&&p.qty>0);
     if (!valid.length) { errors.push(`Material ${mats.indexOf(m)+1} (${esc(libMat.name)}): Please add at least one piece.`); continue; }
 
@@ -3740,14 +3826,20 @@ async function _doCalculate() {
     // Nothing fits at all: still emit a result so the material keeps its card
     // and its "not placed" block, instead of disappearing.
     if (!fitting.length) {
-      results.push({ libMat, sheets: [], unplaced: [], sizeMap: {}, oversized });
+      results.push({ libMat, sheets: [], unplaced: [], sizeMap: {}, oversized, gated });
       continue;
     }
 
     // Off the main thread where possible. packMaterial never rejects: it
     // handles the runMat -> runMatSafe fallback internally, in whichever thread
     // it ends up running in, so the error semantics here are unchanged.
-    const packed = await packMaterial(libMat, fitting, m.remnant, jobQty);
+    const packed = await packMaterial(isPro ? libMat : withoutPrices(libMat), fitting, isPro ? m.remnant : null, jobQty);
+    if (packed.cancelled || _calcCancelled) {
+      // Leave the previous results exactly as they were.
+      if (calcResult) document.getElementById('output').style.display = 'block';
+      showToast('Calculation cancelled');
+      return;
+    }
     let res = packed.res;
     if (packed.err) {
       errors.push(`${esc(libMat.name)}: could not calculate (${esc(packed.err)}).`);
@@ -3766,7 +3858,7 @@ async function _doCalculate() {
       const s2 = libMat.size2 ? (libMat.size2.w+'×'+libMat.size2.h) : 'none';
       errors.push(`${esc(libMat.name)}: packing returned nothing for pieces that should fit. Sheets: ${s1} / ${s2}. [This is a bug — please email hello@cutnest.co.uk]`);
     }
-    results.push({ libMat, ...res });
+    results.push({ libMat, ...res, gated });
   }
 
   // A job that blows the 150-sheet ceiling reports its overflow as "unplaced",
@@ -3922,6 +4014,7 @@ function renderOutput() {
     return `<div class="pres-card">
       <div class="pres-left">
         <div class="pres-name">${esc(libMat.name)}<span class="pres-thk">${esc(libMat.thickness||'')}</span></div>
+        ${gatedNoticeHtml(_r.gated)}
         ${verdict ? (verdict.optimal
           ? `<div style="display:inline-flex;align-items:center;gap:5px;background:#d1fae5;border:1px solid #6ee7b7;color:#065f46;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:700;margin-bottom:7px" title="Checked against a mathematical lower bound: no arrangement of these parts can fit on fewer sheets.">✓ PROVABLY OPTIMAL — no nest can use fewer sheets</div>`
           : `<div style="display:inline-flex;align-items:center;gap:5px;background:var(--sky);border:1px solid var(--bdr2);color:var(--muted);border-radius:6px;padding:3px 9px;font-size:11px;font-weight:600;margin-bottom:7px" title="The theoretical floor is a mathematical bound. It is often not physically achievable — a gap of one sheet usually means the bound is loose, not that a better nest exists.">Best nest found · theoretical floor ${verdict.floor} sheet${verdict.floor!==1?'s':''}</div>`) : ''}
@@ -4708,8 +4801,8 @@ function renderLibEntries() {
             : `<div class="sz-badge" style="opacity:.4"><span class="sl">Size 2</span><span class="sv" style="color:var(--muted)">Not set</span></div>`}
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
-          <span class="mode-chip">${e.cuttingMethod==='guillotine'?'⊞ Guillotine':'⊡ Free placement'}</span>
-          ${e.allowRotation===false?'<span class="mode-chip grain-on">🔒 Grain locked</span>':''}
+          <span class="mode-chip">${e.cuttingMethod==='guillotine'?'⊞ Guillotine'+(isPro?'':' (Pro)'):'⊡ Free placement'}</span>
+          ${e.allowRotation===false?'<span class="mode-chip grain-on">🔒 Grain locked'+(isPro?'':' (Pro)')+'</span>':''}
         </div>
       </div>
       <div id="ee-${e.id}" style="display:none">
@@ -4735,23 +4828,24 @@ function renderLibEntries() {
         <div class="cut-opts">
           <div class="cut-opt-box">
             <label class="lbl">Cutting Method
-              <span class="kerf-tip-icon" data-tip="Free = pieces nested anywhere (CNC punch, laser, router, plasma). Guillotine = straight edge-to-edge cuts only (panel saw, guillotine shear).">?</span>
+              <span class="kerf-tip-icon" tabindex="0" role="img" aria-label="Help: Free = pieces nested anywhere (CNC punch, laser, router, plasma). Guillotine = straight edge-to-edge cuts only (panel saw, guillotine shear)." data-tip="Free = pieces nested anywhere (CNC punch, laser, router, plasma). Guillotine = straight edge-to-edge cuts only (panel saw, guillotine shear).">?</span>
             </label>
-            <select onchange="upd(${jid},'cuttingMethod',this.value)">
+            <select onchange="upd(${jid},'cuttingMethod',this.value)"${isPro ? '' : ' disabled'}>
               <option value="free" ${(e.cuttingMethod||'free')==='free'?'selected':''}>Free placement (punch / laser / router)</option>
               <option value="guillotine" ${e.cuttingMethod==='guillotine'?'selected':''}>Guillotine (saw / shear — straight cuts)</option>
             </select>
           </div>
           <div class="cut-opt-box">
             <label class="lbl">Grain Direction
-              <span class="kerf-tip-icon" data-tip="Lock ON = pieces keep their orientation (brushed steel, wood grain, directional finishes). Lock OFF = pieces may rotate 90° to pack tighter.">?</span>
+              <span class="kerf-tip-icon" tabindex="0" role="img" aria-label="Help: Lock ON = pieces keep their orientation (brushed steel, wood grain, directional finishes). Lock OFF = pieces may rotate 90° to pack tighter." data-tip="Lock ON = pieces keep their orientation (brushed steel, wood grain, directional finishes). Lock OFF = pieces may rotate 90° to pack tighter.">?</span>
             </label>
             <label class="grain-toggle">
-              <input type="checkbox" ${e.allowRotation===false?'checked':''} onchange="upd(${jid},'allowRotation',!this.checked)"/>
+              <input type="checkbox" ${e.allowRotation===false?'checked':''} onchange="upd(${jid},'allowRotation',!this.checked)"${isPro ? '' : ' disabled'}/>
               <span>Lock grain — don't rotate pieces</span>
             </label>
           </div>
         </div>
+        ${isPro ? '' : `<div style="font-size:12px;color:#92400e;background:#fffbeb;border:1px solid var(--amber);border-radius:7px;padding:7px 10px;margin-top:8px">&#128274; Guillotine mode and grain lock are Pro features. <button onclick="showUpgradeModal('&#128274;','Grain lock &amp; guillotine mode','Pro keeps grain direction on brushed, veneered and patterned sheet, and nests for saws and shears with a numbered edge-to-edge cut sequence.')" style="background:none;border:none;color:var(--teal);font-weight:700;cursor:pointer;padding:0;font-size:12px;text-decoration:underline;font-family:inherit">Upgrade</button></div>`}
         <div style="text-align:right;margin-top:9px"><button class="btn-sm-gr" onclick="toggleEdit(${jid})">✓ Done</button></div>
       </div>
     </div>`; }).join('') + hiddenMastersHtml();
@@ -4831,8 +4925,7 @@ function toggleDark() {
 // Apply saved theme on load — must run after DOM ready
 (function(){
   try {
-    const saved = localStorage.getItem('cutnest-theme');
-    if (saved === 'dark') {
+    if (cnPrefersDark()) {
       document.documentElement.setAttribute('data-theme','dark');
       // Update button after DOM is ready
       document.addEventListener('DOMContentLoaded', function() {
@@ -5239,48 +5332,6 @@ function cnInitCookieBar(){
   if (b) setTimeout(function(){ b.style.display = 'flex'; }, 1200);
 }
 
-const LEGAL_CONTENT={
-  terms:{title:'Terms of Service',body:`
-    <p style="margin-bottom:12px"><strong>CutNest Terms of Service — Effective June 2025</strong></p>
-    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest is operated as a sole trader business by Ryan Landreth, Newcastle upon Tyne, United Kingdom. By using CutNest you agree to these terms.</p>
-    <p style="margin-bottom:6px;font-weight:700;font-size:13px">The Service</p>
-    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest provides browser-based cut list optimisation software. The free tier provides limited features. The Pro tier provides full access via a paid subscription processed by Lemon Squeezy.</p>
-    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Subscriptions &amp; Payment</p>
-    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">Pro subscriptions are £12/month, billed via Lemon Squeezy. Subscriptions can be cancelled at any time — access continues until the end of the billing period. Lemon Squeezy acts as the Merchant of Record for all transactions.</p>
-    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Licence</p>
-    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">Your licence key is for personal or single-business use only. Keys may not be shared, resold, or used across multiple unrelated businesses. We reserve the right to deactivate keys used in breach of this policy.</p>
-    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Limitation of Liability</p>
-    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest is a planning aid. You are responsible for verifying all outputs before ordering materials or cutting. We accept no liability for material waste, over-ordering, or losses arising from reliance on CutNest results.</p>
-    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Governing Law</p>
-    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">These terms are governed by the laws of England and Wales. Any disputes will be subject to the exclusive jurisdiction of the courts of England and Wales.</p>
-    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Contact</p>
-    <p style="font-size:13px">hello@cutnest.co.uk</p>
-  `},
-  privacy:{title:'Privacy Policy',body:`
-    <p style="margin-bottom:12px"><strong>CutNest Privacy Policy — Effective June 2025</strong></p>
-    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest is operated by Ryan Landreth, Newcastle upon Tyne, UK. We take privacy seriously. This policy explains what data we handle and why.</p>
-    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Data we do NOT collect</p>
-    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest runs entirely in your browser. Your job data, piece dimensions, and material library are stored only in your browser's local storage — never sent to our servers. We do not use advertising pixels or cross-site tracking. We offer Google Analytics for anonymised, aggregate usage statistics, and it only runs if you accept it (see Analytics below).</p>
-    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Payment data</p>
-    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">All payments are processed by Lemon Squeezy, who act as Merchant of Record. We receive confirmation that a licence key is valid but never see your card details. Lemon Squeezy's privacy policy applies to payment processing.</p>
-    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Licence key validation</p>
-    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">When you enter a licence key, it is sent to the Lemon Squeezy API to verify it is active, and re-checked periodically while you use Pro. Your key is stored in your browser's local storage only. Aside from this, Google Analytics and Google Fonts, CutNest makes no external requests with your data.</p>
-    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Your rights</p>
-    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">Because we hold no personal data on our servers, there is nothing for us to delete or export. Everything CutNest keeps lives in this browser: your stock library, the job you are working on, your job history, your settings (kerf, minimum usable offcut, company name), your theme choice, which pre-built grades you have hidden, your licence key, and your cookie-banner choice. You can clear all of it at any time by clearing your browser's local storage.</p>
-    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Analytics</p>
-    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">We offer Google Analytics (GA4) to measure anonymised, aggregate usage so we can improve the app. <b>It is loaded only if you click Accept on the cookie banner.</b> If you decline, or your browser sends a Do Not Track signal, it is never loaded and no analytics cookie is set. It sets cookies and may process a truncated IP address; we do not use it for advertising. Your cut-list data, dimensions, library and prices are never sent to Google Analytics. Legal basis: your consent.</p>
-    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Data Protection</p>
-    <p style="margin-bottom:10px;font-size:13px;line-height:1.6">CutNest is operated by a UK sole trader and complies with UK GDPR. To exercise any data rights, or for any privacy query, contact hello@cutnest.co.uk.</p>
-    <p style="margin-bottom:6px;font-weight:700;font-size:13px">Contact</p>
-    <p style="font-size:13px">hello@cutnest.co.uk</p>
-  `}
-};
-function openLegal(type){
-  const lm=document.getElementById('legal-modal'),lt=document.getElementById('legal-modal-title'),lb=document.getElementById('legal-modal-body');
-  if(!lm||!LEGAL_CONTENT[type])return;
-  lt.textContent=LEGAL_CONTENT[type].title;lb.innerHTML=LEGAL_CONTENT[type].body;lm.style.display='flex';
-}
-
 // Kerf in mm, 0-100, to 0.1mm. parseInt(v)||4 used to turn a deliberate 0
 // (and any laser kerf under 1mm, e.g. 0.3) back into 4mm on the next load,
 // while Settings still showed the value the user typed.
@@ -5644,7 +5695,7 @@ document.addEventListener('keydown', function(e) {
     // Settings saves on every keystroke, so Escape must roll back like Cancel
     // rather than leaving a half-typed kerf committed.
     if (sm && sm.style.display !== 'none') { cancelSettings(); return; }
-    ['lib-modal','history-modal','upgrade-modal','legal-modal','zoom-modal','paste-modal','offcut-modal'].forEach(function(id) {
+    ['lib-modal','history-modal','upgrade-modal','zoom-modal','paste-modal','offcut-modal'].forEach(function(id) {
       const el = document.getElementById(id);
       if (el && el.style.display !== 'none') el.style.display = 'none';
     });
@@ -5711,7 +5762,10 @@ function doPrint() {
   window.print();
 }
 
+// Plain characters, not entities: showUpgradeModal sets textContent.
+const REMNANT_UPSELL = ['\u267B','Remnants & offcut stock','Pro cuts your leftover sheets first, keeps the usable offcuts from every job, and offers them back on the next job in that material \u2014 so you use stock you already own before buying a new sheet.'];
 function openRemnantInput(matId) {
+  if (!isPro) { showUpgradeModal.apply(null, REMNANT_UPSELL); return; }
   const el = document.getElementById('remnant-form-' + matId);
   if (el) el.style.display = 'block';
 }
@@ -5849,6 +5903,61 @@ document.addEventListener('DOMContentLoaded',function(){
   });
 });
 
+
+// ── DIALOG FOCUS ──────────────────────────────
+// Every dialog is opened and closed by flipping style.display, from a dozen
+// places. Rather than touch each one, watch the dialogs: on open, move focus
+// inside (unless the opener already did) and remember where it came from; on
+// close, put it back. Tab and Shift+Tab stay inside the open dialog.
+(function () {
+  const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+  const returnTo = new Map();
+  const isOpen = function (el) { return el.style.display !== 'none' && getComputedStyle(el).display !== 'none'; };
+  const focusables = function (el) {
+    return Array.prototype.filter.call(el.querySelectorAll(FOCUSABLE), function (f) { return f.offsetWidth || f.offsetHeight; });
+  };
+  const openDialogs = [];
+
+  function watch(dlg) {
+    let was = isOpen(dlg);
+    new MutationObserver(function () {
+      const now = isOpen(dlg);
+      if (now === was) return;
+      was = now;
+      if (now) {
+        returnTo.set(dlg, document.activeElement);
+        openDialogs.push(dlg);
+        setTimeout(function () {
+          if (dlg.contains(document.activeElement)) return;
+          const f = focusables(dlg);
+          if (f.length) f[0].focus();
+        }, 0);
+      } else {
+        const i = openDialogs.indexOf(dlg);
+        if (i !== -1) openDialogs.splice(i, 1);
+        const back = returnTo.get(dlg);
+        returnTo.delete(dlg);
+        if (back && document.contains(back) && typeof back.focus === 'function') back.focus({ preventScroll: true });
+      }
+    }).observe(dlg, { attributes: true, attributeFilter: ['style'] });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.overlay[role=dialog]').forEach(watch);
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Tab' || !openDialogs.length) return;
+    const dlg = openDialogs[openDialogs.length - 1];
+    if (!isOpen(dlg)) return;
+    const f = focusables(dlg);
+    if (!f.length) { e.preventDefault(); return; }
+    const first = f[0], last = f[f.length - 1];
+    if (!dlg.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+    else if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
+})();
 
 // ── SERVICE WORKER: offline support + installable app ──
 if ('serviceWorker' in navigator) {

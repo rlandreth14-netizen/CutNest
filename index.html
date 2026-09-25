@@ -54,6 +54,70 @@
   }
 }
 </script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "FAQPage",
+ "mainEntity": [
+  {
+   "@type": "Question",
+   "name": "Will it work for saw cutting and guillotine, not just punch press?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Yes, with Pro. Set the cutting method per material. “Free placement” for CNC punch, laser and router. “Guillotine” for saw or shear cutting where every cut goes edge to edge. Works for timber, steel sheet, acrylic — mix both in the same job."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Can I use my own sheet sizes and prices?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Yes — that’s the whole point. Go to Library, enter your sheet sizes and prices. Steel, MDF, ply, acrylic, glass — whatever you work with. CutNest uses your actual numbers. Pro users get a pre-built library of common UK grades as a starting point."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "What if my material has a grain direction and can’t be rotated?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "With Pro, tick “Lock grain” on that material in your library. Works for brushed stainless, veneered MDF, wood grain, patterned glass — any material where rotation matters. CutNest will never flip pieces against the grain."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Do I need to install anything or create an account?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "No to both. Open cutnest.co.uk/app in any browser and start using it. Your library and job history are saved in your browser — nothing is sent to a server. For Pro, you just enter a licence key in Settings after purchase."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "How does the Pro licence work?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "After payment you’ll get a licence key by email within a minute. Open the app, tap Settings, paste the key. Pro unlocks immediately. One key works for your whole company — share it with your team."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Will it conflict with our existing CAM or nesting software?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "No — CutNest works at the quoting stage, before production starts. Your tooler keeps using whatever they already run (Dr. ABE Blank, AP100, SigmaNEST etc) for punch programming and NC code. The two tools serve completely different purposes and never overlap."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "What’s the difference between free placement and guillotine mode?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Free placement uses the MaxRects algorithm to pack pieces anywhere on the sheet — the same approach used in industrial nesting software. It’s ideal for CNC punch presses, plasma cutters, lasers, and routers where you can cut in any direction. Guillotine mode restricts cuts to full edge-to-edge straight lines, just like a manual guillotine shear or panel saw. Use guillotine mode for timber, MDF, and sheet cutting on saws where you can only make straight cuts across the full sheet. You set the cutting method per material in your library. Guillotine mode is part of Pro; the free plan uses free placement."
+   }
+  }
+ ]
+}
+</script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230f4c5c'/><rect x='4' y='4' width='11' height='8' rx='1' fill='%23f59e0b'/><rect x='17' y='4' width='11' height='13' rx='1' fill='white' opacity='.9'/><rect x='4' y='14' width='11' height='14' rx='1' fill='white' opacity='.9'/><rect x='17' y='19' width='11' height='9' rx='1' fill='%23f59e0b' opacity='.8'/></svg>"/>
 <link rel="manifest" href="/manifest.webmanifest"/>
 <meta name="theme-color" content="#0a3a47"/>
@@ -61,8 +125,9 @@
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="CutNest"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link rel="preload" href="/fonts/barlow-400.woff2" as="font" type="font/woff2" crossorigin/>
+<link rel="preload" href="/fonts/barlow-condensed-800.woff2" as="font" type="font/woff2" crossorigin/>
+<link rel="stylesheet" href="/fonts/fonts.css"/>
 <!-- Google Analytics — CONSENT GATED.
      GA is NOT loaded here. It is injected by loadAnalytics() only after the
      visitor clicks Accept on the cookie banner (or has accepted previously).
@@ -262,7 +327,7 @@ img{max-width:100%}
 /* ── FAQ ── */
 .faq{padding:60px 5%;max-width:700px;margin:0 auto}
 .faq-item{border-bottom:1px solid var(--bdr);padding:20px 0;cursor:pointer}
-.faq-q{font-family:"Barlow Condensed",sans-serif;font-size:17px;font-weight:700;color:var(--teal);display:flex;justify-content:space-between;align-items:center;gap:16px}
+.faq-q{width:100%;background:none;border:none;padding:0;cursor:pointer;text-align:left;font-family:"Barlow Condensed",sans-serif;font-size:17px;font-weight:700;color:var(--teal);display:flex;justify-content:space-between;align-items:center;gap:16px}
 .faq-q::after{content:"+";font-size:20px;color:var(--amber);font-weight:400;flex-shrink:0;transition:.2s}
 .faq-item.open .faq-q::after{content:"−"}
 .faq-a{font-size:13px;color:var(--text2);line-height:1.7;padding-top:10px;display:none}
@@ -278,8 +343,6 @@ footer{background:var(--teal2);padding:44px 5% 32px}
 .footer-links-group h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.35);margin-bottom:12px}
 .footer-links-group a{display:block;font-size:13px;color:rgba(255,255,255,.55);margin-bottom:8px;transition:.15s}
 .footer-links-group a:hover{color:#fff}
-.footer-links-group button{display:block;font-size:13px;color:rgba(255,255,255,.55);margin-bottom:8px;transition:.15s;background:none;border:none;cursor:pointer;font-family:inherit;padding:0;text-align:left}
-.footer-links-group button:hover{color:#fff}
 .footer-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
 .footer-copy{font-size:12px;color:rgba(255,255,255,.25)}
 .footer-made{font-size:12px;color:rgba(255,255,255,.25)}
@@ -290,18 +353,6 @@ footer{background:var(--teal2);padding:44px 5% 32px}
 .cookie.show{display:flex}
 .cookie a{color:var(--amber)}
 .btn-cookie{background:var(--amber);border:none;color:var(--teal2);font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:13px;padding:7px 18px;border-radius:7px;cursor:pointer;white-space:nowrap}
-
-/* ── MODAL ── */
-.overlay{display:none;position:fixed;inset:0;background:rgba(5,20,28,.78);z-index:200;align-items:center;justify-content:center;padding:16px;-webkit-overflow-scrolling:touch}
-.overlay.open{display:flex}
-.modal{background:#fff;border-radius:14px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-.modal-hdr{background:var(--teal2);border-radius:14px 14px 0 0;padding:16px 22px;display:flex;justify-content:space-between;align-items:center}
-.modal-title{font-family:"Barlow Condensed",sans-serif;font-size:20px;font-weight:800;color:#fff}
-.modal-x{background:none;border:none;color:rgba(255,255,255,.6);font-size:22px;cursor:pointer;line-height:1}
-.modal-x:hover{color:#fff}
-.modal-body{padding:22px;font-size:13px;line-height:1.8;color:var(--text2)}
-.modal-body h4{color:var(--teal);margin:14px 0 5px;font-size:14px;font-weight:700}
-.modal-body p{margin-bottom:8px}
 
 /* ── RESPONSIVE ── */
 
@@ -357,17 +408,17 @@ footer{background:var(--teal2);padding:44px 5% 32px}
     <a href="#pricing" class="nav-link">Pricing</a>
     <a href="app.html" class="btn-try">Try it free &rarr;</a>
   </div>
-  <button class="nav-hamburger" onclick="document.getElementById('nav-mobile').classList.add('open')" aria-label="Open menu">
+  <button class="nav-hamburger" id="nav-hamburger" onclick="openNav()" aria-label="Open menu" aria-expanded="false" aria-controls="nav-mobile">
     <span></span><span></span><span></span>
   </button>
 </nav>
 
 <!-- MOBILE NAV OVERLAY -->
-<div class="nav-mobile" id="nav-mobile">
-  <button class="nav-mobile-close" onclick="document.getElementById('nav-mobile').classList.remove('open')">&times;</button>
-  <a href="#how" onclick="document.getElementById('nav-mobile').classList.remove('open')">How it works</a>
-  <a href="#features" onclick="document.getElementById('nav-mobile').classList.remove('open')">Features</a>
-  <a href="#pricing" onclick="document.getElementById('nav-mobile').classList.remove('open')">Pricing</a>
+<div class="nav-mobile" id="nav-mobile" role="dialog" aria-modal="true" aria-label="Menu">
+  <button class="nav-mobile-close" onclick="closeNav()" aria-label="Close menu">&times;</button>
+  <a href="#how" onclick="closeNav()">How it works</a>
+  <a href="#features" onclick="closeNav()">Features</a>
+  <a href="#pricing" onclick="closeNav()">Pricing</a>
   <a href="app.html" style="background:var(--amber);color:var(--teal2);padding:14px 36px;border-radius:9px;font-weight:900;font-size:20px;font-family:'Barlow Condensed',sans-serif;letter-spacing:.5px">Try Free &rarr;</a>
 </div>
 
@@ -422,8 +473,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
             <div>
               <div style="font-size:13px;font-weight:700;color:var(--teal);margin-bottom:4px">S/S 2mm &mdash; 316 Brushed <span style="font-size:11px;color:var(--muted);font-weight:400">No rotation &middot; Grain locked</span></div>
               <div style="display:flex;gap:6px;flex-wrap:wrap">
-                <div style="background:#fff;border:1px solid var(--bdr);border-radius:5px;padding:3px 8px;font-size:11px"><b style="color:var(--teal)">2</b> &times; 2450&times;1150mm &middot; &pound;225ea</div>
-                <div style="background:#fff;border:1px solid var(--bdr);border-radius:5px;padding:3px 8px;font-size:11px"><b style="color:var(--teal)">1</b> &times; 1950&times;900mm &middot; &pound;132ea</div>
+                <div style="background:#fff;border:1px solid var(--bdr);border-radius:5px;padding:3px 8px;font-size:11px"><b style="color:var(--teal)">3</b> &times; 2450&times;1150mm &middot; &pound;225ea</div>
               </div>
               <div style="margin-top:5px;font-size:11px;color:#dc2626;font-weight:600">You had 4 sheets on the previous quote &mdash; CutNest says 3.</div>
             </div>
@@ -462,7 +512,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
           <div style="display:flex;gap:6px;margin-top:9px">
             <div style="flex:1;background:#fff;border:1px solid var(--bdr);border-radius:7px;padding:6px;text-align:center">
               <div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Total Cost</div>
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;color:var(--teal)">&pound;582</div>
+              <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;color:var(--teal)">&pound;675</div>
             </div>
             <div style="flex:1;background:#d1fae5;border:1px solid #6ee7b7;border-radius:7px;padding:6px;text-align:center">
               <div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#065f46">Saved vs 4 sheets</div>
@@ -488,7 +538,8 @@ footer{background:var(--teal2);padding:44px 5% 32px}
       <div class="story-quote">
         &ldquo;I work in sheet metal fabrication. Every week we&rsquo;d quote a job, order steel, and end up with offcuts we couldn&rsquo;t use. I built CutNest to solve that &mdash; and quickly realised the same problem exists in timber, joinery, acrylic, glass. <strong>Anyone cutting from sheet material wastes money without a proper cut list.</strong>&rdquo;
       </div>
-      <div class="story-attr">Ryan &mdash; Sheet Metal Fabricator &middot; <span>Newcastle upon Tyne, UK</span></div>
+      <div class="story-attr">Ryan &mdash; Sheet Metal Fabricator &amp; founder &middot; <span>Newcastle upon Tyne, UK</span></div>
+      <a href="mailto:hello@cutnest.co.uk?subject=CutNest%20feedback" style="display:inline-block;margin-top:8px;font-size:13px;color:var(--teal3);font-weight:600">Using CutNest? I&rsquo;d genuinely like to hear how it went &rarr;</a>
     </div>
   </div>
 </div>
@@ -501,9 +552,9 @@ footer{background:var(--teal2);padding:44px 5% 32px}
   </div>
   <div class="numbers-grid">
     <div class="num-card">
-      <div class="num-val">3</div>
-      <div class="num-unit">sheets saved</div>
-      <div class="num-label">First job we ran through it — 3 sheets of stainless we&rsquo;d have over-ordered without CutNest.</div>
+      <div class="num-val">1</div>
+      <div class="num-unit">sheet saved</div>
+      <div class="num-label">First job we ran through it &mdash; the quote said 4 sheets of stainless, CutNest said 3. It was right.</div>
     </div>
     <div class="num-card">
       <div class="num-val">&lt;30s</div>
@@ -513,7 +564,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
     <div class="num-card">
       <div class="num-val">&pound;225</div>
       <div class="num-unit">saved, first use</div>
-      <div class="num-label">One sheet of 316 brushed stainless. That&rsquo;s 15 months of Pro subscription, from a single job.</div>
+      <div class="num-label">One sheet of 316 brushed stainless. That&rsquo;s more than a year of Pro, paid for by a single job.</div>
     </div>
   </div>
 </div>
@@ -532,11 +583,11 @@ footer{background:var(--teal2);padding:44px 5% 32px}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;border-radius:12px;overflow:hidden" class="pro-compare-grid">
       <div style="background:rgba(255,255,255,.06);padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.06)">
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:14px">Free</div>
-        <div style="font-size:13px;color:rgba(255,255,255,.6);line-height:2">&#10003; 1 material per job<br>&#10003; 2 sheet sizes<br>&#10003; Visual layouts<br>&#10003; CSV export<br><span style="color:rgba(255,255,255,.25)">&#10007; Multiple materials<br>&#10007; Master library<br>&#10007; DXF export<br>&#10007; Job history<br>&#10007; Unit multiplier</span></div>
+        <div style="font-size:13px;color:rgba(255,255,255,.6);line-height:2">&#10003; 1 material per job<br>&#10003; 2 sheet sizes per material<br>&#10003; Visual layouts<br>&#10003; CSV export<br><span style="color:rgba(255,255,255,.25)">&#10007; Multiple materials<br>&#10007; Grain lock &amp; guillotine<br>&#10007; Remnants &amp; offcut stock<br>&#10007; Master library<br>&#10007; DXF export<br>&#10007; Job history<br>&#10007; Unit multiplier</span></div>
       </div>
       <div style="background:rgba(245,158,11,.12);padding:18px 16px;border:1px solid rgba(245,158,11,.2);border-radius:0 12px 12px 0">
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);margin-bottom:14px">Pro &mdash; &pound;12/mo</div>
-        <div style="font-size:13px;color:#fff;line-height:2">&#10003; 5 materials per job<br>&#10003; Unlimited sheet sizes<br>&#10003; Visual layouts<br>&#10003; CSV export<br><span style="color:var(--amber)">&#10003; Multiple materials<br>&#10003; 23-grade UK library<br>&#10003; DXF export (CNC/laser)<br>&#10003; Job history (50 jobs)<br>&#10003; Unit multiplier</span></div>
+        <div style="font-size:13px;color:#fff;line-height:2">&#10003; 5 materials per job<br>&#10003; 2 sheet sizes per material<br>&#10003; Visual layouts<br>&#10003; CSV export<br><span style="color:var(--amber)">&#10003; Multiple materials<br>&#10003; Grain lock &amp; guillotine<br>&#10003; Remnants &amp; offcut stock<br>&#10003; 23-grade UK library<br>&#10003; DXF export (CNC/laser)<br>&#10003; Job history (50 jobs)<br>&#10003; Unit multiplier</span></div>
       </div>
     </div>
   </div>
@@ -584,7 +635,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
       <div class="step">
         <div class="step-num">2</div>
         <div class="step-title">Hit calculate</div>
-        <div class="step-desc">CutNest works out the most efficient way to fit everything onto the fewest sheets. It takes about 20 seconds and runs entirely in your browser.</div>
+        <div class="step-desc">CutNest works out the most efficient way to fit everything onto the fewest sheets. Most jobs take a second or two, and it all runs in your browser.</div>
       </div>
       <div class="step">
         <div class="step-num">3</div>
@@ -607,8 +658,8 @@ footer{background:var(--teal2);padding:44px 5% 32px}
         <div class="feat-icon-wrap" style="background:var(--teal2)"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="16" x2="16" y2="2" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="2" y1="10" x2="10" y2="2" stroke="white" stroke-width="2" stroke-linecap="round" opacity=".5"/><line x1="8" y1="16" x2="16" y2="8" stroke="white" stroke-width="2" stroke-linecap="round" opacity=".5"/></svg></div>
         <div class="feat-title">Grain direction lock</div>
       </div>
-      <div class="feat-desc">Brushed stainless, veneered MDF, patterned glass, wood grain &mdash; some materials can&rsquo;t be rotated. Tick &ldquo;no rotation&rdquo; on any material and CutNest will never flip pieces against the grain direction.</div>
-      <div class="feat-tag">Built for fabricators</div>
+      <div class="feat-desc">Brushed stainless, veneered MDF, patterned glass, wood grain &mdash; some materials can&rsquo;t be rotated. Tick &ldquo;Lock grain&rdquo; on any material and CutNest will never flip pieces against the grain direction.</div>
+      <div class="feat-tag">Pro</div>
     </div>
     <div class="feat-card">
       <div class="feat-card-accent"></div>
@@ -617,7 +668,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
         <div class="feat-title">Cost-aware optimisation</div>
       </div>
       <div class="feat-desc">Enter your sheet prices and CutNest minimises your total spend &mdash; not just sheet count. A cheaper smaller sheet that creates more waste isn&rsquo;t always better. CutNest knows the difference.</div>
-      <div class="feat-tag">Built for fabricators</div>
+      <div class="feat-tag">Pro</div>
     </div>
     <div class="feat-card teal">
       <div class="feat-card-accent"></div>
@@ -625,8 +676,8 @@ footer{background:var(--teal2);padding:44px 5% 32px}
         <div class="feat-icon-wrap" style="background:var(--teal2)"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="5" cy="5" r="2.5" stroke="white" stroke-width="1.5"/><circle cx="5" cy="13" r="2.5" stroke="white" stroke-width="1.5"/><line x1="7" y1="7" x2="16" y2="2" stroke="white" stroke-width="1.5" stroke-linecap="round"/><line x1="7" y1="11" x2="16" y2="16" stroke="white" stroke-width="1.5" stroke-linecap="round"/><line x1="7.5" y1="8.5" x2="11" y2="9.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div>
         <div class="feat-title">Guillotine mode</div>
       </div>
-      <div class="feat-desc">Running a saw or guillotine as well as a punch press or laser? Set cutting method per material. Free placement for CNC work, guillotine mode for straight cuts. Ideal for timber, decking and steel sheet alike.</div>
-      <div class="feat-tag">Built for fabricators</div>
+      <div class="feat-desc">Running a saw or guillotine as well as a punch press or laser? Set cutting method per material. Free placement for CNC work, guillotine mode for straight cuts. Ideal for timber, decking and steel sheet alike. Comes with a numbered cut sequence for the saw.</div>
+      <div class="feat-tag">Pro</div>
     </div>
     <div class="feat-card teal">
       <div class="feat-card-accent"></div>
@@ -634,7 +685,7 @@ footer{background:var(--teal2);padding:44px 5% 32px}
         <div class="feat-icon-wrap" style="background:var(--teal2)"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 2L4 10h5l-1 6 6-8h-5l1-6z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
         <div class="feat-title">Fast. Always.</div>
       </div>
-      <div class="feat-desc">CutNest runs in your browser, not on a shared server. A 50-piece job across three materials &mdash; steel, ply and acrylic &mdash; calculates in under 30 seconds. No queue, no waiting, works offline once loaded.</div>
+      <div class="feat-desc">CutNest runs in your browser, not on a shared server. A 50-piece job across three materials &mdash; steel, ply and acrylic &mdash; calculates in seconds. No queue, no waiting, works offline once loaded.</div>
       <div class="feat-tag blue">Works offline</div>
     </div>
     <div class="feat-card teal">
@@ -698,30 +749,6 @@ footer{background:var(--teal2);padding:44px 5% 32px}
 </div>
 
 
-<!-- SOCIAL PROOF -->
-<section style="background:#fff;border-top:1px solid var(--bdr);border-bottom:1px solid var(--bdr);padding:52px 5%">
-  <div style="max-width:720px;margin:0 auto">
-    <div style="text-align:center;margin-bottom:28px">
-      <div class="sec-eyebrow">Why I built it</div>
-      <h2 class="sec-h2" style="margin-bottom:10px">From someone who got tired of over-ordering</h2>
-    </div>
-    <div style="background:var(--steel);border:1px solid var(--bdr);border-radius:12px;padding:26px 24px">
-      <div style="font-size:32px;color:var(--amber);font-family:Georgia,serif;line-height:1;margin-bottom:10px">&ldquo;</div>
-      <div style="font-size:15px;color:var(--text);line-height:1.75;margin-bottom:16px">I&rsquo;ve spent years quoting and cutting sheet metal, and I kept watching good material go to the offcut pile because the sheet count was a guess on a spreadsheet. Over-order and you&rsquo;ve wasted money; under-order and the job stops. I built CutNest to take that guess out &mdash; enter your pieces, get the exact sheets to order, with a layout you can hand straight to the saw or press. It does the one job I needed it to do, properly.</div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <div style="width:38px;height:38px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:#fff;flex-shrink:0">R</div>
-        <div>
-          <div style="font-size:13px;font-weight:700;color:var(--teal)">Ryan &middot; Founder</div>
-          <div style="font-size:12px;color:var(--muted)">Sheet-metal fabricator &middot; Newcastle upon Tyne</div>
-        </div>
-      </div>
-    </div>
-    <div style="text-align:center;margin-top:24px">
-      <a href="mailto:hello@cutnest.co.uk?subject=CutNest feedback" style="font-size:13px;color:var(--teal3);font-weight:600">Using CutNest? I&rsquo;d genuinely like to hear how it went &rarr;</a>
-    </div>
-  </div>
-</section>
-
 <!-- PRICING -->
 <section class="pricing" id="pricing">
   <div class="sec-eyebrow">Pricing</div>
@@ -733,14 +760,17 @@ footer{background:var(--teal2);padding:44px 5% 32px}
       <div class="plan-price">&pound;0</div>
       <div class="plan-period">No card needed &middot; forever free</div>
       <ul class="plan-feats">
-        <li><span class="fi">&#10003;</span>Full nesting algorithm</li>
+        <li><span class="fi">&#10003;</span>Full free-placement nesting</li>
         <li><span class="fi">&#10003;</span>1 material per job</li>
         <li><span class="fi">&#10003;</span>2 sheet sizes per material</li>
         <li><span class="fi">&#10003;</span>Your own stock library (5 materials)</li>
         <li><span class="fi">&#10003;</span>Visual cut layouts</li>
         <li><span class="fi">&#10003;</span>CSV export</li>
         <li><span class="fi locked">&#128274;</span><span class="locked">Multiple materials per job</span></li>
+        <li><span class="fi locked">&#128274;</span><span class="locked">Grain lock &amp; guillotine mode</span></li>
+        <li><span class="fi locked">&#128274;</span><span class="locked">Remnants &amp; offcut stock</span></li>
         <li><span class="fi locked">&#128274;</span><span class="locked">Pre-built UK material library</span></li>
+        <li><span class="fi locked">&#128274;</span><span class="locked">DXF export</span></li>
         <li><span class="fi locked">&#128274;</span><span class="locked">Job history</span></li>
       </ul>
       <a href="app.html" class="btn-free">Start Free &rarr;</a>
@@ -795,32 +825,32 @@ footer{background:var(--teal2);padding:44px 5% 32px}
   <h2 class="sec-h2" style="margin-bottom:24px">Straight answers</h2>
 
   <div class="faq-item">
-    <div class="faq-q">Will it work for saw cutting and guillotine, not just punch press?</div>
-    <div class="faq-a">Yes. Set the cutting method per material. &ldquo;Free placement&rdquo; for CNC punch, laser and router. &ldquo;Guillotine&rdquo; for saw or shear cutting where every cut goes edge to edge. Works for timber, steel sheet, acrylic &mdash; mix both in the same job.</div>
+    <button type="button" class="faq-q" aria-expanded="false">Will it work for saw cutting and guillotine, not just punch press?</button>
+    <div class="faq-a">Yes, with Pro. Set the cutting method per material. &ldquo;Free placement&rdquo; for CNC punch, laser and router. &ldquo;Guillotine&rdquo; for saw or shear cutting where every cut goes edge to edge. Works for timber, steel sheet, acrylic &mdash; mix both in the same job.</div>
   </div>
   <div class="faq-item">
-    <div class="faq-q">Can I use my own sheet sizes and prices?</div>
+    <button type="button" class="faq-q" aria-expanded="false">Can I use my own sheet sizes and prices?</button>
     <div class="faq-a">Yes &mdash; that&rsquo;s the whole point. Go to Library, enter your sheet sizes and prices. Steel, MDF, ply, acrylic, glass &mdash; whatever you work with. CutNest uses your actual numbers. Pro users get a pre-built library of common UK grades as a starting point.</div>
   </div>
   <div class="faq-item">
-    <div class="faq-q">What if my material has a grain direction and can&rsquo;t be rotated?</div>
-    <div class="faq-a">Tick &ldquo;No rotation&rdquo; on that material in your library. Works for brushed stainless, veneered MDF, wood grain, patterned glass &mdash; any material where rotation matters. CutNest will never flip pieces against the grain.</div>
+    <button type="button" class="faq-q" aria-expanded="false">What if my material has a grain direction and can&rsquo;t be rotated?</button>
+    <div class="faq-a">With Pro, tick &ldquo;Lock grain&rdquo; on that material in your library. Works for brushed stainless, veneered MDF, wood grain, patterned glass &mdash; any material where rotation matters. CutNest will never flip pieces against the grain.</div>
   </div>
   <div class="faq-item">
-    <div class="faq-q">Do I need to install anything or create an account?</div>
+    <button type="button" class="faq-q" aria-expanded="false">Do I need to install anything or create an account?</button>
     <div class="faq-a">No to both. Open cutnest.co.uk/app in any browser and start using it. Your library and job history are saved in your browser &mdash; nothing is sent to a server. For Pro, you just enter a licence key in Settings after purchase.</div>
   </div>
   <div class="faq-item">
-    <div class="faq-q">How does the Pro licence work?</div>
+    <button type="button" class="faq-q" aria-expanded="false">How does the Pro licence work?</button>
     <div class="faq-a">After payment you&rsquo;ll get a licence key by email within a minute. Open the app, tap Settings, paste the key. Pro unlocks immediately. One key works for your whole company &mdash; share it with your team.</div>
   </div>
   <div class="faq-item">
-    <div class="faq-q">Will it conflict with our existing CAM or nesting software?</div>
+    <button type="button" class="faq-q" aria-expanded="false">Will it conflict with our existing CAM or nesting software?</button>
     <div class="faq-a">No &mdash; CutNest works at the quoting stage, before production starts. Your tooler keeps using whatever they already run (Dr. ABE Blank, AP100, SigmaNEST etc) for punch programming and NC code. The two tools serve completely different purposes and never overlap.</div>
   </div>
   <div class="faq-item">
-    <div class="faq-q">What&rsquo;s the difference between free placement and guillotine mode?</div>
-    <div class="faq-a">Free placement uses the MaxRects algorithm to pack pieces anywhere on the sheet &mdash; the same approach used in industrial nesting software. It&rsquo;s ideal for CNC punch presses, plasma cutters, lasers, and routers where you can cut in any direction. Guillotine mode restricts cuts to full edge-to-edge straight lines, just like a manual guillotine shear or panel saw. Use guillotine mode for timber, MDF, and sheet cutting on saws where you can only make straight cuts across the full sheet. You set the cutting method per material in your library.</div>
+    <button type="button" class="faq-q" aria-expanded="false">What&rsquo;s the difference between free placement and guillotine mode?</button>
+    <div class="faq-a">Free placement uses the MaxRects algorithm to pack pieces anywhere on the sheet &mdash; the same approach used in industrial nesting software. It&rsquo;s ideal for CNC punch presses, plasma cutters, lasers, and routers where you can cut in any direction. Guillotine mode restricts cuts to full edge-to-edge straight lines, just like a manual guillotine shear or panel saw. Use guillotine mode for timber, MDF, and sheet cutting on saws where you can only make straight cuts across the full sheet. You set the cutting method per material in your library. Guillotine mode is part of Pro; the free plan uses free placement.</div>
   </div>
 </section>
 
@@ -854,8 +884,8 @@ footer{background:var(--teal2);padding:44px 5% 32px}
       <div class="footer-links-group">
         <h4>Company</h4>
         <a href="mailto:hello@cutnest.co.uk">hello@cutnest.co.uk</a>
-        <button onclick="openLegal('terms')">Terms of Service</button>
-        <button onclick="openLegal('privacy')">Privacy Policy</button>
+        <a href="/terms.html">Terms of Service</a>
+        <a href="/privacy.html">Privacy Policy</a>
       </div>
     </div>
     <div class="footer-bottom">
@@ -867,109 +897,14 @@ footer{background:var(--teal2);padding:44px 5% 32px}
 
 <!-- COOKIE -->
 <div class="cookie" id="cookie">
-  <span>CutNest saves your settings in your browser&rsquo;s local storage (always &mdash; it&rsquo;s how the app works offline). We&rsquo;d also like to use Google Analytics for anonymised usage stats. No ads, no cross-site tracking. See our <a href="#" onclick="openLegal('privacy');return false;">Privacy Policy</a>.</span>
+  <span>CutNest saves your settings in your browser&rsquo;s local storage (always &mdash; it&rsquo;s how the app works offline). We&rsquo;d also like to use Google Analytics for anonymised usage stats. No ads, no cross-site tracking. See our <a href="/privacy.html">Privacy Policy</a>.</span>
   <span style="display:flex;gap:8px;flex-shrink:0">
     <button class="btn-cookie" style="background:none;border:1px solid rgba(255,255,255,.35);color:rgba(255,255,255,.85)" onclick="declineCookie()">Decline analytics</button>
     <button class="btn-cookie" onclick="acceptCookie()">Accept</button>
   </span>
 </div>
 
-<!-- LEGAL MODAL -->
-<div class="overlay" id="legal-overlay">
-  <div class="modal">
-    <div class="modal-hdr">
-      <div class="modal-title" id="legal-title"></div>
-      <button class="modal-x" onclick="closeLegal()">&#10005;</button>
-    </div>
-    <div class="modal-body" id="legal-body"></div>
-  </div>
-</div>
-
 <script>
-const TERMS = `
-<h3 style="color:#0f4c5c;margin-bottom:6px">CutNest Terms of Service</h3>
-<p style="color:#6a9aaa;font-size:12px;margin-bottom:20px">Last updated: June 2025 &nbsp;&middot;&nbsp; Governing law: England and Wales</p>
-
-<h4 style="color:#0f4c5c;margin:16px 0 6px">1. Who We Are</h4>
-<p style="margin-bottom:10px">CutNest is operated by Ryan Landreth, a sole trader registered in England and Wales, trading as CutNest. Our website is cutnest.co.uk. Contact: hello@cutnest.co.uk.</p>
-
-<h4 style="color:#0f4c5c;margin:16px 0 6px">2. The Service</h4>
-<p style="margin-bottom:10px">CutNest is a browser-based cut list optimisation tool for sheet materials including steel, timber, acrylic and glass. It is provided as-is for professional and commercial use. A free tier and a paid Pro subscription are available.</p>
-
-<h4 style="color:#0f4c5c;margin:16px 0 6px">3. Pro Subscription</h4>
-<p style="margin-bottom:10px">Pro subscriptions are processed by Lemon Squeezy (Tropical Forest LLC), who act as Merchant of Record. Pricing is &pound;12/month. Your licence key unlocks Pro features on any browser where it is entered. Keys are issued per company and may be shared with members of your team. You may not resell, publicly distribute or transfer your key to a third party outside your organisation. We reserve the right to revoke keys found to be shared in breach of these terms.</p>
-
-<h4 style="color:#0f4c5c;margin:16px 0 6px">4. Cancellation and Refunds</h4>
-<p style="margin-bottom:10px">Subscriptions may be cancelled at any time. Access continues until the end of the current billing period. No partial refunds are issued for unused portions of a billing period. If you experience a material technical failure preventing use of the service, contact hello@cutnest.co.uk within 7 days of purchase and we will review your case. Your statutory rights under the Consumer Rights Act 2015 are not affected.</p>
-
-<h4 style="color:#0f4c5c;margin:16px 0 6px">5. Accuracy and Fitness for Purpose</h4>
-<p style="margin-bottom:10px">CutNest generates cut list estimates based on the dimensions and quantities you enter. All results are algorithmic and must be reviewed by a qualified professional before placing material orders. CutNest does not guarantee that layouts are optimal for your specific machine, material or process. You are solely responsible for verifying outputs before ordering.</p>
-
-<h4 style="color:#0f4c5c;margin:16px 0 6px">6. Limitation of Liability</h4>
-<p style="margin-bottom:10px">To the fullest extent permitted by law, CutNest&rsquo;s total liability to you for any claim arising from your use of the service shall not exceed the total fees you have paid to us in the 12 months preceding the claim. We are not liable for any indirect, consequential, incidental or special loss, including but not limited to loss of profit, loss of business, material over-ordering costs or loss of data, whether arising in contract, tort or otherwise, even if we have been advised of the possibility of such losses. Nothing in these terms limits liability for death or personal injury caused by negligence, fraud, or any other liability that cannot be limited by law.</p>
-
-<h4 style="color:#0f4c5c;margin:16px 0 6px">7. Availability</h4>
-<p style="margin-bottom:10px">We aim to keep CutNest available at all times but do not guarantee uninterrupted access. We may update, modify or temporarily suspend the service at any time. The calculation engine runs in your browser and does not require a permanent internet connection once loaded.</p>
-
-<h4 style="color:#0f4c5c;margin:16px 0 6px">8. Intellectual Property</h4>
-<p style="margin-bottom:10px">All code, design, content and branding associated with CutNest are the intellectual property of Ryan Landreth trading as CutNest. You may not copy, reproduce, reverse-engineer or create derivative works from the software without prior written permission.</p>
-
-<h4 style="color:#0f4c5c;margin:16px 0 6px">9. Pricing Changes</h4>
-<p style="margin-bottom:10px">We reserve the right to change subscription pricing at any time. Existing subscribers will be notified at least 30 days before any price change takes effect. You may cancel before the new price applies.</p>
-
-<h4 style="color:#0f4c5c;margin:16px 0 6px">10. Governing Law</h4>
-<p style="margin-bottom:10px">These terms are governed by and construed in accordance with the laws of England and Wales. Any disputes shall be subject to the exclusive jurisdiction of the courts of England and Wales.</p>
-
-<h4 style="color:#0f4c5c;margin:16px 0 6px">11. Contact</h4>
-<p>Ryan Landreth trading as CutNest &nbsp;&middot;&nbsp; hello@cutnest.co.uk &nbsp;&middot;&nbsp; cutnest.co.uk</p>
-`;
-
-const PRIVACY = `
-<h3 style="color:#0f4c5c;margin-bottom:6px">CutNest Privacy Policy</h3>
-<p style="color:#6a9aaa;font-size:12px;margin-bottom:20px">Last updated: June 2025 &nbsp;&middot;&nbsp; Data controller: Ryan Landreth trading as CutNest</p>
-
-<h4 style="color:#0f4c5c;margin:16px 0 6px">1. Who Is Responsible for Your Data</h4>
-<p style="margin-bottom:10px">Ryan Landreth, trading as CutNest, is the data controller for any personal data processed in connection with this service. Contact: hello@cutnest.co.uk &nbsp;&middot;&nbsp; cutnest.co.uk.</p>
-
-<h4 style="color:#0f4c5c;margin:16px 0 6px">2. What Personal Data We Hold</h4>
-<p style="margin-bottom:10px">We hold minimal personal data. When you purchase a Pro subscription, Lemon Squeezy (our payment processor) collects your email address, billing name and payment details. We receive your email address from Lemon Squeezy solely to deliver your licence key and respond to support queries. We do not collect any other personal data directly.</p>
-
-<h4 style="color:#0f4c5c;margin:16px 0 6px">3. How We Use Your Data</h4>
-<p style="margin-bottom:10px">Your email address is used to: deliver your licence key after purchase; respond to support or billing enquiries; notify you of material changes to pricing or these terms. We will not use your email for marketing without your explicit consent. Legal basis: contract performance (sending the licence key you purchased) and legitimate interests (support).</p>
-
-<h4 style="color:#0f4c5c;margin:16px 0 6px">4. Data Stored in Your Browser</h4>
-<p style="margin-bottom:10px">CutNest stores the following data in your browser&rsquo;s localStorage on your device only. This data never leaves your device and is never transmitted to us or any third party: your stock library (material names, sizes, prices); the job you are currently working on; job history (last 50 calculations); app settings (kerf, minimum usable offcut, company name); your light/dark theme choice; which pre-built material grades you have hidden; your licence key; and your cookie-banner choice. You can delete all of this at any time by clearing your browser data.</p>
-
-<h4 style="color:#0f4c5c;margin:16px 0 6px">5. Analytics</h4>
-<p style="margin-bottom:10px">CutNest uses Google Analytics (GA4) to understand aggregate, anonymised usage &mdash; for example which pages are visited and roughly how many people try the app &mdash; so we can improve the product. Google Analytics sets cookies and may process a truncated version of your IP address; we have IP anonymisation enabled and do not use Google Analytics for advertising or remarketing. We do not use the Meta Pixel or advertising/retargeting pixels. Your cut-list data, piece dimensions, material library and prices are never sent to Google Analytics or to us &mdash; they stay in your browser (see section 4). Google Analytics is only loaded after you click Accept on the cookie banner; if you decline, or your browser sends &ldquo;Do Not Track&rdquo;, it is never loaded at all. You can also block it with any browser privacy setting or extension. Legal basis: your consent.</p>
-
-<h4 style="color:#0f4c5c;margin:16px 0 6px">6. Third-Party Data Processors</h4>
-<p style="margin-bottom:10px"><b>Lemon Squeezy (Tropical Forest LLC)</b> &mdash; processes payments and manages subscriptions. They act as Merchant of Record and have their own privacy policy at lemonsqueezy.com. <b>Google Analytics (Google LLC)</b> &mdash; provides anonymised, aggregate usage analytics as described in section 5. <b>GitHub Pages</b> &mdash; hosts this website. GitHub may log IP addresses for security purposes per their privacy policy. <b>Google Fonts</b> &mdash; serves typography. Google may log font requests per their privacy policy.</p>
-
-<h4 style="color:#0f4c5c;margin:16px 0 6px">7. Data Retention</h4>
-<p style="margin-bottom:10px">We retain your email address for as long as your subscription is active plus 12 months, in order to handle any post-cancellation queries. After this period your email is deleted from our records. Data stored in your browser is under your control and persists until you clear it.</p>
-
-<h4 style="color:#0f4c5c;margin:16px 0 6px">8. Your Rights Under UK GDPR</h4>
-<p style="margin-bottom:10px">You have the right to: access the personal data we hold about you; correct inaccurate data; request deletion of your data; object to processing; data portability. To exercise any of these rights contact hello@cutnest.co.uk. We will respond within 30 days. You also have the right to lodge a complaint with the Information Commissioner&rsquo;s Office (ico.org.uk).</p>
-
-<h4 style="color:#0f4c5c;margin:16px 0 6px">9. Cookies</h4>
-<p style="margin-bottom:10px">CutNest itself sets no cookies. It uses localStorage keys on your device for the items listed in section 4, including one (&ldquo;cn-cookie&rdquo;) recording whether you accepted or declined analytics. Google Analytics sets cookies, but <b>only if you click Accept on the cookie banner</b> &mdash; decline, or send a Do Not Track signal, and Google Analytics is never loaded and no analytics cookie is ever set. We do not use advertising or cross-site tracking cookies. You can clear or block anything stored at any time through your browser settings.</p>
-
-<h4 style="color:#0f4c5c;margin:16px 0 6px">10. Changes to This Policy</h4>
-<p style="margin-bottom:10px">We may update this policy from time to time. Material changes will be notified via email to active subscribers. The current version is always available at cutnest.co.uk.</p>
-
-<h4 style="color:#0f4c5c;margin:16px 0 6px">11. Contact</h4>
-<p>Data protection queries: <a href="mailto:hello@cutnest.co.uk" style="color:#1a6678">hello@cutnest.co.uk</a> &nbsp;&middot;&nbsp; Ryan Landreth trading as CutNest</p>
-`;
-
-function openLegal(type) {
-  document.getElementById('legal-title').textContent = type === 'terms' ? 'Terms of Service' : 'Privacy Policy';
-  document.getElementById('legal-body').innerHTML = type === 'terms' ? TERMS : PRIVACY;
-  document.getElementById('legal-overlay').classList.add('open');
-}
-function closeLegal() {
-  document.getElementById('legal-overlay').classList.remove('open');
-}
 function acceptCookie() {
   try{ localStorage.setItem('cn-cookie','accepted'); }catch(e){}
   document.getElementById('cookie').classList.remove('show');
@@ -1011,22 +946,39 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
+// ── MOBILE NAV ──
+function openNav() {
+  document.getElementById('nav-mobile').classList.add('open');
+  document.getElementById('nav-hamburger').setAttribute('aria-expanded', 'true');
+  document.querySelector('#nav-mobile a').focus();
+}
+function closeNav() {
+  const nav = document.getElementById('nav-mobile');
+  if (!nav.classList.contains('open')) return;
+  nav.classList.remove('open');
+  const h = document.getElementById('nav-hamburger');
+  h.setAttribute('aria-expanded', 'false');
+  h.focus({ preventScroll: true });
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeNav();
+});
+
 // ── FAQ ACCORDION ──
 document.querySelectorAll('.faq-item').forEach(function(item) {
   item.querySelector('.faq-q').addEventListener('click', function() {
     const isOpen = item.classList.contains('open');
-    document.querySelectorAll('.faq-item.open').forEach(function(el) { el.classList.remove('open'); });
-    if (!isOpen) item.classList.add('open');
+    document.querySelectorAll('.faq-item.open').forEach(function(el) {
+      el.classList.remove('open');
+      el.querySelector('.faq-q').setAttribute('aria-expanded', 'false');
+    });
+    if (!isOpen) {
+      item.classList.add('open');
+      this.setAttribute('aria-expanded', 'true');
+    }
   });
 });
 
-// ── LEGAL MODAL CLOSE ──
-document.getElementById('legal-overlay').addEventListener('click', function(e) {
-  if (e.target === this) closeLegal();
-});
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closeLegal();
-});
 
 // ── DEMO ANIMATION ──
 (function() {

@@ -11,12 +11,23 @@
    bump the VERSION string below.
    ════════════════════════════════════════════════════════════════ */
 
-const VERSION = 'cutnest-v17';
+const VERSION = 'cutnest-v18';
 
 const PRECACHE = [
   '/',
   '/index.html',
   '/app.html',
+  '/terms.html',
+  '/privacy.html',
+  '/fonts/fonts.css',
+  '/fonts/barlow-400.woff2',
+  '/fonts/barlow-500.woff2',
+  '/fonts/barlow-600.woff2',
+  '/fonts/barlow-condensed-400.woff2',
+  '/fonts/barlow-condensed-600.woff2',
+  '/fonts/barlow-condensed-700.woff2',
+  '/fonts/barlow-condensed-800.woff2',
+  '/fonts/barlow-condensed-900.woff2',
   '/manifest.webmanifest',
   '/og-image.png',
   '/icon-192.png',
@@ -91,8 +102,7 @@ self.addEventListener('fetch', function (event) {
     return;
   }
 
-  // ── Fonts + same-origin assets: cache-first ──
-  const isFont = url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com';
+  // ── Same-origin assets (fonts are self-hosted under /fonts): cache-first ──
   const isSameOrigin = url.origin === self.location.origin;
 
   // HTML must never be served stale. A non-navigation fetch of a .html page
@@ -115,12 +125,12 @@ self.addEventListener('fetch', function (event) {
     return;
   }
 
-  if (isFont || isSameOrigin) {
+  if (isSameOrigin) {
     event.respondWith(
       caches.match(req).then(function (hit) {
         if (hit) return hit;
         return fetch(req).then(function (res) {
-          if (res && (res.status === 200 || res.type === 'opaque')) {
+          if (res && res.status === 200) {
             const copy = res.clone();
             caches.open(VERSION).then(function (cache) { cache.put(req, copy); });
           }
