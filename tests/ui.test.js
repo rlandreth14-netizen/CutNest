@@ -382,6 +382,64 @@ const tests = {
     expect(await free.isVisible('#upgrade-modal'), 'free plan: grain button should open the upgrade prompt');
   },
 
+  async 'inches: welcome choice, fractions, exact fits, exports'() {
+    const page = await freshPage({ pro: true });
+    await page.addInitScript(() => {
+      if (sessionStorage.getItem('cn-units-init')) return;
+      sessionStorage.setItem('cn-units-init', '1');
+      localStorage.setItem('cutnest-settings-v1', JSON.stringify({ kerf: 0, kerfTouched: true, units: 'in', currency: '$' }));
+    });
+    await page.goto(base + '/app.html');
+    await page.waitForFunction(() => isPro && library.length > 20);
+    // A custom 96 x 48" sheet at $60, entered in inches.
+    await page.click('button[aria-label="Stock library"]');
+    await page.fill('#n-name', 'Ply 4x8');
+    await page.fill('#n-w1', '96');
+    await page.fill('#n-h1', '48');
+    await page.fill('#n-pr1', '60');
+    await page.click('#add-form-wrap >> text=+ Add');
+    await page.click('text=Save Library');
+    const ply = await page.evaluate(() => library.find(l => l.name === 'Ply 4x8'));
+    expect(Math.abs(ply.sizes[0].w - 2438.4) < 1e-9, 'sheet width should be stored in mm');
+    await page.selectOption('#mat-blocks select', String(ply.id));
+    expect((await page.textContent('.sz-info-row')).includes('96 \u00d7 48"'), 'size badge should read 96 x 48"');
+    // Four 48 x 24" parts fill a 96 x 48" sheet exactly (kerf 0): one sheet.
+    await page.fill('[aria-label="Piece 1 width in in"]', '48');
+    await page.fill('[aria-label="Piece 1 height in in"]', '24');
+    await page.fill('[aria-label="Piece 1 quantity"]', '4');
+    await calculateAndWait(page);
+    expect(await page.textContent('#s-sheets') === '1', 'four 48x24" parts should fit one 96x48" sheet exactly');
+    expect((await page.textContent('#total-cost-val')).startsWith('$60.00'), 'cost should be in dollars');
+    // Fractions.
+    await page.fill('[aria-label="Piece 1 width in in"]', '23 5/8');
+    await page.fill('[aria-label="Piece 1 height in in"]', '15-3/4');
+    const w = await page.evaluate(() => mats[0].pieces[0].w);
+    expect(Math.abs(w - 600.075) < 1e-9, '23 5/8" should store as 600.075mm, got ' + w);
+    await calculateAndWait(page);
+    const vis = await page.textContent('#mat-visuals');
+    // The part may be placed either way round.
+    expect(vis.includes('23 5/8 \u00d7 15 3/4"') || vis.includes('15 3/4 \u00d7 23 5/8"'),
+      'results should show fractions: ' + vis.replace(/\s+/g, ' ').slice(0, 600));
+    // Paste: inches by default, but a line that says mm is read in mm.
+    await page.click('text=Paste list');
+    await page.fill('#paste-input', 'Door, 24 1/2, 18, 2\nSide 600mm x 400mm x 1');
+    await page.click('#paste-confirm');
+    const pasted = await page.evaluate(() => mats[0].pieces.slice(-2).map(p => [+p.w.toFixed(3), +p.h.toFixed(3), p.qty]));
+    expect(JSON.stringify(pasted) === JSON.stringify([[622.3, 457.2, 2], [600, 400, 1]]), 'paste units wrong: ' + JSON.stringify(pasted));
+    // Exports carry the units.
+    await calculateAndWait(page);
+    const [csvDl] = await Promise.all([page.waitForEvent('download'), page.click('.res-acts >> text=CSV')]);
+    const csv = fs.readFileSync(await csvDl.path(), 'utf8');
+    expect(csv.includes('W (in)') && csv.includes('Units: inches'), 'CSV should be in inches');
+    const [dxfDl] = await Promise.all([page.waitForEvent('download'), page.click('.res-acts >> text=DXF')]);
+    expect(fs.readFileSync(await dxfDl.path(), 'utf8').includes('$MEASUREMENT\r\n70\r\n0\r\n'), 'DXF should be imperial');
+    // Switching back to mm changes only the display.
+    await page.click('button[aria-label="Settings"]');
+    await page.selectOption('#units-setting', 'mm');
+    expect(await page.inputValue('[aria-label="Piece 1 width in mm"]') === '600.1', 'switching to mm should show 600.1');
+    expect(!page.errors.length, 'page errors: ' + page.errors.join(' | '));
+  },
+
   async 'landing page, FAQ and legal pages'() {
     const page = await freshPage({ viewport: { width: 390, height: 800 } });
     await page.goto(base + '/');
