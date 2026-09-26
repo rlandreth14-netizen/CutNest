@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en-GB"><head><meta charset="utf-8"/><meta name="robots" content="noindex"/>
+<link rel="stylesheet" href="/fonts/fonts.css"/>
+<style>
+  :root{--t2:#0a3a47;--t:#0f4c5c;--t3:#1a6678;--a:#f59e0b;--a2:#d97706;--sky:#e8f4f8;--ink:#0d2d36;--g:#059669}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#222;font-family:"Barlow",sans-serif}
+  .card{width:1080px;height:1350px;position:relative;overflow:hidden;background:var(--t2);color:#fff;display:flex;flex-direction:column;padding:78px 80px 0}
+  .card.light{background:#f4f9fb;color:var(--ink)}
+  .card::before{content:"";position:absolute;right:-220px;top:-220px;width:620px;height:620px;border-radius:50%;background:radial-gradient(circle,rgba(245,158,11,.16),rgba(245,158,11,0) 70%)}
+  .brand{display:flex;align-items:center;gap:14px;font-family:"Barlow Condensed";font-weight:900;font-size:40px;letter-spacing:.5px;margin-bottom:54px;position:relative}
+  .brand span{color:var(--a)}
+  .brand svg{width:54px;height:54px}
+  .kicker{font-family:"Barlow Condensed";font-weight:700;font-size:26px;letter-spacing:5px;text-transform:uppercase;color:var(--a);margin-bottom:18px}
+  h1{font-family:"Barlow Condensed";font-weight:900;font-size:104px;line-height:.98;letter-spacing:-.5px;margin-bottom:30px;position:relative}
+  h1 em{font-style:normal;color:var(--a)}
+  .light h1{color:var(--t)}
+  .light h1 em{color:var(--a2)}
+  .sub{font-size:36px;line-height:1.4;color:rgba(255,255,255,.82);max-width:900px;position:relative}
+  .light .sub{color:#2a5a6a}
+  .sub b{color:#fff}
+  .light .sub b{color:var(--ink)}
+  .vis{flex:1;display:flex;align-items:center;justify-content:center;position:relative;min-height:0;padding:36px 0 30px}
+  .foot{margin:0 -80px;padding:30px 80px;background:rgba(0,0,0,.22);display:flex;justify-content:space-between;align-items:center;font-size:30px;position:relative}
+  .light .foot{background:var(--t2);color:#fff}
+  .foot b{font-family:"Barlow Condensed";font-weight:900;font-size:40px;color:var(--a);letter-spacing:.5px}
+  .shot{border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.45);border:3px solid rgba(255,255,255,.12);max-width:100%;max-height:100%;display:block}
+  .light .shot{box-shadow:0 26px 70px rgba(10,58,71,.28);border-color:#cde4ea}
+  .crop{width:920px;height:440px;overflow:hidden;border-radius:18px;border:3px solid rgba(255,255,255,.14);box-shadow:0 30px 80px rgba(0,0,0,.45);position:relative}
+  .crop img{width:100%;display:block}
+  .crop::after{content:"";position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(rgba(10,58,71,0),rgba(10,58,71,.95))}
+  .crop-light{border-color:#cde4ea;box-shadow:0 26px 70px rgba(10,58,71,.28)}
+  .crop-light::after{background:linear-gradient(rgba(244,249,251,0),rgba(244,249,251,.96))}
+  .big{font-family:"Barlow Condensed";font-weight:900;line-height:.9}
+  .row{display:flex;gap:40px;align-items:flex-end;justify-content:center}
+  .stat{text-align:center}
+  .stat .n{font-family:"Barlow Condensed";font-weight:900;font-size:300px;line-height:.85}
+  .stat .l{font-size:34px;color:rgba(255,255,255,.7);margin-top:10px}
+  .strike{position:relative;color:rgba(255,255,255,.35)}
+  .strike::after{content:"";position:absolute;left:-8%;right:-8%;top:48%;height:14px;background:#ef4444;transform:rotate(-12deg);border-radius:7px}
+  .arrow{font-size:120px;color:var(--a);font-weight:900;padding-bottom:80px}
+  .pill{display:inline-block;background:var(--a);color:var(--t2);font-family:"Barlow Condensed";font-weight:900;font-size:64px;padding:12px 34px;border-radius:18px}
+  .badge{display:inline-flex;align-items:center;gap:14px;background:#d1fae5;color:#065f46;border:3px solid #6ee7b7;border-radius:16px;padding:14px 26px;font-weight:700;font-size:36px}
+  .sheets{display:grid;gap:26px;width:100%}
+  .sheets svg{width:100%;height:auto;display:block;border-radius:6px}
+  .cap{font-size:26px;color:rgba(255,255,255,.6);margin-top:8px}
+  .light .cap{color:#3f6c7c}
+  .list{list-style:none;font-size:40px;line-height:1.35}
+  .list li{padding:14px 0 14px 64px;position:relative;border-bottom:2px solid rgba(255,255,255,.08)}
+  .list li::before{content:"✓";position:absolute;left:0;top:10px;width:46px;height:46px;border-radius:50%;background:var(--a);color:var(--t2);font-weight:900;font-size:30px;display:flex;align-items:center;justify-content:center}
+  .list li span{display:block;font-size:28px;color:rgba(255,255,255,.62)}
+  table.k{border-collapse:collapse;font-size:40px;width:100%}
+  table.k th{font-family:"Barlow Condensed";text-transform:uppercase;letter-spacing:2px;font-size:26px;color:var(--a);text-align:left;padding:10px 12px}
+  table.k td{padding:18px 12px;border-top:2px solid rgba(255,255,255,.12)}
+  table.k td b{font-family:"Barlow Condensed";font-size:64px;font-weight:900}
+  .num{position:absolute;right:80px;top:78px;font-family:"Barlow Condensed";font-weight:900;font-size:34px;color:rgba(255,255,255,.35)}
+  .light .num{color:#9dcad6}
+  .swipe{font-family:"Barlow Condensed";font-weight:800;font-size:40px;color:var(--a)}
+</style></head>
+<body>
+<div id="root"></div>
+<script>
+const LOGO = '<svg viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="8" fill="#0f4c5c" stroke="rgba(255,255,255,.25)"/><rect x="4" y="4" width="13" height="9" rx="2" fill="#f59e0b"/><rect x="19" y="4" width="13" height="15" rx="2" fill="white" opacity=".9"/><rect x="4" y="15" width="13" height="17" rx="2" fill="white" opacity=".9"/><rect x="19" y="21" width="13" height="11" rx="2" fill="#f59e0b" opacity=".8"/></svg>';
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#e11d48', '#8b5cf6', '#f97316', '#06b6d4', '#84cc16'];
+const brand = () => '<div class="brand">' + LOGO + '<div>Cut<span>Nest</span></div></div>';
+const foot = (l, r) => '<div class="foot"><span>' + (l || 'Cut lists for sheet, bar &amp; tube') + '</span><b>' + (r || 'cutnest.co.uk') + '</b></div>';
+
+function sheetSvg(s, opt) {
+  opt = opt || {};
+  const pad = 0;
+  const parts = s.parts.map(p => {
+    const c = COLORS[p.i % COLORS.length];
+    const lab = opt.labels !== false && p.w > s.w * 0.16 && p.h > s.h * 0.12;
+    return '<rect x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="' + p.h + '" fill="' + c + '" stroke="#0a3a47" stroke-width="8"/>' +
+      (lab ? '<text x="' + (p.x + p.w / 2) + '" y="' + (p.y + p.h / 2) + '" font-family="Barlow Condensed" font-weight="800" font-size="' + Math.min(p.h * 0.26, p.w * 0.13, 90) + '" fill="#fff" text-anchor="middle" dominant-baseline="middle">' + (p.label || '') + '</text>' : '');
+  }).join('');
+  return '<svg viewBox="' + (-pad) + ' ' + (-pad) + ' ' + (s.w + pad * 2) + ' ' + (s.h + pad * 2) + '"><rect width="' + s.w + '" height="' + s.h + '" fill="' + (opt.bg || '#e8f4f8') + '"/>' + parts + '<rect width="' + s.w + '" height="' + s.h + '" fill="none" stroke="' + (opt.edge || '#9dcad6') + '" stroke-width="14"/></svg>';
+}
+function barSvg(s) {
+  const H = s.w / 16;
+  const parts = s.parts.map(p => {
+    const c = COLORS[p.i % COLORS.length];
+    return '<rect x="' + p.x + '" y="0" width="' + p.w + '" height="' + H + '" fill="' + c + '" stroke="#0a3a47" stroke-width="12"/>' +
+      (p.w > s.w * 0.08 ? '<text x="' + (p.x + p.w / 2) + '" y="' + (H / 2) + '" font-family="Barlow Condensed" font-weight="800" font-size="' + H * 0.45 + '" fill="#fff" text-anchor="middle" dominant-baseline="middle">' + p.w + '</text>' : '');
+  }).join('');
+  const off = s.off ? '<rect x="' + (s.w - 10 - s.off) + '" y="0" width="' + s.off + '" height="' + H + '" fill="' + (s.keep ? '#6ee7b7' : '#cbd5e1') + '"/>' : '';
+  return '<svg viewBox="0 0 ' + s.w + ' ' + H + '"><rect width="' + s.w + '" height="' + H + '" fill="#e8f4f8"/>' + off + parts + '</svg>';
+}
+
+const CARDS = {
+  // ── Single posts ──
+  launch: D => '<div class="card">' + brand() +
+    '<div class="kicker">Built by a fabricator</div><h1>I kept <em>over-ordering</em> sheet.<br>So I built the fix.</h1>' +
+    '<div class="sub">CutNest nests every part before you order &mdash; sheet, bar and tube &mdash; then prices the job. <b>Free to try, in your browser.</b></div>' +
+    '<div class="vis"><div class="crop"><img src="/img/app-results.webp"/></div></div>' + foot() + '</div>',
+
+  story: D => '<div class="card">' + brand() +
+    '<div class="kicker">One real job</div><h1>Quoted <em>4 sheets</em> of 316 brushed.<br>It needed 3.</h1>' +
+    '<div class="vis"><div><div class="row"><div class="stat"><div class="n strike">4</div><div class="l">sheets quoted</div></div><div class="arrow">&rarr;</div><div class="stat"><div class="n" style="color:var(--a)">3</div><div class="l">sheets needed</div></div></div>' +
+    '<div style="text-align:center;margin-top:60px"><span class="pill">&pound;225 saved on one job</span></div></div></div>' +
+    foot('Nest it before you order it') + '</div>',
+
+  areamyth: D => '<div class="card">' + brand() +
+    '<div class="kicker">Ordering tip</div><h1>Area &divide; sheet area said <em>2 sheets</em>.<br>The job needed 3.</h1>' +
+    '<div class="sub">Two 1400&times;700 desk tops can&rsquo;t sit side by side on a 1220 wide sheet. Parts don&rsquo;t pour like water &mdash; <b>nest them</b>.</div>' +
+    '<div class="vis"><div class="sheets" style="grid-template-columns:1fr 1fr;width:100%">' + D.desk.sheets.map((s, i) => '<div>' + sheetSvg(s) + '<div class="cap">Sheet ' + (i + 1) + ' &middot; 2440&times;1220</div></div>').join('') + '</div></div>' +
+    foot() + '</div>',
+
+  kerf: D => '<div class="card">' + brand() +
+    '<div class="kicker">Ordering tip</div><h1>1mm of kerf cost me <em>4 parts</em> a sheet.</h1>' +
+    '<div class="sub">606&times;300 parts on a 2440&times;1220 sheet. Four across needs 2424mm plus three cuts.</div>' +
+    '<div class="vis" style="flex-direction:column;align-items:stretch"><table class="k"><tr><th>Kerf</th><th>Four across</th><th>Per sheet</th></tr>' +
+    '<tr><td><b>5mm</b></td><td>2424 + 15 = 2439 &#10003;</td><td><b style="color:var(--a)">16</b></td></tr>' +
+    '<tr><td><b>6mm</b></td><td>2424 + 18 = 2442 &#10007;</td><td><b style="color:#f87171">12</b></td></tr></table>' +
+    '<div class="sheets" style="grid-template-columns:1fr 1fr;margin-top:40px"><div>' + sheetSvg(D.kerf5.sheets[0], { labels: false }) + '<div class="cap">5mm kerf &middot; 16 parts, 1 sheet</div></div><div>' + sheetSvg(D.kerf6.sheets[0], { labels: false }) + '<div class="cap">6mm kerf &middot; 12 fit, the rest need a 2nd sheet</div></div></div></div>' +
+    foot('Use your real kerf, to the tenth') + '</div>',
+
+  bars: D => '<div class="card">' + brand() +
+    '<div class="kicker">Bar, tube &amp; extrusion</div><h1>Cut to length from <em>the fewest bars</em>.</h1>' +
+    '<div class="sub">Box section, angle, flat bar, extrusion, timber. A saw list per pattern and the offcuts worth keeping.</div>' +
+    '<div class="vis" style="flex-direction:column;align-items:stretch;gap:26px">' + D.bar.sheets.map((s, i) => '<div>' + barSvg(s) + '<div class="cap">Bar ' + (i + 1) + ' &middot; 7.5m SHS 40&times;40&times;3 &middot; ' + s.util + '% used' + (s.keep ? ' &middot; keep ' + Math.round(s.off) + 'mm offcut' : '') + '</div></div>').join('') +
+    '<div><span class="badge">&#10003; Provably optimal &mdash; no plan uses fewer bars</span></div></div>' +
+    foot('Free on every plan') + '</div>',
+
+  quote: D => '<div class="card light">' + brand() +
+    '<div class="kicker" style="color:var(--a2)">CutNest Pro</div><h1>Cut list to <em>customer quote</em>, in a minute.</h1>' +
+    '<div class="sub">Material with your markup, cutting time from the actual layout, handling, VAT &mdash; <b>on your letterhead</b>.</div>' +
+    '<div class="vis"><div class="crop crop-light" style="width:720px;height:520px;transform:rotate(-2deg)"><img src="/img/app-quote.webp"/></div></div>' +
+    foot('&pound;12/month per company') + '</div>',
+
+  optimal: D => '<div class="card">' + brand() +
+    '<div class="kicker">Not a guess</div><h1>When it says <em>&ldquo;provably optimal&rdquo;</em>, it means it.</h1>' +
+    '<div class="sub">Every result is checked against a mathematical lower bound. When CutNest hits it, <b>no layout from any software</b> can use fewer sheets. When it can&rsquo;t prove it, it says so.</div>' +
+    '<div class="vis" style="flex-direction:column;gap:34px"><div class="sheets" style="grid-template-columns:1fr">' + sheetSvg(D.metal.sheets[0]) + '</div><span class="badge">&#10003; PROVABLY OPTIMAL &mdash; 1 sheet, 90% used</span></div>' +
+    foot() + '</div>',
+
+  free: D => '<div class="card">' + brand() +
+    '<div class="kicker">Try it today</div><h1>Free. In your browser. <em>No account.</em></h1>' +
+    '<div class="vis" style="align-items:flex-start"><ul class="list" style="width:100%">' +
+    '<li>Sheet metal, timber, acrylic &mdash; and bar &amp; tube<span>The fewest sheets or bars, on the sizes you actually buy</span></li>' +
+    '<li>Paste your cut list or open Excel<span>mm or inches with fractions</span></li>' +
+    '<li>Cut sheets and saw lists for the shop floor<span>Numbered cuts, offcuts worth keeping</span></li>' +
+    '<li>Pro &pound;12/month per company<span>Quotes, 5 materials per job, DXF, labels, stock limits</span></li>' +
+    '</ul></div>' + foot('Your data stays on your computer') + '</div>',
+
+  // ── Carousel: 5 reasons you're over-ordering ──
+  c1: D => '<div class="card">' + brand() + '<div class="num">1/8</div>' +
+    '<div class="kicker">For fabricators &amp; joiners</div><h1>5 reasons you&rsquo;re <em>over-ordering</em> sheet material.</h1>' +
+    '<div class="sub">And the one habit that fixes all of them.</div>' +
+    '<div class="vis"><div class="sheets" style="grid-template-columns:1fr 1fr 1fr;width:100%">' + D.kitchen.sheets.map(s => sheetSvg(s, { labels: false })).join('') + '</div></div>' +
+    '<div class="swipe" style="padding-bottom:40px;position:relative">Swipe &rarr;</div>' + foot() + '</div>',
+  c2: D => '<div class="card">' + brand() + '<div class="num">2/8</div>' +
+    '<div class="kicker">Reason 1</div><h1>The area sum <em>lies</em>.</h1>' +
+    '<div class="sub">Total part area &divide; sheet area is a minimum, not an answer. This desk job &ldquo;fits on 2&rdquo; by area. It needs <b>3</b>.</div>' +
+    '<div class="vis"><div class="sheets" style="grid-template-columns:1fr 1fr;width:100%">' + D.desk.sheets.map(s => sheetSvg(s)).join('') + '</div></div>' + foot() + '</div>',
+  c3: D => '<div class="card">' + brand() + '<div class="num">3/8</div>' +
+    '<div class="kicker">Reason 2</div><h1>Kerf <em>adds up</em>.</h1>' +
+    '<div class="sub">Every cut takes the blade&rsquo;s width. 606mm parts on a 2440 sheet: 5mm kerf fits 16 a sheet, 6mm fits <b>12</b>.</div>' +
+    '<div class="vis"><div class="sheets" style="grid-template-columns:1fr 1fr;width:100%"><div>' + sheetSvg(D.kerf5.sheets[0], { labels: false }) + '<div class="cap">5mm &middot; 16 parts</div></div><div>' + sheetSvg(D.kerf6.sheets[0], { labels: false }) + '<div class="cap">6mm &middot; 12 parts</div></div></div></div>' + foot() + '</div>',
+  c4: D => '<div class="card">' + brand() + '<div class="num">4/8</div>' +
+    '<div class="kicker">Reason 3</div><h1>Grain <em>locks you in</em>.</h1>' +
+    '<div class="sub">Brushed stainless, veneers and woodgrain can&rsquo;t be turned to fill a gap. Lock only the parts that show &mdash; <b>let hidden parts turn</b>.</div>' +
+    '<div class="vis" style="flex-direction:column;align-items:stretch;gap:16px">' +
+    '<div class="cap" style="font-size:30px;color:#fff">Every part locked: <b style="color:#f87171">' + D.grainAll.sheets.length + ' sheets</b></div>' +
+    '<div class="sheets" style="grid-template-columns:repeat(' + D.grainAll.sheets.length + ',1fr)">' + D.grainAll.sheets.map(s => sheetSvg(s, { labels: false })).join('') + '</div>' +
+    '<div class="cap" style="font-size:30px;color:#fff;margin-top:14px">Only the doors locked: <b style="color:var(--a)">' + D.grainDoors.sheets.length + ' sheets</b></div>' +
+    '<div class="sheets" style="grid-template-columns:repeat(3,1fr)">' + D.grainDoors.sheets.map(s => sheetSvg(s, { labels: false })).join('') + '</div>' +
+    '<div class="cap">4 doors 700&times;500 + 6 backs 1100&times;400 on 2450&times;1150 brushed stainless</div></div>' + foot() + '</div>',
+  c5: D => '<div class="card">' + brand() + '<div class="num">5/8</div>' +
+    '<div class="kicker">Reason 4</div><h1>Full sheets <em>aren&rsquo;t always</em> cheapest.</h1>' +
+    '<div class="sub">The last few parts often fit a half sheet or a smaller size. Price every size you can buy and let the <b>cheapest mix</b> win.</div>' +
+    '<div class="vis" style="flex-direction:column;align-items:stretch;gap:16px">' +
+    '<div class="cap" style="font-size:30px;color:#fff">Full sheets only: <b style="color:#f87171">2 &times; 2440&times;1220 = &pound;110</b></div>' +
+    '<div class="sheets" style="grid-template-columns:1fr 1fr">' + D.mixFull.sheets.map(s => sheetSvg(s)).join('') + '</div>' +
+    '<div class="cap" style="font-size:30px;color:#fff;margin-top:14px">Cheapest mix: <b style="color:var(--a)">1 full + 1 half = &pound;85</b></div>' +
+    '<div class="sheets" style="grid-template-columns:2fr 1fr 1fr;align-items:start">' + D.mixBest.sheets.map(s => sheetSvg(s)).join('') + '</div>' +
+    '<div class="cap">5 acrylic panels 1200&times;600 &middot; full sheet &pound;55, half sheet &pound;30</div></div>' + foot() + '</div>',
+  c6: D => '<div class="card">' + brand() + '<div class="num">6/8</div>' +
+    '<div class="kicker">Reason 5</div><h1>Offcuts go <em>in the skip</em>.</h1>' +
+    '<div class="sub">The cheapest sheet is the one already on the rack. Measure the usable offcut on every sheet and <b>use it first</b> next time.</div>' +
+    '<div class="vis"><div class="sheets" style="grid-template-columns:1fr;width:78%">' + sheetSvg(D.kitchen.sheets[2]) + '<div class="cap">Sheet 3 &middot; usable offcut left for the next job</div></div></div>' + foot() + '</div>',
+  c7: D => '<div class="card light">' + brand() + '<div class="num">7/8</div>' +
+    '<div class="kicker" style="color:var(--a2)">The habit</div><h1>Nest every job <em>before</em> you order.</h1>' +
+    '<div class="sub">That&rsquo;s what CutNest does: your sheet sizes and prices, your kerf, grain per part, offcuts &mdash; in seconds.</div>' +
+    '<div class="vis"><img class="shot" src="/img/app-sheet.webp" style="width:100%"/></div>' + foot() + '</div>',
+  c8: D => '<div class="card">' + brand() + '<div class="num">8/8</div>' +
+    '<div class="kicker">Try it on your last job</div><h1>Free, in your browser, <em>no account</em>.</h1>' +
+    '<div class="sub">Enter the job you last ordered for and compare the sheet count. <b>Link in the comments.</b></div>' +
+    '<div class="vis"><div style="text-align:center"><span class="pill" style="font-size:80px">cutnest.co.uk</span><div class="cap" style="font-size:32px;margin-top:26px">Sheet &middot; bar &amp; tube &middot; quotes &middot; built in Newcastle upon Tyne</div></div></div>' + foot() + '</div>',
+};
+
+(async () => {
+  const D = await (await fetch('/marketing/data.json')).json();
+  const id = new URLSearchParams(location.search).get('c');
+  const ids = id ? id.split(',') : Object.keys(CARDS);
+  document.getElementById('root').innerHTML = ids.map(k => CARDS[k](D)).join('');
+  await document.fonts.ready;
+  await Promise.all([...document.images].map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; })));
+  document.body.setAttribute('data-ready', '1');
+})();
+</script>
+</body></html>
