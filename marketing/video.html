@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en-GB"><head><meta charset="utf-8"/><meta name="robots" content="noindex"/>
+<link rel="stylesheet" href="/fonts/fonts.css"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1080px;height:1350px;overflow:hidden;background:#0a3a47}
+  #stage{position:relative;width:1080px;height:1350px;overflow:hidden;background:radial-gradient(circle at 85% 8%,rgba(245,158,11,.16),rgba(245,158,11,0) 38%),#0a3a47;color:#fff;font-family:"Barlow",sans-serif}
+  .scene{position:absolute;inset:0;padding:120px 80px 0;opacity:0}
+  .brand{position:absolute;left:80px;top:56px;display:flex;align-items:center;gap:12px;font-family:"Barlow Condensed";font-weight:900;font-size:36px;z-index:5}
+  .brand span{color:#f59e0b}
+  .brand svg{width:46px;height:46px}
+  .url{position:absolute;right:80px;top:62px;font-family:"Barlow Condensed";font-weight:800;font-size:32px;color:#f59e0b;z-index:5}
+  h1{font-family:"Barlow Condensed";font-weight:900;font-size:112px;line-height:.98;letter-spacing:-.5px}
+  h1 em{font-style:normal;color:#f59e0b}
+  h2{font-family:"Barlow Condensed";font-weight:900;font-size:84px;line-height:1;margin-bottom:22px}
+  h2 em{font-style:normal;color:#f59e0b}
+  .line{display:block;opacity:0}
+  .sub{font-size:38px;line-height:1.35;color:rgba(255,255,255,.8)}
+  .sheetwrap{position:absolute;left:80px;right:80px}
+  .sheetwrap svg{width:100%;height:auto;display:block}
+  .cap{font-size:30px;color:rgba(255,255,255,.7);margin-top:10px}
+  .badge{display:inline-flex;align-items:center;gap:12px;background:#d1fae5;color:#065f46;border:3px solid #6ee7b7;border-radius:16px;padding:14px 26px;font-weight:700;font-size:36px;opacity:0}
+  .count{font-family:"Barlow Condensed";font-weight:900;font-size:220px;line-height:.85;color:#f59e0b}
+  .strike{position:relative;color:rgba(255,255,255,.35)}
+  .x{position:absolute;left:-6%;top:46%;height:14px;background:#ef4444;border-radius:7px;transform:rotate(-10deg);transform-origin:left center}
+  .quote{position:absolute;left:170px;width:740px;border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.5);overflow:hidden;border:3px solid rgba(255,255,255,.15)}
+  .quote img{width:100%;display:block}
+  .total{position:absolute;left:80px;right:80px;bottom:120px;display:flex;justify-content:space-between;align-items:baseline;background:#f59e0b;color:#0a3a47;border-radius:20px;padding:20px 34px;font-family:"Barlow Condensed";font-weight:900;font-size:56px;opacity:0}
+  .total b{font-size:84px}
+  .pill{display:inline-block;background:#f59e0b;color:#0a3a47;font-family:"Barlow Condensed";font-weight:900;font-size:88px;padding:14px 40px;border-radius:22px}
+  .ticks{list-style:none;font-size:44px;margin-top:46px}
+  .ticks li{padding:12px 0 12px 66px;position:relative;opacity:0}
+  .ticks li::before{content:"✓";position:absolute;left:0;top:12px;width:48px;height:48px;border-radius:50%;background:#f59e0b;color:#0a3a47;font-weight:900;font-size:30px;display:flex;align-items:center;justify-content:center}
+  .progress{position:absolute;left:0;bottom:0;height:8px;background:#f59e0b;z-index:9}
+</style></head>
+<body><div id="stage"></div>
+<script>
+const LOGO = '<svg viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="8" fill="#0f4c5c" stroke="rgba(255,255,255,.25)"/><rect x="4" y="4" width="13" height="9" rx="2" fill="#f59e0b"/><rect x="19" y="4" width="13" height="15" rx="2" fill="white" opacity=".9"/><rect x="4" y="15" width="13" height="17" rx="2" fill="white" opacity=".9"/><rect x="19" y="21" width="13" height="11" rx="2" fill="#f59e0b" opacity=".8"/></svg>';
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#e11d48', '#8b5cf6', '#f97316', '#06b6d4', '#84cc16'];
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const ease = x => { x = clamp(x, 0, 1); return 1 - Math.pow(1 - x, 3); };
+const win = (t, a, b) => clamp((t - a) / (b - a), 0, 1);      // 0..1 across [a,b]
+// Scene visibility with 0.35s fades.
+const vis = (t, a, b) => Math.min(win(t, a, a + .35), 1 - win(t, b - .35, b));
+let D;
+
+function sheetSvg(s, id, opt) {
+  opt = opt || {};
+  return '<svg viewBox="0 0 ' + s.w + ' ' + s.h + '"><rect width="' + s.w + '" height="' + s.h + '" fill="#e8f4f8"/>' +
+    s.parts.map((p, k) => {
+      const c = COLORS[p.i % COLORS.length];
+      const lab = opt.labels !== false && p.w > s.w * .16 && p.h > s.h * .12;
+      return '<g class="' + id + '" style="opacity:0"><rect x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="' + p.h + '" fill="' + c + '" stroke="#0a3a47" stroke-width="8"/>' +
+        (lab ? '<text x="' + (p.x + p.w / 2) + '" y="' + (p.y + p.h / 2) + '" font-family="Barlow Condensed" font-weight="800" font-size="' + Math.min(p.h * .26, p.w * .13, 90) + '" fill="#fff" text-anchor="middle" dominant-baseline="middle">' + (p.label || '') + '</text>' : '') + '</g>';
+    }).join('') + '<rect width="' + s.w + '" height="' + s.h + '" fill="none" stroke="#9dcad6" stroke-width="14"/></svg>';
+}
+function barSvg(s, id) {
+  const H = s.w / 14;
+  return '<svg viewBox="0 0 ' + s.w + ' ' + H + '"><rect width="' + s.w + '" height="' + H + '" fill="#e8f4f8"/>' +
+    s.parts.map(p => '<g class="' + id + '" style="opacity:0"><rect x="' + p.x + '" y="0" width="' + p.w + '" height="' + H + '" fill="' + COLORS[p.i % COLORS.length] + '" stroke="#0a3a47" stroke-width="12"/>' +
+      (p.w > s.w * .08 ? '<text x="' + (p.x + p.w / 2) + '" y="' + (H / 2) + '" font-family="Barlow Condensed" font-weight="800" font-size="' + H * .45 + '" fill="#fff" text-anchor="middle" dominant-baseline="middle">' + p.w + '</text>' : '') + '</g>').join('') + '</svg>';
+}
+
+function build() {
+  const st = document.getElementById('stage');
+  st.innerHTML =
+    '<div class="brand">' + LOGO + '<div>Cut<span>Nest</span></div></div><div class="url">cutnest.co.uk</div>' +
+    // 1. Hook
+    '<div class="scene" id="s1" style="padding-top:330px"><h1><span class="line">Still working out</span><span class="line">sheet orders</span><span class="line"><em>on a calculator?</em></span></h1></div>' +
+    // 2. Area myth
+    '<div class="scene" id="s2"><h2 style="margin-top:40px"><span class="line">Area &divide; sheet area:</span><span class="line" id="s2a"><em>2 sheets.</em></span></h2>' +
+    '<div class="sheetwrap" style="top:480px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">' +
+    D.desk.sheets.map((s, i) => '<div id="dsw' + i + '">' + sheetSvg(s, 'dp' + i) + '</div>').join('') + '</div></div>' +
+    '<div style="position:absolute;left:80px;bottom:150px"><h2 class="line" id="s2b">The real nest: <em>3 sheets.</em></h2></div></div>' +
+    // 3. Watch it nest
+    '<div class="scene" id="s3"><h2 style="margin-top:40px"><span class="line">CutNest nests <em>every part</em></span><span class="line">before you order.</span></h2>' +
+    '<div class="sheetwrap" style="top:470px">' + sheetSvg(D.metal.sheets[0], 'mp') + '<div class="cap" id="mcap">0 parts</div></div>' +
+    '<div style="position:absolute;left:80px;bottom:170px"><span class="badge" id="mbadge">&#10003; Provably optimal &middot; 1 sheet, 90% used</span></div></div>' +
+    // 4. Bars
+    '<div class="scene" id="s4"><h2 style="margin-top:40px"><span class="line">Bar, tube &amp; extrusion</span><span class="line"><em>cut to length.</em></span></h2>' +
+    '<div class="sheetwrap" style="top:500px;display:flex;flex-direction:column;gap:30px">' + D.bar.sheets.map((s, i) => '<div>' + barSvg(s, 'bp' + i) + '<div class="cap">Bar ' + (i + 1) + ' &middot; 7.5m box section</div></div>').join('') + '</div>' +
+    '<div style="position:absolute;left:80px;bottom:170px"><span class="badge" id="bbadge">&#10003; Fewest bars possible &middot; offcuts marked</span></div></div>' +
+    // 5. Quote
+    '<div class="scene" id="s5"><h2 style="margin-top:40px"><span class="line">Then <em>quote it</em>,</span><span class="line">on your letterhead.</span></h2>' +
+    '<div class="quote" id="q"><img src="/img/app-quote.webp"/></div>' +
+    '<div class="total" id="qt"><span>Quote total</span><b id="qv">&pound;0.00</b></div></div>' +
+    // 6. CTA
+    '<div class="scene" id="s6" style="padding-top:280px"><h1><span class="line">Free to try.</span><span class="line"><em>No account.</em></span></h1>' +
+    '<ul class="ticks"><li>Sheet metal, timber, acrylic</li><li>Bar, tube &amp; extrusion</li><li>Customer quotes (Pro)</li></ul>' +
+    '<div style="margin-top:60px" class="line" id="ctaurl"><span class="pill">cutnest.co.uk</span></div></div>' +
+    '<div class="progress" id="prog"></div>';
+}
+
+const T = 30;
+function render(t) {
+  const $ = id => document.getElementById(id);
+  const scenes = [['s1', 0, 3.6], ['s2', 3.6, 9.6], ['s3', 9.6, 16.4], ['s4', 16.4, 21.6], ['s5', 21.6, 26.4], ['s6', 26.4, 30.2]];
+  scenes.forEach(([id, a, b]) => { $(id).style.opacity = vis(t, a, b); });
+  const lines = (id, a, step) => [...$(id).querySelectorAll('h1 .line, h2 .line')].forEach((l, i) => {
+    const k = ease(win(t, a + i * step, a + i * step + .45)); l.style.opacity = k; l.style.transform = 'translateY(' + (1 - k) * 40 + 'px)';
+  });
+  // 1
+  lines('s1', .2, .55);
+  // 2
+  [...$('s2').querySelectorAll('h2 .line')].forEach((l, i) => { const k = ease(win(t, 3.9 + i * .5, 4.35 + i * .5)); l.style.opacity = k; l.style.transform = 'translateY(' + (1 - k) * 30 + 'px)'; });
+  let n = 0;
+  D.desk.sheets.forEach((s, si) => {                // each sheet appears just before its first part lands
+    const a0 = 5 + n * .28 - .25; document.getElementById('dsw' + si).style.opacity = ease(win(t, a0, a0 + .25));
+    n += s.parts.length;
+  });
+  n = 0;
+  D.desk.sheets.forEach((s, si) => document.querySelectorAll('.dp' + si).forEach(g => {
+    const a = 5 + n * .28; n++;
+    const k = ease(win(t, a, a + .35)); g.style.opacity = k; g.style.transform = 'translateY(' + (1 - k) * -60 + 'px)';
+  }));
+  const kb = ease(win(t, 7.9, 8.4)); $('s2b').style.opacity = kb; $('s2b').style.transform = 'translateY(' + (1 - kb) * 30 + 'px)';
+  // 3
+  [...$('s3').querySelectorAll('h2 .line')].forEach((l, i) => { const k = ease(win(t, 9.9 + i * .45, 10.3 + i * .45)); l.style.opacity = k; l.style.transform = 'translateY(' + (1 - k) * 30 + 'px)'; });
+  const mp = document.querySelectorAll('.mp'); let shown = 0;
+  mp.forEach((g, i) => {
+    const a = 11 + i * (3.2 / mp.length);
+    const k = ease(win(t, a, a + .3)); g.style.opacity = k; g.style.transform = 'scale(' + (1.4 - .4 * k) + ')'; g.style.transformOrigin = 'center'; g.style.transformBox = 'fill-box';
+    if (k > .5) shown++;
+  });
+  $('mcap').textContent = shown + ' part' + (shown === 1 ? '' : 's') + ' placed · 2450×1150 mild steel';
+  const mb = ease(win(t, 14.6, 15.1)); $('mbadge').style.opacity = mb; $('mbadge').style.transform = 'scale(' + (.85 + .15 * mb) + ')';
+  // 4
+  [...$('s4').querySelectorAll('h2 .line')].forEach((l, i) => { const k = ease(win(t, 16.7 + i * .45, 17.1 + i * .45)); l.style.opacity = k; l.style.transform = 'translateY(' + (1 - k) * 30 + 'px)'; });
+  let bn = 0;
+  D.bar.sheets.forEach((s, si) => document.querySelectorAll('.bp' + si).forEach(g => {
+    const a = 17.6 + bn * .12; bn++;
+    const k = ease(win(t, a, a + .25)); g.style.opacity = k; g.style.transform = 'translateX(' + (1 - k) * -80 + 'px)';
+  }));
+  const bb = ease(win(t, 20.2, 20.6)); $('bbadge').style.opacity = bb;
+  // 5
+  [...$('s5').querySelectorAll('h2 .line')].forEach((l, i) => { const k = ease(win(t, 21.9 + i * .45, 22.3 + i * .45)); l.style.opacity = k; l.style.transform = 'translateY(' + (1 - k) * 30 + 'px)'; });
+  const qk = ease(win(t, 22.4, 23.3)); $('q').style.top = (1350 - qk * 900) + 'px'; $('q').style.transform = 'rotate(' + (-3 * qk) + 'deg)';
+  const tk = ease(win(t, 24, 24.4)); $('qt').style.opacity = tk;
+  $('qv').textContent = '£' + (369.34 * ease(win(t, 24, 25.4))).toFixed(2);
+  // 6
+  [...$('s6').querySelectorAll('h1 .line')].forEach((l, i) => { const k = ease(win(t, 26.7 + i * .4, 27.1 + i * .4)); l.style.opacity = k; l.style.transform = 'translateY(' + (1 - k) * 40 + 'px)'; });
+  [...$('s6').querySelectorAll('.ticks li')].forEach((l, i) => { const k = ease(win(t, 27.6 + i * .3, 28 + i * .3)); l.style.opacity = k; l.style.transform = 'translateX(' + (1 - k) * -40 + 'px)'; });
+  const ck = ease(win(t, 28.6, 29)); $('ctaurl').style.opacity = ck; $('ctaurl').style.transform = 'scale(' + (.9 + .1 * ck) + ')';
+  $('prog').style.width = (t / T * 100) + '%';
+}
+
+(async () => {
+  D = await (await fetch('/marketing/data.json')).json();
+  build();
+  await document.fonts.ready;
+  await Promise.all([...document.images].map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; })));
+  render(0);
+  window.render = render; window.DURATION = T;
+  document.body.setAttribute('data-ready', '1');
+})();
+</script>
+</body></html>
