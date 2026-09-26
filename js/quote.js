@@ -613,6 +613,7 @@ function copyQuoteText() {
 }
 
 function printQuote() {
+  cnTrack('quote_printed', { materials: calcResult ? calcResult.results.length : 0 });
   const qj = ensureQuoteJob();
   // Using the suggested number uses it up, so the next job gets the next one.
   if (qj.no && qj.no === autoQuoteNo()) saveQuoteSettings({ nextNo: (parseInt(quoteSettings().nextNo, 10) || 1) + 1 });

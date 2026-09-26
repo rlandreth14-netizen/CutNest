@@ -19,6 +19,7 @@ function setSS(state, txt) {
 function defaultLib() { return []; }
 
 function loadStarterPack(type) {
+  cnTrack('starter_pack', { pack: String(type), units: isInch() ? 'in' : 'mm' });
   const packs = {
     metal: [
       {id:Date.now()+1,allowRotation:true,cuttingMethod:'free',name:'Mild Steel 2mm',material:'Mild Steel',thickness:'2mm',size1:{w:2450,h:1150,price:105},size2:{w:2050,h:900,price:65}},
@@ -1253,7 +1254,7 @@ function buildCutSheetsHtml() {
       pages += `<section class="page">
         <header class="hd">
           <div>
-            <div class="hd-t">${esc(libMat.name)}${libMat.thickness ? ' \u00b7 ' + esc(libMat.thickness) : ''}
+            <div class="hd-t">${esc(libMat.name)}${libMat.thickness && libMat.name.indexOf(libMat.thickness) === -1 ? ' \u00b7 ' + esc(libMat.thickness) : ''}
               &mdash; Sheet ${si+1} of ${r.sheets.length}${sh.isRemnant ? ' (YOUR REMNANT)' : ''}</div>
             <div class="hd-m">${esc(dims(sh.sheetW, sh.sheetH))} &nbsp;\u00b7&nbsp; ${sh.placed.length} parts
               &nbsp;\u00b7&nbsp; ${sh.utilPercent || 0}% used
@@ -1447,6 +1448,7 @@ function barCutPagesHtml(r, co, jr, dateStr) {
 }
 
 function exportCutSheets() {
+  cnTrack('export', { type: 'cut_sheets' });
   if (!calcResult) { showToast('Calculate a job first'); return; }
   const html = buildCutSheetsHtml();
   if (!html) { showToast('Nothing to print yet'); return; }
@@ -1580,6 +1582,7 @@ function updateLabelsSummary() {
   out.textContent = n + ' label' + (n !== 1 ? 's' : '') + ' on ' + sheets + ' sheet' + (sheets !== 1 ? 's' : '') + ' of ' + per + (skip ? ', starting at label ' + (skip + 1) : '') + '.';
 }
 function printLabels() {
+  cnTrack('export', { type: 'labels' });
   const sel = document.getElementById('label-layout'), sk = document.getElementById('label-skip');
   try { localStorage.setItem('cutnest-label-layout', sel.value); } catch (e) {}
   const html = buildLabelsHtml(sel.value, sk ? sk.value : 0);
@@ -1953,6 +1956,9 @@ async function _doCalculate() {
     showErr('Some materials need attention: ' + errors.join(' | '));
   }
   calcResult = { results, jobQty };
+  cnTrack('calculate', { materials: results.length, sheet_materials: results.filter(function(r){ return !r.linear; }).length,
+    bar_materials: results.filter(function(r){ return r.linear; }).length, stock: results.reduce(function(a, r){ return a + r.sheets.length; }, 0),
+    pro: isPro ? 1 : 0, gated: results.some(function(r){ return r.gated && r.gated.length; }) ? 1 : 0 });
   // The results now match the pieces, so the "pieces changed" banner goes.
   const staleEl = document.getElementById('stale-banner');
   if (staleEl) staleEl.style.display = 'none';
@@ -2137,7 +2143,7 @@ function renderOutput() {
 
     return `<div class="pres-card">
       <div class="pres-left">
-        <div class="pres-name">${esc(libMat.name)}<span class="pres-thk">${esc(libMat.thickness||'')}</span></div>
+        <div class="pres-name">${esc(libMat.name)}<span class="pres-thk">${libMat.thickness && libMat.name.indexOf(libMat.thickness) === -1 ? esc(libMat.thickness) : ''}</span></div>
         ${gatedNoticeHtml(_r.gated)}
         ${verdict ? (verdict.optimal
           ? `<div style="display:inline-flex;align-items:center;gap:5px;background:#d1fae5;border:1px solid #6ee7b7;color:#065f46;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:700;margin-bottom:7px" title="Checked against a mathematical lower bound: no arrangement of these parts can fit on fewer ${stockWord(libMat, 2)}.">✓ PROVABLY OPTIMAL — no ${isLinear(libMat) ? 'cutting plan' : 'nest'} can use fewer ${stockWord(libMat, 2)}</div>`
@@ -2553,6 +2559,7 @@ function copyQuote() {
 }
 
 function exportPDF() {
+  cnTrack('export', { type: 'pdf' });
   if (!calcResult) return;
   // Build a clean print-optimised HTML page and open in new tab for browser PDF save
   const jr = (document.getElementById('job-ref')||{}).value || 'Untitled';
@@ -2708,6 +2715,7 @@ function exportPDF() {
 }
 
 function shareJob() {
+  cnTrack('export', { type: 'share_link' });
   try {
     // Only share the JOB itself (selected materials + their sizes + pieces),
     // NOT the user's whole library — that keeps the URL short enough to send.
@@ -2798,6 +2806,7 @@ function csvCell(v){
 }
 
 function exportCSV() {
+  cnTrack('export', { type: 'csv' });
   if (!calcResult) return;
   let csvTotal = 0;
   const summaryRows = calcResult.results.flatMap(({libMat,sizeMap}) =>
@@ -2992,6 +3001,7 @@ function exportDXF() {
   if (!calcResult || !calcResult.results) return;
   const sheetResults = calcResult.results.filter(function (r) { return !r.linear; });
   if (!sheetResults.length) { showToast('DXF is for sheet layouts. Bars are cut to length \u2014 use Cut sheets for the saw list', 4200); return; }
+  cnTrack('export', { type: 'dxf' });
   const dxf = buildDXF(sheetResults);
   const jr = (document.getElementById('job-ref')||{}).value||'cutlist';
   const safe = jr.replace(/[^a-z0-9]/gi,'-').toLowerCase();
@@ -3554,6 +3564,7 @@ const LS_URL='https://cutnest.lemonsqueezy.com/checkout/buy/a9fdfebb-ea08-4962-8
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('a[href*="lemonsqueezy.com/checkout"]').forEach(function(a) {
     a.href = LS_URL;
+    a.addEventListener('click', function(){ cnTrack('begin_checkout', { source: 'app' }); });
   });
 });
 
@@ -3742,6 +3753,7 @@ async function validateAndSaveKey(){
       if(d.instance && d.instance.id) store.instanceId = d.instance.id;
       localStorage.setItem(KEY_STORE,JSON.stringify(store));
       isPro=true;
+      cnTrack('licence_activated', {});
       se.className='key-status valid';
       se.textContent='Pro active — loading…';
       updateProUI();
@@ -3797,12 +3809,13 @@ async function validateAndSaveKey(){
   }
 }
 
-function buyPro(){window.open(LS_URL,'_blank');}
+function buyPro(){cnTrack('begin_checkout', { source: 'app' }); window.open(LS_URL,'_blank');}
 
 function showUpgradeModal(icon,title,desc){
   const ids=['upgrade-icon','upgrade-title','upgrade-desc'],vals=[icon||'!',title||'Pro Feature',desc||'Upgrade to Pro.'];
   ids.forEach(function(id,i){const el=document.getElementById(id);if(el)el.textContent=vals[i];});
   const um=document.getElementById('upgrade-modal');if(um)um.style.display='flex';
+  cnTrack('upgrade_prompt', { feature: String(title||'').slice(0, 60) });
 }
 
 function updateProUI(){
