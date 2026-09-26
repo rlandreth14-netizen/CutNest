@@ -196,3 +196,68 @@ async function fileToCutListText(file) {
   if (file.size > 5 * 1024 * 1024) throw new Error('That file is over 5MB, which is far bigger than any cut list.');
   return await file.text();
 }
+
+// ── LENGTH LISTS (bar, tube, extrusion) ───────────────────────────
+// A cut list for bar stock is lengths and quantities, one part per line:
+//   1200            1200 4          1200 x 4        4 off 1200
+//   Rail 1200 4     Rail, 1200, 4   2.4m x 6        23 5/8, 4  (inches)
+// or a spreadsheet with a Length column (and optional Qty and Name columns).
+// Returns { rows: [{w, qty, label, warn}], errors, header } like the sheet parser.
+function parseLengthList(text) {
+  const rows = [], errors = [];
+  const lines = String(text || '').split(/\r?\n/);
+  const delim = detectDelimiter(text);
+  const clean = function (c) { return String(c == null ? '' : c).replace(/(\d),(?=\d{3}(\D|$))/g, '$1').trim(); };
+  const isLen = function (c) { return String(c).trim() !== '' && isFinite(parseLen(clean(c))); };
+  // Header row with a Length column?
+  let map = null, start = 0;
+  const first = lines.findIndex(function (l) { return l.trim(); });
+  if (first !== -1 && delim) {
+    const cells = splitDelimited(lines[first], delim).map(function (c) {
+      return String(c).trim().toLowerCase().replace(/\s*\((mm|in|inches|"|m)\)\s*$/, '').replace(/[:*]/g, '').trim();
+    });
+    if (!cells.some(function (c) { return /\d/.test(c) && !/^(no\.?|#)$/.test(c); })) {
+      const find = function (re) { return cells.findIndex(function (c) { return re.test(c); }); };
+      const L = find(/^(length|len|l|cut length|cut size|size|long)$/);
+      if (L !== -1) { map = { w: L, qty: find(HEADER_WORDS.qty), label: find(HEADER_WORDS.label) }; start = first + 1; }
+    }
+  }
+  lines.forEach(function (raw, i) {
+    if (i < start) return;
+    const line = String(raw || '').trim();
+    if (!line || /^[#/]/.test(line) || !/\d/.test(line)) return;
+    const where = 'Line ' + (i + 1) + ': ', quote = ' — "' + line.slice(0, 40) + '"';
+    let label = '', lenTxt = '', qty = 1, m;
+    if (map) {
+      const c = splitDelimited(raw, delim);
+      lenTxt = c[map.w] || '';
+      if (map.qty >= 0) qty = parseInt(clean(c[map.qty]), 10) || 1;
+      if (map.label >= 0) label = c[map.label] || '';
+    } else if (delim) {
+      const c = splitDelimited(raw, delim).filter(function (x) { return String(x).trim() !== ''; });
+      const nums = c.filter(isLen);
+      label = c.filter(function (x) { return !isLen(x); }).join(' ');
+      lenTxt = nums[0] || '';
+      if (nums[1] != null) qty = parseInt(clean(nums[1]), 10) || 1;
+    } else {
+      // Commas, semicolons and tabs on a line of their own are separators too.
+      let s = clean(line).replace(/×/g, 'x').replace(/\s*[,;\t]\s*/g, ' ').trim();
+      if ((m = s.match(/^(.*?)(\d+)\s*(?:off|pcs?|no\.?)\s*(?:@|of|x)?\s*(.+)$/i))) { label = m[1]; qty = +m[2]; s = m[3]; }
+      if ((m = s.match(/^(.*?\d.*?)\s*(?:qty|quantity|x)\s*(\d+)\s*(?:off|pcs?)?$/i))) { s = m[1]; qty = +m[2]; }
+      if ((m = s.match(/^([^\d]*[A-Za-z][^\d]*?)\s+(?=\d)/))) { label = (label + ' ' + m[1]).trim(); s = s.slice(m[0].length); }
+      s = clean(s);
+      if (isLen(s)) lenTxt = s;
+      else if ((m = s.match(/^(.+?)\s+(\d+)$/)) && isLen(m[1])) { lenTxt = m[1]; qty = +m[2]; }
+      else lenTxt = s;
+    }
+    const w = parseLen(clean(lenTxt));
+    if (!(w > 0)) { errors.push(where + 'need a length' + quote); return; }
+    if (w > 99999) { errors.push(where + 'length looks wrong (over ' + len(99999) + ')' + quote); return; }
+    qty = Math.max(1, Math.min(9999, qty || 1));
+    let warn = null;
+    if (w < 5) warn = 'length under ' + len(5) + ' — check this line';
+    else if (qty > 500) warn = 'quantity over 500 — check this line';
+    rows.push({ w: w, qty: qty, label: String(label).replace(/[,;\t]+$/, '').trim().slice(0, 40), warn: warn });
+  });
+  return { rows: rows, errors: errors, header: !!map };
+}

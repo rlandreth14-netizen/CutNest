@@ -406,7 +406,8 @@ function deriveGuillotineCuts(placed, sheetW, sheetH, kerf) {
   let ok = true;
 
   function rec(x0, y0, x1, y1, items, depth) {
-    if (!ok || items.length <= 1) return;
+    if (!ok || !items.length) return;
+    if (items.length === 1) { freeLeaf(x0, y0, x1, y1, items[0], depth); return; }
 
     // A cut line is valid if every part lies wholly on one side of it, with at
     // least one part on each side. Candidates are the far edges of the parts.
@@ -451,6 +452,33 @@ function deriveGuillotineCuts(placed, sheetW, sheetH, kerf) {
       rec(x0, y0, x1, hit.c, hit.before, depth + 1);
       rec(x0, hit.c + K, x1, y1, hit.after, depth + 1);
     }
+  }
+
+  // One part left in its region: cut away the waste around it. Without these
+  // the sequence stopped when parts were separated, so a part that did not
+  // fill its strip was never cut free (and a sheet holding a single part had
+  // no cuts at all). Waste thinner than the kerf just turns to dust.
+  function freeLeaf(x0, y0, x1, y1, p, depth) {
+    const first = (x1 - x0) >= (y1 - y0) ? 'V' : 'H';
+    [first, first === 'V' ? 'H' : 'V'].forEach(function (axis) {
+      const lo = axis === 'V' ? p.x : p.y, hi = axis === 'V' ? p.x + p.w : p.y + p.h;
+      const r0 = axis === 'V' ? x0 : y0, r1 = axis === 'V' ? x1 : y1;
+      const at = [];
+      if (lo - K > r0 + EPS) at.push(lo - K);     // waste before the part
+      if (hi < r1 - EPS) at.push(hi);             // waste after it
+      at.forEach(function (c) {
+        if (axis === 'V') {
+          cuts.push({ no: ++n, axis: 'V', pos: c, from: y0, to: y1, depth: depth,
+                      label: 'Cut down at X = ' + Math.round(c) + 'mm' });
+        } else {
+          cuts.push({ no: ++n, axis: 'H', pos: c, from: x0, to: x1, depth: depth,
+                      label: 'Cut across at Y = ' + Math.round(c) + 'mm' });
+        }
+      });
+      // The part is now held in a narrower region for the other axis.
+      if (axis === 'V') { x0 = Math.max(x0, lo); x1 = Math.min(x1, hi); }
+      else { y0 = Math.max(y0, lo); y1 = Math.min(y1, hi); }
+    });
   }
 
   rec(0, 0, sheetW, sheetH, placed.slice(), 0);
@@ -1686,6 +1714,7 @@ function untrimResult(res, t) {
 // The one function the page and the worker call. `safe` selects the plain
 // greedy packer, used only if the full optimiser throws.
 function packJob(libMat, pieces, remnant, jobQty, safe) {
+  if (isLinear(libMat)) return packLinear(libMat, pieces, jobQty, safe);
   const run = function(mat){
     return safe ? runMatSafe(mat, pieces, jobQty, remnant) : runMat(mat, pieces, remnant, jobQty);
   };
@@ -1699,4 +1728,198 @@ function packJob(libMat, pieces, remnant, jobQty, safe) {
   delete inner.size1; delete inner.size2;
   const res = run(inner);
   return res.noValidSize ? res : untrimResult(res, t);
+}
+
+
+// ── LINEAR CUTTING: bar, tube, angle, flat, extrusion, timber lengths ─────
+// Cutting parts to length from stock lengths is the one-dimensional version of
+// the sheet problem, and the sheet engine solves it as it stands: a bar is a
+// strip LINEAR_H high, every part is LINEAR_H high, so parts can only sit in
+// one row along the bar with the kerf between them (the kerf is only added
+// where a free space stops short of the sheet edge, so none is added across
+// the strip). That brings everything the sheet engine already does to bars:
+// several stock lengths, prices and the cheapest mix, stock limits, the
+// open-bins search, and the lower bound that proves a result optimal (the area
+// bound on a strip is exactly the classic 1D bound).
+//
+// A classic 1D heuristic is run as well: repeatedly cut the bar that can be
+// filled fullest (an exact subset-sum over the remaining parts). Each method
+// wins on different jobs, so both run and the better result is kept.
+//
+// Finally every bar is laid out the way it is cut: parts packed from one end,
+// longest first, kerf between them, so the offcut is one piece at the far end
+// and bars cut to the same pattern look identical and can be grouped.
+const LINEAR_H = 1;
+function isLinear(libMat) { return !!libMat && libMat.kind === 'linear'; }
+
+function linearKerf(libMat) {
+  const k = libMat && libMat.kerf;
+  return k != null && k !== '' && isFinite(+k) && +k >= 0 ? +k : KERF;
+}
+
+function packLinear(libMat, pieces, jobQty, safe) {
+  const t = trimAmount(libMat);                 // taken off EACH end
+  const saved = KERF;
+  KERF = linearKerf(libMat);
+  try {
+    const sizes = stockSizes(libMat)
+      .map(function (z) { return { w: z.w - 2 * t, h: LINEAR_H, price: z.price, max: z.max }; })
+      .filter(function (z) { return z.w > 0; });
+    if (!sizes.length) return { sheets: [], unplaced: [], sizeMap: {}, noValidSize: true };
+    const inner = { id: libMat.id, name: libMat.name, sizes: sizes, allowRotation: false, cuttingMethod: 'free' };
+    const ps = pieces.map(function (p) { return { w: +p.w, h: LINEAR_H, qty: p.qty, label: p.label || '' }; });
+
+    const cands = [];
+    cands.push(safe ? runMatSafe(inner, ps, jobQty, null) : runMat(inner, ps, null, jobQty));
+    try { const mf = linearMaxFill(inner, ps, jobQty); if (mf) cands.push(mf); } catch (e) { /* the engine result stands */ }
+
+    const allPriced = sizes.every(function (z) { return z.price > 0; });
+    const score = function (r) {
+      const bars = r.sheets.length;
+      const cost = allPriced ? sheetSetCost(r.sheets, sizes) : 0;
+      // Waste in one long offcut beats the same waste spread over many bars.
+      let longest = 0;
+      r.sheets.forEach(function (sh) {
+        const used = sh.placed.reduce(function (a, p) { return a + p.w; }, 0) + KERF * Math.max(0, sh.placed.length - 1);
+        longest = Math.max(longest, sh.sheetW - used);
+      });
+      return [r.unplaced.length, cost, bars, -longest];
+    };
+    let best = cands[0], bs = score(best);
+    for (let i = 1; i < cands.length; i++) {
+      const sc = score(cands[i]);
+      for (let j = 0; j < sc.length; j++) {
+        if (sc[j] < bs[j] - 1e-9) { best = cands[i]; bs = sc; break; }
+        if (sc[j] > bs[j] + 1e-9) break;
+      }
+    }
+    return finishLinear(best, t, KERF);
+  } finally {
+    KERF = saved;
+  }
+}
+
+// The fullest single bar of length L that can be cut from what is left:
+// bounded subset-sum on a 1mm grid, each part costing its length plus a kerf,
+// capacity L plus one kerf (the last part needs no cut after it). Rounding each
+// part UP to the grid keeps it safe: a pattern found here always really fits.
+function maxFillPattern(types, L, k) {
+  const cap = Math.floor(L + k + 1e-6);
+  const chunks = [];
+  types.forEach(function (t, ti) {
+    if (t.left <= 0) return;
+    const c = Math.ceil(t.w + k - 1e-6);
+    if (c > cap) return;
+    let m = Math.min(t.left, Math.floor(cap / c)), size = 1;
+    while (m > 0) {                               // binary split: 1, 2, 4, ... pieces
+      const n = Math.min(size, m);
+      chunks.push({ ti: ti, n: n, c: c * n });
+      m -= n; size *= 2;
+    }
+  });
+  if (!chunks.length) return { count: 0 };
+  if (cap * chunks.length > 3e7) return null;     // too big to be worth it here
+  const via = new Int32Array(cap + 1).fill(-1), prev = new Int32Array(cap + 1);
+  via[0] = -2;
+  for (let j = 0; j < chunks.length; j++) {
+    const c = chunks[j].c;
+    for (let s = cap; s >= c; s--) {
+      if (via[s] === -1 && via[s - c] !== -1) { via[s] = j; prev[s] = s - c; }
+    }
+  }
+  let s = cap;
+  while (s > 0 && via[s] === -1) s--;
+  const take = types.map(function () { return 0; });
+  let count = 0, len = 0;
+  while (s > 0) {
+    const ch = chunks[via[s]];
+    take[ch.ti] += ch.n; count += ch.n; len += types[ch.ti].w * ch.n;
+    s = prev[s];
+  }
+  return { take: take, count: count, len: len };
+}
+
+function linearMaxFill(inner, ps, jobQty) {
+  const mult = Math.max(1, parseInt(jobQty) || 1);
+  const k = KERF;
+  const types = ps.map(function (p, i) { return { i: i, w: +p.w, label: p.label || '', left: (+p.qty || 1) * mult, next: 0 }; });
+  const sizes = inner.sizes.map(function (z) { return Object.assign({ used: 0 }, z); });
+  const allPriced = sizes.every(function (z) { return z.price > 0; });
+  const sheets = [];
+  let guard = 20000;
+  while (types.some(function (t) { return t.left > 0; }) && guard-- > 0) {
+    let best = null;
+    for (const z of sizes) {
+      if (z.max != null && z.used >= z.max) continue;
+      const pat = maxFillPattern(types, z.w, k);
+      if (pat === null) return null;
+      if (!pat.count) continue;
+      const sc = allPriced ? z.price / pat.len : (z.w - pat.len) / z.w;
+      if (!best || sc < best.sc - 1e-12 || (Math.abs(sc - best.sc) <= 1e-12 && pat.len > best.pat.len)) best = { z: z, pat: pat, sc: sc };
+    }
+    if (!best) break;
+    // The same pattern usually fits several more times: cut it that many.
+    let reps = Infinity;
+    best.pat.take.forEach(function (n, ti) { if (n) reps = Math.min(reps, Math.floor(types[ti].left / n)); });
+    if (best.z.max != null) reps = Math.min(reps, best.z.max - best.z.used);
+    reps = Math.max(1, reps);
+    for (let r = 0; r < reps; r++) {
+      const placed = [];
+      best.pat.take.forEach(function (n, ti) {
+        const t = types[ti];
+        for (let q = 0; q < n; q++) placed.push({ x: 0, y: 0, w: t.w, h: LINEAR_H, label: t.label, pieceIndex: t.i, instanceIndex: t.next++ });
+        t.left -= n;
+      });
+      best.z.used++;
+      sheets.push({ sheetW: best.z.w, sheetH: LINEAR_H, placed: placed });
+    }
+  }
+  const unplaced = [];
+  types.forEach(function (t) {
+    for (; t.left > 0; t.left--) unplaced.push({ w: t.w, h: LINEAR_H, label: t.label, pieceIndex: t.i, instanceIndex: t.next++ });
+  });
+  const sizeMap = {};
+  sheets.forEach(function (s) { const key = s.sheetW + '×' + s.sheetH; sizeMap[key] = (sizeMap[key] || 0) + 1; });
+  return { sheets: sheets, unplaced: unplaced, sizeMap: sizeMap, allowRotation: false,
+           stockShort: stockShortfall(unplaced, sizes, sheets) };
+}
+
+// Lay each bar out as it is cut and measure what is left. `t` is the end
+// trim (each end); bars come in at their usable length and go out at full length.
+function finishLinear(res, t, k) {
+  const minKeep = (typeof settings !== 'undefined' && settings && settings.minBarOffcut != null) ? +settings.minBarOffcut : 500;
+  const sizeMap = {};
+  res.sheets.forEach(function (sh) {
+    const usable = sh.sheetW;
+    sh.placed.sort(function (a, b) { return (b.w - a.w) || (a.pieceIndex - b.pieceIndex) || (a.instanceIndex - b.instanceIndex); });
+    let pos = 0;
+    sh.placed.forEach(function (p, i) {
+      if (i) pos += k;
+      p.x = t + pos; p.y = 0; p.h = LINEAR_H; p.rotated = false;
+      pos += p.w;
+    });
+    const left = usable - pos;
+    const offLen = sh.placed.length ? Math.max(0, left - k) : usable;
+    sh.sheetW = usable + 2 * t;
+    sh.sheetH = LINEAR_H;
+    sh.trim = t;
+    sh.linear = true;
+    sh.offcut = offLen > 0 ? { x: sh.sheetW - t - offLen, y: 0, w: offLen, h: LINEAR_H, area: offLen } : null;
+    sh.usableOffcut = sh.offcut && offLen >= minKeep ? sh.offcut : null;
+    sh.pattern = sh.sheetW + '|' + sh.placed.map(function (p) { return p.pieceIndex + ':' + p.w; }).join(',');
+    const used = sh.placed.reduce(function (a, p) { return a + p.w; }, 0);
+    sh.utilPercent = Math.round(used / sh.sheetW * 100);
+    sh.usablePercent = sh.usableOffcut ? Math.round(offLen / sh.sheetW * 100) : 0;
+    sh.scrapPercent = Math.max(0, 100 - sh.utilPercent - sh.usablePercent);
+    delete sh.wastePercent;
+    const key = sh.sheetW + '×' + LINEAR_H;
+    sizeMap[key] = (sizeMap[key] || 0) + 1;
+  });
+  res.sizeMap = sizeMap;
+  delete res.altFewerSheets;
+  res.linear = true;
+  res.kerf = k;
+  res.trim = t;
+  res.allowRotation = false;
+  return res;
 }

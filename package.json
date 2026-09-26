@@ -3,7 +3,7 @@
   "private": true,
   "description": "CutNest cut list optimiser (static site). No build step; this file only runs the tests.",
   "scripts": {
-    "test": "node tests/units.test.js && node tests/import.test.js && node tests/engine.test.js",
+    "test": "node tests/units.test.js && node tests/import.test.js && node tests/quote.test.js && node tests/engine.test.js",
     "test:ui": "node tests/ui.test.js",
     "test:all": "npm test && node tests/ui.test.js"
   },

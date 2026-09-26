@@ -11,7 +11,7 @@
    bump the VERSION string below.
    ════════════════════════════════════════════════════════════════ */
 
-const VERSION = 'cutnest-v22';
+const VERSION = 'cutnest-v24';
 
 const PRECACHE = [
   '/',
@@ -21,6 +21,7 @@ const PRECACHE = [
   '/js/engine.js',
   '/js/units.js',
   '/js/import.js',
+  '/js/quote.js',
   '/js/app.js',
   '/js/pack-worker.js',
   '/terms.html',
