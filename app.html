@@ -44,6 +44,11 @@ function loadAnalytics(){
   gtag('js', new Date());
   gtag('config','G-EGY30977X1',{anonymize_ip:true,allow_google_signals:false,allow_ad_personalization_signals:false});
 }
+// An event, only if the visitor agreed to analytics (nothing is queued
+// otherwise). Events never carry job names, sizes or anything personal.
+function cnTrack(name, params){
+  try { if (window.__cnAnalyticsLoaded) gtag('event', name, params || {}); } catch (e) {}
+}
 try{
   var _dnt = (navigator.doNotTrack==='1'||window.doNotTrack==='1'||navigator.msDoNotTrack==='1');
   if (localStorage.getItem('cn-cookie') === 'accepted' && !_dnt) loadAnalytics();

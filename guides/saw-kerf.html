@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Saw Kerf Guide: Typical Kerf Widths and Why They Matter | CutNest</title>
+<meta name="description" content="Typical kerf and part spacing for panel saws, track saws, bandsaws, CNC routers, laser, plasma, waterjet and punch, with a worked example of how one millimetre of kerf can cost a part per row."/>
+<link rel="canonical" href="https://cutnest.co.uk/guides/saw-kerf.html"/>
+<meta name="robots" content="index,follow"/>
+<meta property="og:type" content="website"/>
+<meta property="og:site_name" content="CutNest"/>
+<meta property="og:title" content="Saw Kerf Guide: Typical Kerf Widths and Why They Matter | CutNest"/>
+<meta property="og:description" content="Typical kerf and part spacing for panel saws, track saws, bandsaws, CNC routers, laser, plasma, waterjet and punch, with a worked example of how one millimetre of kerf can cost a part per row."/>
+<meta property="og:url" content="https://cutnest.co.uk/guides/saw-kerf.html"/>
+<meta property="og:image" content="https://cutnest.co.uk/og-image.png"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://cutnest.co.uk/og-image.png"/>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230f4c5c'/><rect x='4' y='4' width='11' height='8' rx='1' fill='%23f59e0b'/><rect x='17' y='4' width='11' height='13' rx='1' fill='white' opacity='.9'/><rect x='4' y='14' width='11' height='14' rx='1' fill='white' opacity='.9'/><rect x='17' y='19' width='11' height='9' rx='1' fill='%23f59e0b' opacity='.8'/></svg>"/>
+<link rel="manifest" href="/manifest.webmanifest"/>
+<meta name="theme-color" content="#0a3a47"/>
+<link rel="apple-touch-icon" href="/apple-touch-icon.png"/>
+<link rel="preload" href="/fonts/barlow-400.woff2" as="font" type="font/woff2" crossorigin/>
+<link rel="preload" href="/fonts/barlow-condensed-800.woff2" as="font" type="font/woff2" crossorigin/>
+<link rel="stylesheet" href="/fonts/fonts.css"/>
+<link rel="stylesheet" href="/css/site.css"/>
+<script src="/js/site.js"></script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "Article",
+ "headline": "Kerf: the millimetres that cost you parts",
+ "description": "Typical kerf and part spacing by process, with a worked example.",
+ "mainEntityOfPage": "https://cutnest.co.uk/guides/saw-kerf.html",
+ "dateModified": "2026-09-26",
+ "datePublished": "2026-09-26",
+ "author": {
+  "@type": "Organization",
+  "name": "CutNest",
+  "url": "https://cutnest.co.uk"
+ },
+ "publisher": {
+  "@type": "Organization",
+  "name": "CutNest",
+  "url": "https://cutnest.co.uk"
+ }
+}
+</script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "BreadcrumbList",
+ "itemListElement": [
+  {
+   "@type": "ListItem",
+   "position": 1,
+   "name": "Home",
+   "item": "https://cutnest.co.uk/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 2,
+   "name": "Guides",
+   "item": "https://cutnest.co.uk/guides.html"
+  },
+  {
+   "@type": "ListItem",
+   "position": 3,
+   "name": "Kerf guide",
+   "item": "https://cutnest.co.uk/guides/saw-kerf.html"
+  }
+ ]
+}
+</script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "FAQPage",
+ "mainEntity": [
+  {
+   "@type": "Question",
+   "name": "What is kerf?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "The width of material removed by a cut: the saw blade’s tooth width, the router cutter’s diameter, or the width of a laser or plasma cut. In a cut list it is the minimum gap between two parts."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Does kerf apply at the edge of the sheet?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Not between a part and the sheet edge. It applies between parts. Damaged or out-of-square edges are a separate allowance, which CutNest calls edge trim."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "What kerf should I use for a laser?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "The gap you actually leave between parts on the nest, which is normally more than the beam’s own cut. A few millimetres is common; use your own figure."
+   }
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<!-- SITE:NAV (written by tools/pages.py) -->
+<nav class="nav">
+  <a class="brand" href="/">
+    <svg class="brand-logo" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+      <rect width="36" height="36" rx="8" fill="#0f4c5c"/>
+      <rect x="4" y="4" width="13" height="9" rx="2" fill="#f59e0b"/>
+      <rect x="19" y="4" width="13" height="15" rx="2" fill="white" opacity=".9"/>
+      <rect x="4" y="15" width="13" height="17" rx="2" fill="white" opacity=".9"/>
+      <rect x="19" y="21" width="13" height="11" rx="2" fill="#f59e0b" opacity=".8"/>
+    </svg>
+    <div class="brand-name">Cut<span>Nest</span></div>
+  </a>
+  <div class="nav-links">
+    <a href="/#demo" class="nav-link">Live demo</a>
+    <a href="/#features" class="nav-link">Features</a>
+    <a href="/guides.html" class="nav-link">Guides</a>
+    <a href="/#pricing" class="nav-link">Pricing</a>
+    <a href="/app.html" class="btn-try" data-placement="nav">Try it free &rarr;</a>
+  </div>
+  <button class="nav-hamburger" id="nav-hamburger" onclick="openNav()" aria-label="Open menu" aria-expanded="false" aria-controls="nav-mobile">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+<div class="nav-mobile" id="nav-mobile" role="dialog" aria-modal="true" aria-label="Menu">
+  <button class="nav-mobile-close" onclick="closeNav()" aria-label="Close menu">&times;</button>
+  <a href="/#demo" onclick="closeNav()">Live demo</a>
+  <a href="/#features" onclick="closeNav()">Features</a>
+  <a href="/guides.html" onclick="closeNav()">Guides</a>
+  <a href="/#pricing" onclick="closeNav()">Pricing</a>
+  <a href="/app.html" data-placement="nav-mobile" style="background:var(--amber);color:var(--teal2);padding:14px 36px;border-radius:9px;font-weight:900;font-size:20px;font-family:'Barlow Condensed',sans-serif;letter-spacing:.5px">Try Free &rarr;</a>
+</div>
+<!-- /SITE:NAV -->
+<main>
+<header class="pg-hero">
+  <div class="pg-hero-inner">
+    <div class="sec-eyebrow pg-eyebrow">Guide</div>
+    <h1>Kerf: the millimetres that <span>cost you parts</span></h1>
+    <p class="pg-lead">Kerf is the width of material a cut removes. In a cut list it is the gap you must leave between parts, and it adds up faster than most people expect.</p>
+  </div>
+</header>
+<section class="pg-sec "><div class="pg-sec-inner"><h2 class="sec-h2">One millimetre, one part per row</h2><div class="prose">
+<p>Take 606&times;300mm parts on a 2440&times;1220mm sheet. Across the 2440mm width, four parts need 4 &times; 606 = 2424mm plus three cuts between them:</p>
+<table class="pg-tbl"><thead><tr><th>Kerf</th><th>Four across</th><th>Fits in 2440mm?</th><th>Parts per sheet</th></tr></thead><tbody>
+<tr><td>5mm</td><td>2424 + 3 &times; 5 = 2439mm</td><td>Yes, 1mm spare</td><td><b>16</b> (4 across &times; 4 down)</td></tr>
+<tr><td>6mm</td><td>2424 + 3 &times; 6 = 2442mm</td><td>No, 2mm over</td><td><b>12</b> (3 across &times; 4 down)</td></tr>
+</tbody></table>
+<p>One extra millimetre of kerf loses a quarter of the sheet: 16 parts on one sheet becomes two sheets. That is why CutNest asks for your kerf before anything else, and why it keeps the exact figure (a 1/8&Prime; blade stays 3.175mm, not &ldquo;about 3&rdquo;).</p>
+</div></div></section><section class="pg-sec "><div class="pg-sec-inner"><h2 class="sec-h2">Typical kerf and spacing by process</h2><div class="prose">
+<p>These are typical figures to start from, not specifications. Measure your own blade or cutter, or ask whoever programs the machine what gap they leave between parts, and use that.</p>
+<table class="pg-tbl"><thead><tr><th>Process</th><th>Typical gap to use</th><th>Notes</th></tr></thead><tbody>
+<tr><td>Panel saw / table saw</td><td>about 3&ndash;4.5mm</td><td>The blade&rsquo;s tooth width. Scoring blades don&rsquo;t add to it.</td></tr>
+<tr><td>Track / plunge saw</td><td>about 2&ndash;3mm</td><td>Thinner blades; check the blade&rsquo;s stated kerf.</td></tr>
+<tr><td>Mitre saw (timber lengths)</td><td>about 2.5&ndash;3.5mm</td><td>Use as the saw kerf on a bar material.</td></tr>
+<tr><td>Metal bandsaw</td><td>about 1.5&ndash;2mm</td><td>Common for box section and bar.</td></tr>
+<tr><td>Cold saw</td><td>about 2&ndash;3mm</td><td></td></tr>
+<tr><td>CNC router</td><td>the cutter diameter, e.g. 6mm</td><td>Add any extra you leave for tabs or onion skin.</td></tr>
+<tr><td>Fibre / CO&#8322; laser</td><td>a few mm between parts</td><td>The cut itself is well under 1mm; shops leave a gap for heat and a stable skeleton.</td></tr>
+<tr><td>Plasma</td><td>about 5mm or more</td><td>Wider cut and more heat than a laser.</td></tr>
+<tr><td>Waterjet</td><td>about 1&ndash;2mm plus spacing</td><td></td></tr>
+<tr><td>Turret punch</td><td>often 15&ndash;20mm</td><td>Clamp zones and tooling need space; ask your programmer.</td></tr>
+<tr><td>Guillotine shear</td><td>0mm</td><td>A shear removes no material.</td></tr>
+</tbody></table>
+<p>In CutNest the kerf is set once in Settings, and a bar material can have its own saw kerf, so the bandsaw for box section and the laser for plate can live in the same job.</p>
+</div></div></section>
+<section class="faq pg-faq"><div class="sec-eyebrow">Questions</div><h2 class="sec-h2" style="margin-bottom:18px">Straight answers</h2><div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">What is kerf?</button><div class="faq-a">The width of material removed by a cut: the saw blade&rsquo;s tooth width, the router cutter&rsquo;s diameter, or the width of a laser or plasma cut. In a cut list it is the minimum gap between two parts.</div></div><div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">Does kerf apply at the edge of the sheet?</button><div class="faq-a">Not between a part and the sheet edge. It applies between parts. Damaged or out-of-square edges are a separate allowance, which CutNest calls edge trim.</div></div><div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">What kerf should I use for a laser?</button><div class="faq-a">The gap you actually leave between parts on the nest, which is normally more than the beam&rsquo;s own cut. A few millimetres is common; use your own figure.</div></div></section>
+<section class="cta-band">
+  <h2>Try it on your own job</h2>
+  <p>Free, in your browser, no account. Your cut list stays on your computer.</p>
+  <div class="cta-btns"><a href="/app.html" class="btn-primary" data-placement="cta-band">Open CutNest free &rarr;</a>
+  <a href="/#pricing" class="btn-secondary">See Pro &mdash; &pound;12/month</a></div>
+</section>
+</main>
+<!-- SITE:FOOTER (written by tools/pages.py) -->
+<div class="mobile-cta-bar" id="mobile-cta">
+  <a href="/app.html" class="mcta-free" data-placement="mobile-bar">Try Free &rarr;</a>
+  <a href="https://cutnest.lemonsqueezy.com/checkout/buy/a9fdfebb-ea08-4962-8aae-45e608f0cc6e" target="_blank" rel="noopener" class="mcta-pro" data-placement="mobile-bar">Pro &pound;12/mo</a>
+</div>
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div>
+        <div class="footer-brand-name">Cut<span>Nest</span></div>
+        <div class="footer-brand-desc">Cut list optimisation for sheet, bar and tube. Built by a fabricator in Newcastle upon Tyne. Used by fabricators, joiners and trades across the UK.</div>
+        <div style="margin-top:14px;display:flex;gap:10px">
+          <a href="https://www.linkedin.com/company/cutnest" target="_blank" rel="noopener" class="footer-social">LinkedIn</a>
+        </div>
+      </div>
+      <div class="footer-links-group">
+        <h4>Product</h4>
+        <a href="/app.html">Open the app</a>
+        <a href="/#demo">Live demo</a>
+        <a href="/#features">Features</a>
+        <a href="/#pricing">Pricing</a>
+      </div>
+      <div class="footer-links-group">
+        <h4>Trades</h4>
+        <a href="/sheet-metal.html">Sheet metal</a>
+        <a href="/joinery.html">Joinery &amp; cabinets</a>
+        <a href="/signs-and-plastics.html">Signs &amp; plastics</a>
+        <a href="/bar-and-tube.html">Bar &amp; tube</a>
+      </div>
+      <div class="footer-links-group">
+        <h4>Guides</h4>
+        <a href="/guides/how-many-sheets.html">How many sheets?</a>
+        <a href="/guides/saw-kerf.html">Kerf guide</a>
+        <a href="/choosing-a-cut-list-optimiser.html">Choosing an optimiser</a>
+        <a href="/guides.html">All guides</a>
+      </div>
+      <div class="footer-links-group">
+        <h4>Company</h4>
+        <a href="mailto:hello@cutnest.co.uk">hello@cutnest.co.uk</a>
+        <a href="/terms.html">Terms of Service</a>
+        <a href="/privacy.html">Privacy Policy</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-copy">&copy; 2025&ndash;2026 CutNest &middot; cutnest.co.uk</div>
+      <div class="footer-made">Made in <span>Newcastle upon Tyne, UK</span></div>
+    </div>
+  </div>
+</footer>
+<div class="cookie" id="cookie">
+  <span>CutNest saves your settings in your browser&rsquo;s local storage (always &mdash; it&rsquo;s how the app works offline). We&rsquo;d also like to use Google Analytics for anonymised usage stats. No ads, no cross-site tracking. See our <a href="/privacy.html">Privacy Policy</a>.</span>
+  <span style="display:flex;gap:8px;flex-shrink:0">
+    <button class="btn-cookie" style="background:none;border:1px solid rgba(255,255,255,.35);color:rgba(255,255,255,.85)" onclick="declineCookie()">Decline analytics</button>
+    <button class="btn-cookie" onclick="acceptCookie()">Accept</button>
+  </span>
+</div>
+<!-- /SITE:FOOTER -->
+</body>
+</html>

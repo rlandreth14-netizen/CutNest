@@ -14,6 +14,10 @@ jobs:
         with:
           node-version: 20
       - run: npm test
+      # The content pages and the shared nav/footer are written by
+      # tools/pages.py. Fail if the committed HTML is out of step with it.
+      - name: Website pages are up to date
+        run: python3 tools/pages.py && git diff --exit-code -- '*.html' sitemap.xml
 
   browser:
     name: Browser tests

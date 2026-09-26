@@ -17,7 +17,7 @@ const { chromium } = require('playwright');
 const ROOT = path.join(__dirname, '..');
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
   '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.woff2': 'font/woff2', '.xml': 'application/xml',
-  '.txt': 'text/plain' };
+  '.txt': 'text/plain', '.webp': 'image/webp' };
 
 // Minimal static server, GitHub Pages style: "/" serves index.html.
 function serve() {
@@ -689,6 +689,89 @@ const tests = {
       expect(res.status() === 200, f + ' returned ' + res.status());
     }
     expect(!page.errors.length, 'page errors: ' + page.errors.join(' | '));
+  },
+
+  async 'website: every page loads clean, and every internal link and anchor resolves'() {
+    const page = await freshPage();
+    const sitemap = fs.readFileSync(path.join(ROOT, 'sitemap.xml'), 'utf8');
+    const pages = [...sitemap.matchAll(/<loc>https:\/\/cutnest\.co\.uk([^<]*)<\/loc>/g)].map(m => m[1]);
+    expect(pages.length >= 11, 'sitemap should list the content pages, got ' + pages.length);
+    const links = new Set(), anchors = [];
+    for (const p of pages) {
+      const res = await page.goto(base + p);
+      expect(res.status() === 200, p + ' returned ' + res.status());
+      const info = await page.evaluate(() => ({
+        title: document.title, h1: document.querySelectorAll('h1').length,
+        canonical: (document.querySelector('link[rel=canonical]') || {}).href || '',
+        ld: [...document.querySelectorAll('script[type="application/ld+json"]')].map(s => { try { JSON.parse(s.textContent); return true; } catch (e) { return false; } }),
+        refs: [...document.querySelectorAll('a[href], img[src], script[src], link[href]')].map(e => e.getAttribute('href') || e.getAttribute('src'))
+      }));
+      expect(info.title.length > 10 && info.h1 === 1, p + ': needs a title and exactly one h1 (has ' + info.h1 + ')');
+      expect(p === '/terms.html' || p === '/privacy.html' || info.canonical === 'https://cutnest.co.uk' + p, p + ': canonical is ' + info.canonical);
+      expect(info.ld.every(Boolean), p + ': invalid JSON-LD');
+      info.refs.forEach(r => {
+        if (!r || /^(mailto:|https?:|data:|#|javascript:)/.test(r)) return;
+        const u = new URL(r, base + p);
+        if (u.hash && u.hash.length > 1) anchors.push([u.pathname, u.hash.slice(1), p]);
+        links.add(u.pathname);
+      });
+    }
+    for (const l of links) {
+      const res = await page.request.get(base + l);
+      expect(res.status() === 200, 'broken link ' + l + ' (' + res.status() + ')');
+    }
+    for (const [pathname, id, from] of anchors) {
+      const html = fs.readFileSync(path.join(ROOT, pathname === '/' ? 'index.html' : pathname.slice(1)), 'utf8');
+      expect(html.includes('id="' + id + '"'), 'link from ' + from + ' to ' + pathname + '#' + id + ': no such anchor');
+    }
+    expect(!page.errors.length, 'page errors: ' + page.errors.join(' | '));
+  },
+
+  async 'website: live demo runs the real engine and opens the job in the app'() {
+    const page = await freshPage();
+    await page.goto(base + '/');
+    await page.waitForSelector('#demo .cnd-head', { timeout: 20000 });
+    expect(/Provably optimal/.test(await page.textContent('#demo .cnd-out')), 'the sample job should be proved optimal');
+    await page.fill('#demo [aria-label="Part 1 quantity"]', '12');
+    await page.click('#demo .cnd-go');
+    // More covers than one sheet holds: the plan grows (cheapest mix, so not always the big sheet).
+    await page.waitForFunction(() => /^[2-9]\s*sheets/.test(document.querySelector('#demo .cnd-n').textContent), null, { timeout: 20000 });
+    await page.click('#demo .cnd-tab[data-k="bar"]');
+    await page.waitForFunction(() => /bars/.test(document.querySelector('#demo .cnd-n').textContent), null, { timeout: 20000 });
+    expect(await page.$$eval('#demo .cnd-sheets.lin figure', f => f.length) === 3, 'bar sample should need 3 bars');
+    const href = await page.getAttribute('#demo .cnd-open', 'href');
+    await page.goto(base + href);
+    await page.waitForFunction(() => mats.length === 1 && library.some(l => l._transient && l.kind === 'linear'));
+    const job = await page.evaluate(() => ({ ref: document.getElementById('job-ref').value, n: mats[0].pieces.length, w: mats[0].pieces[0].w }));
+    expect(/Demo/.test(job.ref) && job.n === 3 && job.w === 2400, 'demo job should open in the app: ' + JSON.stringify(job));
+    // The how-many-sheets calculator compares the nest with the area sum.
+    await page.goto(base + '/guides/how-many-sheets.html');
+    await page.waitForSelector('.cnd-cmp', { timeout: 20000 });
+    expect(/Area estimate: 2 · real nest: 3/.test(await page.textContent('.cnd-cmp')), 'calculator should show the area sum falling short: ' + await page.textContent('.cnd-cmp'));
+    expect(!page.errors.length, 'page errors: ' + page.errors.join(' | '));
+  },
+
+  async 'website: analytics only after consent'() {
+    const ctx = await browser.newContext({ serviceWorkers: 'block' });
+    const gaHits = [];
+    await ctx.route(u => !u.href.startsWith(base), r => { if (/googletagmanager|google-analytics/.test(r.request().url())) gaHits.push(r.request().url()); r.abort(); });
+    const page = await ctx.newPage();
+    await page.goto(base + '/sheet-metal.html');
+    await page.waitForSelector('#cookie.show', { timeout: 5000 });
+    await page.waitForTimeout(300);
+    expect(!gaHits.length, 'Google Analytics requested before consent');
+    expect(await page.evaluate(() => { cnTrack('test_event'); return window.dataLayer.length; }) === 0, 'events must not be queued without consent');
+    await page.click('#cookie >> text=Decline analytics');
+    await page.goto(base + '/app.html');
+    await page.waitForTimeout(500);
+    expect(!gaHits.length, 'Google Analytics requested after declining');
+    await page.evaluate(() => localStorage.removeItem('cn-cookie'));
+    await page.goto(base + '/');
+    await page.waitForSelector('#cookie.show', { timeout: 5000 });
+    await page.click('#cookie >> text=Accept');
+    await page.waitForTimeout(300);
+    expect(gaHits.length === 1, 'Google Analytics should load once after Accept, got ' + gaHits.length);
+    await ctx.close();
   },
 
   async 'offline cache installs (no missing files)'() {
