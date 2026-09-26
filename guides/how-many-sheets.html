@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>How Many Sheets Do I Need? Plywood, MDF &amp; Steel Calculator | CutNest</title>
+<meta name="description" content="Why dividing total part area by sheet area under-orders, what to allow for kerf and grain, and a free calculator that nests your parts to give the real sheet count."/>
+<link rel="canonical" href="https://cutnest.co.uk/guides/how-many-sheets.html"/>
+<meta name="robots" content="index,follow"/>
+<meta property="og:type" content="website"/>
+<meta property="og:site_name" content="CutNest"/>
+<meta property="og:title" content="How Many Sheets Do I Need? Plywood, MDF &amp; Steel Calculator | CutNest"/>
+<meta property="og:description" content="Why dividing total part area by sheet area under-orders, what to allow for kerf and grain, and a free calculator that nests your parts to give the real sheet count."/>
+<meta property="og:url" content="https://cutnest.co.uk/guides/how-many-sheets.html"/>
+<meta property="og:image" content="https://cutnest.co.uk/og-image.png"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://cutnest.co.uk/og-image.png"/>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230f4c5c'/><rect x='4' y='4' width='11' height='8' rx='1' fill='%23f59e0b'/><rect x='17' y='4' width='11' height='13' rx='1' fill='white' opacity='.9'/><rect x='4' y='14' width='11' height='14' rx='1' fill='white' opacity='.9'/><rect x='17' y='19' width='11' height='9' rx='1' fill='%23f59e0b' opacity='.8'/></svg>"/>
+<link rel="manifest" href="/manifest.webmanifest"/>
+<meta name="theme-color" content="#0a3a47"/>
+<link rel="apple-touch-icon" href="/apple-touch-icon.png"/>
+<link rel="preload" href="/fonts/barlow-400.woff2" as="font" type="font/woff2" crossorigin/>
+<link rel="preload" href="/fonts/barlow-condensed-800.woff2" as="font" type="font/woff2" crossorigin/>
+<link rel="stylesheet" href="/fonts/fonts.css"/>
+<link rel="stylesheet" href="/css/site.css"/>
+<script src="/js/site.js"></script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "Article",
+ "headline": "How many sheets do I need?",
+ "description": "Why the area sum under-orders, and a calculator that nests your parts.",
+ "mainEntityOfPage": "https://cutnest.co.uk/guides/how-many-sheets.html",
+ "dateModified": "2026-09-26",
+ "datePublished": "2026-09-26",
+ "author": {
+  "@type": "Organization",
+  "name": "CutNest",
+  "url": "https://cutnest.co.uk"
+ },
+ "publisher": {
+  "@type": "Organization",
+  "name": "CutNest",
+  "url": "https://cutnest.co.uk"
+ }
+}
+</script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "BreadcrumbList",
+ "itemListElement": [
+  {
+   "@type": "ListItem",
+   "position": 1,
+   "name": "Home",
+   "item": "https://cutnest.co.uk/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 2,
+   "name": "Guides",
+   "item": "https://cutnest.co.uk/guides.html"
+  },
+  {
+   "@type": "ListItem",
+   "position": 3,
+   "name": "How many sheets do I need?",
+   "item": "https://cutnest.co.uk/guides/how-many-sheets.html"
+  }
+ ]
+}
+</script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "FAQPage",
+ "mainEntity": [
+  {
+   "@type": "Question",
+   "name": "How many sheets of plywood do I need for a job?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Nest the parts on the sheet size you can buy, with your saw’s kerf, and count the sheets. Dividing total area by sheet area gives a minimum, not an answer: on jobs with large parts it can be a whole sheet short."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "How much should I add for waste?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Rather than a percentage, nest the job: the waste is whatever the real layout leaves. For rough budgeting, jobs of large panels waste more than jobs of small parts."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "What size is a standard sheet?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "In the UK most board is 2440×1220mm (8×4 ft), with 3050×1220mm also common; sheet steel is commonly 2500×1250 or 2000×1000mm, with other sizes from stockholders. Use the sizes your supplier actually sells."
+   }
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<!-- SITE:NAV (written by tools/pages.py) -->
+<nav class="nav">
+  <a class="brand" href="/">
+    <svg class="brand-logo" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+      <rect width="36" height="36" rx="8" fill="#0f4c5c"/>
+      <rect x="4" y="4" width="13" height="9" rx="2" fill="#f59e0b"/>
+      <rect x="19" y="4" width="13" height="15" rx="2" fill="white" opacity=".9"/>
+      <rect x="4" y="15" width="13" height="17" rx="2" fill="white" opacity=".9"/>
+      <rect x="19" y="21" width="13" height="11" rx="2" fill="#f59e0b" opacity=".8"/>
+    </svg>
+    <div class="brand-name">Cut<span>Nest</span></div>
+  </a>
+  <div class="nav-links">
+    <a href="/#demo" class="nav-link">Live demo</a>
+    <a href="/#features" class="nav-link">Features</a>
+    <a href="/guides.html" class="nav-link">Guides</a>
+    <a href="/#pricing" class="nav-link">Pricing</a>
+    <a href="/app.html" class="btn-try" data-placement="nav">Try it free &rarr;</a>
+  </div>
+  <button class="nav-hamburger" id="nav-hamburger" onclick="openNav()" aria-label="Open menu" aria-expanded="false" aria-controls="nav-mobile">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+<div class="nav-mobile" id="nav-mobile" role="dialog" aria-modal="true" aria-label="Menu">
+  <button class="nav-mobile-close" onclick="closeNav()" aria-label="Close menu">&times;</button>
+  <a href="/#demo" onclick="closeNav()">Live demo</a>
+  <a href="/#features" onclick="closeNav()">Features</a>
+  <a href="/guides.html" onclick="closeNav()">Guides</a>
+  <a href="/#pricing" onclick="closeNav()">Pricing</a>
+  <a href="/app.html" data-placement="nav-mobile" style="background:var(--amber);color:var(--teal2);padding:14px 36px;border-radius:9px;font-weight:900;font-size:20px;font-family:'Barlow Condensed',sans-serif;letter-spacing:.5px">Try Free &rarr;</a>
+</div>
+<!-- /SITE:NAV -->
+<main>
+<header class="pg-hero">
+  <div class="pg-hero-inner">
+    <div class="sec-eyebrow pg-eyebrow">Guide</div>
+    <h1>How many sheets do I need?</h1>
+    <p class="pg-lead">The quick answer &mdash; add up the area of the parts and divide by the area of a sheet &mdash; is usually wrong, and always in the direction that costs you a second delivery. Here is why, and a calculator that does it properly.</p>
+  </div>
+</header>
+<section class="pg-demo">
+  <div class="pg-demo-inner">
+    <h2>Calculator: your sheet, your parts</h2>
+    <p>Enter your sheet size, kerf and parts. CutNest nests them for real and shows what the area sum would have said.</p>
+    <div class="cn-demo" data-preset="custom" data-only data-compare><noscript><p>The live demo needs JavaScript. <a href="/app.html">Open the app</a> instead.</p></noscript></div>
+  </div>
+</section><section class="pg-sec "><div class="pg-sec-inner"><h2 class="sec-h2">Why the area sum under-orders</h2><div class="prose">
+<p>Area arithmetic assumes parts can be poured into a sheet like water. They can&rsquo;t. Three things break it:</p>
+<ol>
+<li><b>Parts don&rsquo;t tessellate.</b> Two 1400&times;700 desk tops on a 2440&times;1220 sheet need 1404mm of width side by side and only 1220mm is there, so each top uses most of a sheet on its own. In the calculator above, a small desk job has an area sum of 2 sheets and really needs 3.</li>
+<li><b>Every cut removes material.</b> The saw blade or cutter takes its width out of every cut. On a row of parts that is a few millimetres each time, and a few millimetres is sometimes the difference between four parts in a row and three. The <a href="/guides/saw-kerf.html">kerf guide</a> has a worked example.</li>
+<li><b>Grain and finish limit rotation.</b> Veneered board, woodgrain melamine and brushed stainless can&rsquo;t be turned 90&deg; to fill a gap, so fewer arrangements are possible.</li>
+</ol>
+<p>A &ldquo;10% for waste&rdquo; allowance is a guess on top of a guess: too little on a job of big parts, too much on a job of small ones.</p>
+</div></div></section><section class="pg-sec "><div class="pg-sec-inner"><h2 class="sec-h2">The reliable way</h2><div class="prose">
+<ol>
+<li>List every part with its finished size and quantity, and note which ones must keep the grain direction.</li>
+<li>Use the sheet sizes you can actually buy, and the kerf of the tool that will cut them.</li>
+<li>Nest the parts &mdash; by hand on paper for a few, or with a cut list optimiser for anything more.</li>
+<li>Count the sheets, then check the leftover: a big offcut is stock for the next job, not waste.</li>
+</ol>
+<p>That is what the calculator above does with CutNest&rsquo;s engine. The <a href="/app.html">full app</a> adds several sheet sizes with prices (it picks the cheapest mix), grain per part, cut sheets for the saw, and a quote.</p>
+</div></div></section>
+<section class="faq pg-faq"><div class="sec-eyebrow">Questions</div><h2 class="sec-h2" style="margin-bottom:18px">Straight answers</h2><div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">How many sheets of plywood do I need for a job?</button><div class="faq-a">Nest the parts on the sheet size you can buy, with your saw&rsquo;s kerf, and count the sheets. Dividing total area by sheet area gives a minimum, not an answer: on jobs with large parts it can be a whole sheet short.</div></div><div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">How much should I add for waste?</button><div class="faq-a">Rather than a percentage, nest the job: the waste is whatever the real layout leaves. For rough budgeting, jobs of large panels waste more than jobs of small parts.</div></div><div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">What size is a standard sheet?</button><div class="faq-a">In the UK most board is 2440&times;1220mm (8&times;4 ft), with 3050&times;1220mm also common; sheet steel is commonly 2500&times;1250 or 2000&times;1000mm, with other sizes from stockholders. Use the sizes your supplier actually sells.</div></div></section>
+<section class="cta-band">
+  <h2>Try it on your own job</h2>
+  <p>Free, in your browser, no account. Your cut list stays on your computer.</p>
+  <div class="cta-btns"><a href="/app.html" class="btn-primary" data-placement="cta-band">Open CutNest free &rarr;</a>
+  <a href="/#pricing" class="btn-secondary">See Pro &mdash; &pound;12/month</a></div>
+</section>
+</main>
+<!-- SITE:FOOTER (written by tools/pages.py) -->
+<div class="mobile-cta-bar" id="mobile-cta">
+  <a href="/app.html" class="mcta-free" data-placement="mobile-bar">Try Free &rarr;</a>
+  <a href="https://cutnest.lemonsqueezy.com/checkout/buy/a9fdfebb-ea08-4962-8aae-45e608f0cc6e" target="_blank" rel="noopener" class="mcta-pro" data-placement="mobile-bar">Pro &pound;12/mo</a>
+</div>
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div>
+        <div class="footer-brand-name">Cut<span>Nest</span></div>
+        <div class="footer-brand-desc">Cut list optimisation for sheet, bar and tube. Built by a fabricator in Newcastle upon Tyne. Used by fabricators, joiners and trades across the UK.</div>
+        <div style="margin-top:14px;display:flex;gap:10px">
+          <a href="https://www.linkedin.com/company/cutnest" target="_blank" rel="noopener" class="footer-social">LinkedIn</a>
+        </div>
+      </div>
+      <div class="footer-links-group">
+        <h4>Product</h4>
+        <a href="/app.html">Open the app</a>
+        <a href="/#demo">Live demo</a>
+        <a href="/#features">Features</a>
+        <a href="/#pricing">Pricing</a>
+      </div>
+      <div class="footer-links-group">
+        <h4>Trades</h4>
+        <a href="/sheet-metal.html">Sheet metal</a>
+        <a href="/joinery.html">Joinery &amp; cabinets</a>
+        <a href="/signs-and-plastics.html">Signs &amp; plastics</a>
+        <a href="/bar-and-tube.html">Bar &amp; tube</a>
+      </div>
+      <div class="footer-links-group">
+        <h4>Guides</h4>
+        <a href="/guides/how-many-sheets.html">How many sheets?</a>
+        <a href="/guides/saw-kerf.html">Kerf guide</a>
+        <a href="/choosing-a-cut-list-optimiser.html">Choosing an optimiser</a>
+        <a href="/guides.html">All guides</a>
+      </div>
+      <div class="footer-links-group">
+        <h4>Company</h4>
+        <a href="mailto:hello@cutnest.co.uk">hello@cutnest.co.uk</a>
+        <a href="/terms.html">Terms of Service</a>
+        <a href="/privacy.html">Privacy Policy</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-copy">&copy; 2025&ndash;2026 CutNest &middot; cutnest.co.uk</div>
+      <div class="footer-made">Made in <span>Newcastle upon Tyne, UK</span></div>
+    </div>
+  </div>
+</footer>
+<div class="cookie" id="cookie">
+  <span>CutNest saves your settings in your browser&rsquo;s local storage (always &mdash; it&rsquo;s how the app works offline). We&rsquo;d also like to use Google Analytics for anonymised usage stats. No ads, no cross-site tracking. See our <a href="/privacy.html">Privacy Policy</a>.</span>
+  <span style="display:flex;gap:8px;flex-shrink:0">
+    <button class="btn-cookie" style="background:none;border:1px solid rgba(255,255,255,.35);color:rgba(255,255,255,.85)" onclick="declineCookie()">Decline analytics</button>
+    <button class="btn-cookie" onclick="acceptCookie()">Accept</button>
+  </span>
+</div>
+<!-- /SITE:FOOTER -->
+<script src="/js/demo.js" defer></script>
+</body>
+</html>
