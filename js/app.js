@@ -18,8 +18,10 @@ function setSS(state, txt) {
 }
 function defaultLib() { return []; }
 
-function loadStarterPack(type) {
-  cnTrack('starter_pack', { pack: String(type), units: isInch() ? 'in' : 'mm' });
+// The starter packs offered on the welcome screen, in mm with UK prices or
+// in inches with US ones. Fresh ids on every call.
+const STARTER_TRADES = [['metal', 'Sheet metal'], ['timber', 'Timber & joinery'], ['acrylic', 'Acrylic & plastics'], ['bar', 'Bar & tube']];
+function starterPacks(imperial) {
   const packs = {
     metal: [
       {id:Date.now()+1,allowRotation:true,cuttingMethod:'free',name:'Mild Steel 2mm',material:'Mild Steel',thickness:'2mm',size1:{w:2450,h:1150,price:105},size2:{w:2050,h:900,price:65}},
@@ -67,9 +69,91 @@ function loadStarterPack(type) {
       {id:Date.now()+3,allowRotation:true,cuttingMethod:'free',name:'Acrylic 1/8" White',material:'Acrylic',thickness:'1/8"',sizes:[{w:IN(96),h:IN(48),price:160},{w:IN(48),h:IN(24),price:45}]}
     ]
   };
-  const pack = (isInch() ? imperialPacks : packs)[type];
+  return imperial ? imperialPacks : packs;
+}
+function starterPack(type) {
+  const pack = starterPacks(isInch())[type];
+  return pack ? pack.map(normalizeLibEntry) : null;
+}
+// Names of every starter material, in both unit systems. A library entry with
+// one of these names came from a starter pack, so switching trade can swap it.
+function starterNames() {
+  const names = {};
+  [false, true].forEach(function(imp){
+    const all = starterPacks(imp);
+    Object.keys(all).forEach(function(t){ all[t].forEach(function(e){ names[e.name] = 1; }); });
+  });
+  return names;
+}
+function isStarterEntry(e) { return !!(e && starterNames()[e.name]); }
+
+// Swap the starter materials in `list` for another trade's, keeping everything
+// the user made themselves (and Pro's CutNest grades). The free plan's limit
+// counts the user's own materials, so a full library takes what fits.
+function withStarterPack(list, type) {
+  const pack = starterPack(type) || [];
+  const keep = list.filter(function(e){ return !isStarterEntry(e); });
+  const have = {};
+  keep.forEach(function(e){ have[e.name] = 1; });
+  let add = pack.filter(function(e){ return !have[e.name]; });
+  let skipped = 0;
+  if (!isPro) {
+    const own = keep.filter(function(e){ return !isMasterId(e.id); }).length;
+    const room = Math.max(0, FREE_LIB_LIMIT - own);
+    skipped = Math.max(0, add.length - room);
+    add = add.slice(0, room);
+  }
+  return { list: keep.concat(add), added: add, skipped: skipped };
+}
+function starterTradeName(type) {
+  const t = STARTER_TRADES.find(function(x){ return x[0] === type; });
+  return t ? t[1] : type;
+}
+function switchNote(r) {
+  return r.skipped ? ' \u2014 the free plan holds ' + FREE_LIB_LIMIT + ' materials, so ' + r.skipped + ' did not fit' : '';
+}
+
+// Try another trade from the job screen: the new starter materials replace the
+// old ones, and any material block that used a removed one moves to the first
+// new material. Pieces already entered stay.
+function switchTrade(type) {
+  const r = withStarterPack(library, type);
+  if (!r.added.length) {
+    showToast(r.skipped ? 'The free plan holds ' + FREE_LIB_LIMIT + ' materials. Remove one in Library first.' : starterTradeName(type) + ' materials are already loaded', 4200);
+    return;
+  }
+  cnTrack('starter_pack', { pack: String(type), units: isInch() ? 'in' : 'mm', switched: 1 });
+  pushUndo();
+  library = r.list;
+  const ids = {};
+  library.forEach(function(e){ ids[e.id] = 1; });
+  mats.forEach(function(m){ if (!ids[m.selectedMatId]) m.selectedMatId = r.added[0].id; });
+  saveData(library).then(function() {
+    renderAll(); saveState();
+    showToast('Switched to ' + starterTradeName(type) + ' starter materials' + switchNote(r), 4200);
+  });
+}
+// The same from the Library window: it changes the unsaved list, like every
+// other edit there, and Save Library keeps it.
+function switchTradeInLib(type) {
+  flushEditForms();
+  const r = withStarterPack(pending, type);
+  if (!r.added.length) {
+    showToast(r.skipped ? 'The free plan holds ' + FREE_LIB_LIMIT + ' materials. Remove one first.' : starterTradeName(type) + ' materials are already in the list', 4200);
+    return;
+  }
+  pending = r.list;
+  _libSwitchedTo = r.added[0].id;
+  renderLibEntries();
+  showToast(starterTradeName(type) + ' starter materials added' + switchNote(r) + '. Save Library to keep them.', 4200);
+}
+let _libSwitchedTo = null;
+
+function loadStarterPack(type) {
+  cnTrack('starter_pack', { pack: String(type), units: isInch() ? 'in' : 'mm' });
+  const pack = starterPack(type);
   if (!pack) return;
-  library = pack.map(normalizeLibEntry);
+  library = pack;
   // Set a sensible default blade gap for the chosen trade so first-run numbers
   // are realistic without the user touching Settings. Sheet metal here means
   // laser/plasma profile cutting (~4mm); timber saw/router ~4mm; acrylic ~3mm.
@@ -188,6 +272,32 @@ function materialCategory(mat, name) {
   if (/\b(timber|wood|mdf|ply|plywood|osb|oak|pine|birch|chipboard|melamine|decking|deck|hardwood|softwood|veneer|board)\b/.test(s)) return 'Timber';
   if (/\b(acrylic|perspex|plastic|polycarb|poly|pvc|hdpe|abs|foamex|dibond|composite|glass)\b/.test(s)) return 'Plastic & Other';
   return 'Other';
+}
+
+// "Try another trade" links under the first material dropdown, for as long as
+// the library is only starter materials (and Pro's CutNest grades). Once the
+// user has made materials of their own, the same choice lives in Library.
+function tradeSwitchHtml() {
+  const own = library.filter(function(e){ return !isMasterId(e.id); });
+  if (!own.length || !own.every(isStarterEntry)) return '';
+  const names = {};
+  own.forEach(function(e){ names[e.name] = 1; });
+  const others = STARTER_TRADES.filter(function(t){
+    return !(starterPack(t[0]) || []).every(function(e){ return names[e.name]; });
+  });
+  if (!others.length) return '';
+  return '<div class="trade-switch"><span>Different work?</span>' + others.map(function(t){
+    return '<button type="button" onclick="switchTrade(\'' + t[0] + '\')">' + esc(t[1]) + '</button>';
+  }).join('') + '</div>';
+}
+
+// The same choice inside Library.
+function libTradeHtml() {
+  return '<div class="lib-trades"><div class="lib-trades-t">Starter materials</div>' +
+    '<p>Swap the starter materials for another trade\u2019s. Materials you made yourself stay.</p><div class="lib-trades-b">' +
+    STARTER_TRADES.map(function(t){
+      return '<button type="button" class="btn-sm-bl" onclick="switchTradeInLib(\'' + t[0] + '\')">' + esc(t[1]) + '</button>';
+    }).join('') + '</div></div>';
 }
 
 function buildBlock(m, idx) {
@@ -372,6 +482,7 @@ function buildBlock(m, idx) {
           </div>
           <button class="btn btn-out" onclick="openLib()" style="white-space:nowrap;flex-shrink:0">+ Add to Library</button>
         </div>
+        ${idx === 0 ? tradeSwitchHtml() : ''}
 
         ${sizeHtml}
 
@@ -3112,6 +3223,7 @@ function openLib() {
   refreshUnitLabels();
   pending=library.map(e=>({...e,sizes:(e.sizes||[]).map(z=>({...z}))}));
   _libOpen.clear();
+  _libSwitchedTo = null;
   renderLibEntries();
   document.getElementById('lib-modal').style.display='flex';
 }
@@ -3134,6 +3246,15 @@ async function saveLibClose() {
     library.forEach(function(e){ if (e && e.id != null) present[e.id] = 1; });
     setDeletedMasterIds(MASTER_LIBRARY.filter(function(m){ return !present[m.id]; }).map(function(m){ return m.id; }));
   }
+  // After a trade switch here, jobs on a removed starter material move to the
+  // first new one instead of losing their material.
+  if (_libSwitchedTo != null && library.some(function(e){ return e.id === _libSwitchedTo; })) {
+    const ids = {};
+    library.forEach(function(e){ ids[e.id] = 1; });
+    mats.forEach(function(m){ if (!ids[m.selectedMatId]) m.selectedMatId = _libSwitchedTo; });
+    saveState();
+  }
+  _libSwitchedTo = null;
   await persistLib(library);
   renderAll();
   closeLib();
@@ -3178,12 +3299,12 @@ function hiddenMastersHtml(){
 
 function renderLibEntries() {
   const wrap=document.getElementById('lib-entries');
-  if(!pending.length){wrap.innerHTML='<p style="color:var(--muted);font-size:13px;margin-bottom:12px">Your library is empty. Add your first material below — enter the sheet sizes and prices from your supplier.</p>'+hiddenMastersHtml();return;}
+  if(!pending.length){wrap.innerHTML='<p style="color:var(--muted);font-size:13px;margin-bottom:12px">Your library is empty. Add your first material below — enter the sheet sizes and prices from your supplier.</p>'+hiddenMastersHtml()+libTradeHtml();return;}
   // Ids are numbers for hand-made entries but strings for shared-link ones
   // ('shared-…'). Written bare into onclick, a string id became a JS expression
   // (shared - 1750… - 0) and threw, so those materials could not be edited or
   // deleted. JSON-quote, then escape for the attribute.
-  wrap.innerHTML=pending.map(e=>{ const jid=esc(JSON.stringify(e.id)); return `
+  wrap.innerHTML=libTradeHtml()+pending.map(e=>{ const jid=esc(JSON.stringify(e.id)); return `
     <div class="lib-entry">
       <div class="le-hdr">
         <div><div class="le-name">${esc(e.name)}</div><div class="le-meta">${esc(e.material||'')}${e.thickness?' · '+esc(e.thickness):''}</div></div>

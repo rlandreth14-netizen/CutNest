@@ -146,6 +146,47 @@ const tests = {
     expect(found, 'new material missing after reload');
   },
 
+  async 'switch trade from the job screen'() {
+    const page = await freshPage();
+    await startWithMetal(page);
+    await setPiece(page, 1, 800, 600, 2);
+    expect(!(await page.isVisible('.trade-switch >> text=Sheet metal')), 'the loaded trade should not be offered');
+    await page.click('.trade-switch >> text=Timber & joinery');
+    await page.waitForFunction(() => library.some(l => l.name === 'MDF 18mm'));
+    const r = await page.evaluate(() => ({
+      names: library.map(l => l.name),
+      sel: (library.find(l => l.id == mats[0].selectedMatId) || {}).name,
+      piece: [mats[0].pieces[0].w, mats[0].pieces[0].h, mats[0].pieces[0].qty]
+    }));
+    expect(JSON.stringify(r.names) === JSON.stringify(['MDF 18mm', 'Plywood 18mm (Hardwood Face)', 'MDF 12mm']), 'library should be the timber pack: ' + r.names);
+    expect(r.sel === 'MDF 18mm', 'job should move to the first timber material, got ' + r.sel);
+    expect(JSON.stringify(r.piece) === '[800,600,2]', 'pieces should stay: ' + r.piece);
+    expect(await page.isVisible('.trade-switch >> text=Sheet metal'), 'sheet metal should be offered to switch back');
+    await page.reload();
+    await page.waitForFunction(() => library.length > 0);
+    expect(await page.evaluate(() => library[0].name) === 'MDF 18mm', 'switch should survive a reload');
+    expect(!page.errors.length, 'page errors: ' + page.errors.join(' | '));
+  },
+
+  async 'switch trade in Library keeps your own materials'() {
+    const page = await freshPage();
+    await startWithMetal(page);
+    await page.click('button[aria-label="Stock library"]');
+    await page.fill('#n-name', 'Test Ply 9mm');
+    await page.fill('#n-w1', '2440');
+    await page.fill('#n-h1', '1220');
+    await page.click('#add-form-wrap >> text=+ Add');
+    await page.click('.lib-trades >> text=Acrylic & plastics');
+    await page.click('text=Save Library');
+    const r = await page.evaluate(() => ({ names: library.map(l => l.name), sel: (library.find(l => l.id == mats[0].selectedMatId) || {}).name }));
+    expect(r.names.includes('Test Ply 9mm'), 'own material should stay: ' + r.names);
+    expect(!r.names.some(n => /Steel|S\/S|Galv/.test(n)), 'metal starter materials should go: ' + r.names);
+    expect(r.names.filter(n => /^Acrylic/.test(n)).length === 3, 'acrylic pack should load: ' + r.names);
+    expect(r.sel === 'Acrylic 3mm Clear', 'job should move to the first acrylic material, got ' + r.sel);
+    expect(!(await page.isVisible('.trade-switch')), 'job screen links hide once you have your own materials');
+    expect(!page.errors.length, 'page errors: ' + page.errors.join(' | '));
+  },
+
   async 'kerf under 1mm is kept'() {
     const page = await freshPage();
     await startWithMetal(page);
