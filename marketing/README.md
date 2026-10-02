@@ -9,6 +9,8 @@ node marketing/build.js         # post images, carousel PDF + cover
 FFMPEG=/path/to/ffmpeg node marketing/video.js        # 30s overview MP4
 FFMPEG=/path/to/ffmpeg node marketing/walkthrough.js  # app screen recording MP4
 node marketing/kit.js           # post copy (posts.js) -> linkedin-posts.md + kit.html
+FFMPEG=/path/to/ffmpeg node marketing/youtube.js     # YouTube videos, thumbnails, channel art
+node marketing/youtube-kit.js   # YouTube upload text -> youtube-uploads.md + youtube-kit.html
 ```
 
 The videos need an ffmpeg with libx264 (for example `npm i ffmpeg-static`).
