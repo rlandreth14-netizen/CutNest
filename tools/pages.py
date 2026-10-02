@@ -54,7 +54,7 @@ NAV = f'''<!-- SITE:NAV (written by tools/pages.py) -->
 FOOTER = f'''<!-- SITE:FOOTER (written by tools/pages.py) -->
 <div class="mobile-cta-bar" id="mobile-cta">
   <a href="/app.html" class="mcta-free" data-placement="mobile-bar">Try Free &rarr;</a>
-  <a href="{CHECKOUT}" target="_blank" rel="noopener" class="mcta-pro" data-placement="mobile-bar">Pro &pound;12/mo</a>
+  <a href="{CHECKOUT}" target="_blank" rel="noopener" class="mcta-pro" data-placement="mobile-bar">Pro &pound;12/mo + VAT</a>
 </div>
 <footer>
   <div class="footer-inner">
@@ -165,7 +165,7 @@ def cta(title='Try it on your own job', sub='Free, in your browser, no account. 
   <h2>{title}</h2>
   <p>{sub}</p>
   <div class="cta-btns"><a href="/app.html" class="btn-primary" data-placement="cta-band">Open CutNest free &rarr;</a>
-  <a href="/#pricing" class="btn-secondary">See Pro &mdash; &pound;12/month</a></div>
+  <a href="/#pricing" class="btn-secondary">See Pro &mdash; &pound;12/month + VAT</a></div>
 </section>'''
 
 
@@ -218,7 +218,8 @@ def software_ld(desc):
     return {"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "CutNest", "url": SITE,
             "applicationCategory": "BusinessApplication", "operatingSystem": "Web", "description": desc,
             "offers": [{"@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "GBP"},
-                       {"@type": "Offer", "name": "Pro Monthly", "price": "12.00", "priceCurrency": "GBP"}]}
+                       {"@type": "Offer", "name": "Pro Monthly", "price": "12.00", "priceCurrency": "GBP",
+                        "priceSpecification": {"@type": "UnitPriceSpecification", "price": "12.00", "priceCurrency": "GBP", "valueAddedTaxIncluded": False}}]}
 
 
 def article_ld(path, headline, desc):
@@ -418,7 +419,7 @@ PAGES.append(page(
             ('Can it price the job?', 'The sheet count is only half a quote.', 'Pro turns the layout into a quote: material with markup, machine time from the actual cuts, handling, extras, VAT and your logo.'),
             ('Where does your data live?', 'Cut lists and prices are commercial information.', 'In your browser. No account; nothing is uploaded; the app works offline once loaded.'),
             ('Millimetres or inches?', 'Your supplier and your tape measure should agree with the software.', 'Both, with fractions (23 5/8, 8&prime; 6) and metres (2.4m).'),
-            ('What does it cost for the whole team?', 'Per-seat pricing adds up in a busy shop.', 'Free for one material per job; Pro is &pound;12 a month per company and the key can be shared with your team.'),
+            ('What does it cost for the whole team?', 'Per-seat pricing adds up in a busy shop.', 'Free for one material per job; Pro is &pound;12 a month plus VAT per company and the key can be shared with your team.'),
         ])) + '</div>') +
     section('Try it before you decide', '<div class="prose"><p>The quickest test is your own last job. Enter it in the <a href="/#demo">live demo</a> or the <a href="/app.html">app</a> and compare the sheet count with what you ordered.</p></div>'),
     ld=[article_ld('/choosing-a-cut-list-optimiser.html', 'Choosing a cut list optimiser: 12 questions to ask', 'A practical checklist for choosing cut list software for a workshop.')],
