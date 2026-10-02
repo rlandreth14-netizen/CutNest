@@ -13,7 +13,7 @@ import html, json, os, re
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 SITE = 'https://cutnest.co.uk'
-UPDATED = '2026-09-26'
+UPDATED = '2026-10-02'
 CHECKOUT = 'https://cutnest.lemonsqueezy.com/checkout/buy/a9fdfebb-ea08-4962-8aae-45e608f0cc6e'
 
 LOGO = '''<svg class="brand-logo" viewBox="0 0 36 36" fill="none" aria-hidden="true">
@@ -33,7 +33,7 @@ NAV = f'''<!-- SITE:NAV (written by tools/pages.py) -->
   <div class="nav-links">
     <a href="/#demo" class="nav-link">Live demo</a>
     <a href="/#features" class="nav-link">Features</a>
-    <a href="/guides.html" class="nav-link">Guides</a>
+    <a href="/guides.html" class="nav-link">Calculators</a>
     <a href="/#pricing" class="nav-link">Pricing</a>
     <a href="/app.html" class="btn-try" data-placement="nav">Try it free &rarr;</a>
   </div>
@@ -45,7 +45,7 @@ NAV = f'''<!-- SITE:NAV (written by tools/pages.py) -->
   <button class="nav-mobile-close" onclick="closeNav()" aria-label="Close menu">&times;</button>
   <a href="/#demo" onclick="closeNav()">Live demo</a>
   <a href="/#features" onclick="closeNav()">Features</a>
-  <a href="/guides.html" onclick="closeNav()">Guides</a>
+  <a href="/guides.html" onclick="closeNav()">Calculators &amp; guides</a>
   <a href="/#pricing" onclick="closeNav()">Pricing</a>
   <a href="/app.html" data-placement="nav-mobile" style="background:var(--amber);color:var(--teal2);padding:14px 36px;border-radius:9px;font-weight:900;font-size:20px;font-family:'Barlow Condensed',sans-serif;letter-spacing:.5px">Try Free &rarr;</a>
 </div>
@@ -81,7 +81,10 @@ FOOTER = f'''<!-- SITE:FOOTER (written by tools/pages.py) -->
         <a href="/bar-and-tube.html">Bar &amp; tube</a>
       </div>
       <div class="footer-links-group">
-        <h4>Guides</h4>
+        <h4>Free tools</h4>
+        <a href="/sheet-calculator.html">Sheet calculator</a>
+        <a href="/plywood-cut-list-calculator.html">Plywood &amp; MDF calculator</a>
+        <a href="/bar-cutting-calculator.html">Cut length calculator</a>
         <a href="/guides/how-many-sheets.html">How many sheets?</a>
         <a href="/guides/saw-kerf.html">Kerf guide</a>
         <a href="/choosing-a-cut-list-optimiser.html">Choosing an optimiser</a>
@@ -196,8 +199,8 @@ def page(path, title, desc, h1, lead, body, faqs=None, ld=None, crumb=None, demo
     return path
 
 
-def demo_block(preset, title, sub, extra=''):
-    return f'''<section class="pg-demo">
+def demo_block(preset, title, sub, extra='', cls=''):
+    return f'''<section class="pg-demo {cls}">
   <div class="pg-demo-inner">
     <h2>{title}</h2>
     <p>{sub}</p>
@@ -326,6 +329,131 @@ PAGES.append(page(
     ld=[software_ld('Linear cutting optimiser for bar, tube, angle, extrusion and timber lengths.')],
     crumb=[('Home', '/'), ('Bar & tube', '/bar-and-tube.html')], demo=True, eyebrow='For bar, tube &amp; extrusion'))
 
+# ── CALCULATORS ───────────────────────────────────────────────────
+def calc_block(preset, title, sub):
+    return demo_block(preset, title, sub, 'data-compare', 'pg-calc')
+
+
+PAGES.append(page(
+    '/sheet-calculator.html',
+    'Free Sheet Nesting Calculator: Sheet Metal & Plate | CutNest',
+    'Free online sheet nesting calculator. Enter your sheet size, kerf and parts, and it nests them on the sheet to give the real number of sheets, the cost and a drawing of every sheet. No sign-up.',
+    'Free sheet <span>nesting calculator</span>',
+    'Enter your sheet size, the gap you leave between parts and your parts list. The calculator nests the parts on the sheet and tells you how many sheets to order, what they cost, and whether the answer is provably the minimum.',
+    calc_block('sheetcalc', 'Sheet nesting calculator', 'Pick a standard size or type your own. Prices are optional. Up to 20 part sizes and 400 parts.') +
+    section('How to use it', '''<div class="prose">
+<ol>
+<li><b>Sheet size.</b> Tap a standard size or type the width and height in millimetres.</li>
+<li><b>Kerf.</b> The gap you leave between parts: a few millimetres on a laser, more on plasma. The <a href="/guides/saw-kerf.html">kerf guide</a> has typical figures for each process.</li>
+<li><b>Price per sheet</b> (optional) gives the material cost of the job.</li>
+<li><b>Parts.</b> Width, height and quantity for each part. Untick &ldquo;Parts can turn&rdquo; for brushed or grained finishes.</li>
+<li><b>Calculate.</b> You get the sheet count, the material cost, how much of each sheet is used, and every sheet drawn to scale.</li>
+</ol>
+<p>The answer is checked against a mathematical lower bound. When it says <b>provably optimal</b>, no layout from any software uses fewer sheets. The yellow line shows what the usual &ldquo;total area &divide; sheet area&rdquo; sum would have said.</p>
+</div>''') +
+    section('Common sheet and plate sizes', '''<div class="prose">
+<p>Sizes that UK stockholders commonly carry. Always use the sizes your supplier actually sells.</p>
+<div style="overflow-x:auto"><table class="pg-tbl"><thead><tr><th>Size (mm)</th><th>Often called</th><th>Common for</th></tr></thead><tbody>
+<tr><td>2500 &times; 1250</td><td>&ldquo;8 by 4&rdquo; metric</td><td>Mild steel, galvanised, aluminium</td></tr>
+<tr><td>2440 &times; 1220</td><td>8 &times; 4 ft</td><td>Stainless, aluminium, also board</td></tr>
+<tr><td>3000 &times; 1500</td><td>10 &times; 5</td><td>Steel and stainless sheet and plate</td></tr>
+<tr><td>2000 &times; 1000</td><td>&nbsp;</td><td>Thinner steel and aluminium sheet</td></tr>
+<tr><td>4000 &times; 2000</td><td>&nbsp;</td><td>Heavier plate</td></tr>
+</tbody></table></div>
+</div>''') +
+    section('Need more than the calculator?', points([
+        ('Several sheet sizes at once', 'The <a href="/app.html">app</a> mixes sizes and picks the cheapest combination, for example full sheets plus a smaller size for the last few parts.'),
+        ('Grain on individual parts (Pro)', 'Lock the grain on the door faces of a brushed stainless job and let the hidden parts turn to fill gaps.'),
+        ('Quotes and DXF (Pro)', 'Cut length and pierces from the actual nest, priced at your machine rate, and the layout as a DXF for your programmer.'),
+    ])),
+    faqs=[
+        ('Is the sheet nesting calculator free?', 'Yes. No sign-up, no limit on how often you use it, and nothing is uploaded: the nesting runs in your browser. It takes up to 400 parts; the free app takes more.'),
+        ('Does it nest irregular shapes from a DXF?', 'No. CutNest nests each part as a rectangle, which is what you need for ordering and quoting: how many sheets, and what they cost. Your CAM or nesting software still programs the machine.'),
+        ('Why is the answer more than total area divided by sheet area?', 'Because parts don&rsquo;t tessellate perfectly and every cut takes a kerf. On jobs with large parts the area sum is often a whole sheet short. See <a href="/guides/how-many-sheets.html">how many sheets do I need?</a>'),
+        ('What does &ldquo;provably optimal&rdquo; mean?', 'CutNest works out the fewest sheets any layout could possibly use. When its own layout matches that number, nothing can do better. When it can&rsquo;t prove it, it doesn&rsquo;t say so.'),
+    ],
+    ld=[software_ld('Free online sheet nesting calculator for sheet metal and plate.')],
+    crumb=[('Home', '/'), ('Calculators', '/guides.html'), ('Sheet nesting calculator', '/sheet-calculator.html')], demo=True, eyebrow='Free calculator'))
+
+PAGES.append(page(
+    '/plywood-cut-list-calculator.html',
+    'Plywood & MDF Cut List Calculator (8×4 Sheets) | CutNest',
+    'Free plywood and MDF cut list calculator. Enter your panels and it lays them out on 8×4 (2440×1220) or any board size, with your blade kerf and grain, and tells you how many sheets to buy.',
+    'Plywood &amp; MDF <span>cut list calculator</span>',
+    'List your panels, pick the board size and your blade&rsquo;s kerf, and the calculator lays them out on the sheets: how many boards to buy, what they cost and where every panel goes.',
+    calc_block('boardcalc', 'Cut list calculator for sheet board', 'Kitchen carcass parts are loaded as an example. Change them to your own job. Untick &ldquo;Parts can turn&rdquo; when the grain must run one way.') +
+    section('How to use it', '''<div class="prose">
+<ol>
+<li><b>Board size.</b> 8&times;4 (2440&times;1220mm) is selected. Tap another size or type your own.</li>
+<li><b>Kerf.</b> Your saw blade&rsquo;s width, usually about 3&ndash;4.5mm on a panel saw and 2&ndash;3mm on a track saw. On a CNC router, use the cutter diameter.</li>
+<li><b>Price per board</b> (optional) gives the material cost.</li>
+<li><b>Panels.</b> Finished width, height and quantity. For veneered ply, oak-faced MDF or woodgrain melamine, untick &ldquo;Parts can turn&rdquo; so every panel keeps the grain running the same way.</li>
+<li><b>Calculate</b> and you get the board count and every sheet drawn to scale.</li>
+</ol>
+</div>''') +
+    section('Standard board sizes in the UK', '''<div class="prose">
+<div style="overflow-x:auto"><table class="pg-tbl"><thead><tr><th>Size (mm)</th><th>Often called</th><th>Common for</th></tr></thead><tbody>
+<tr><td>2440 &times; 1220</td><td>8 &times; 4</td><td>Plywood, MDF, OSB, hardboard</td></tr>
+<tr><td>3050 &times; 1220</td><td>10 &times; 4</td><td>Longer MDF and ply panels</td></tr>
+<tr><td>2800 &times; 2070</td><td>Full-size MFC</td><td>Melamine-faced chipboard for kitchens and wardrobes</td></tr>
+<tr><td>1220 &times; 607</td><td>Quarter sheet</td><td>MDF and ply cut down at DIY stores</td></tr>
+</tbody></table></div>
+<p>Thicknesses vary by supplier. 18mm is the usual carcass board; 6mm and 9mm are common for backs and drawer bottoms.</p>
+</div>''') +
+    section('Need more than the calculator?', points([
+        ('Saw-friendly layouts (Pro)', 'Guillotine mode keeps every cut edge to edge, the way a panel saw works, and numbers the cuts in order.'),
+        ('Grain per panel (Pro)', 'Lock the grain on doors and drawer fronts only, and let carcass parts turn to fit.'),
+        ('Labels and cut sheets', 'Print the cut sheet for the saw, and with Pro a label for every panel so nothing gets mixed up at assembly.'),
+    ])),
+    faqs=[
+        ('How many sheets of plywood do I need?', 'Enter your panels above and the calculator nests them on the board size you buy. Dividing total area by board area gives a minimum, not an answer; on jobs with big panels it can be a whole board short.'),
+        ('What kerf should I use for a panel saw?', 'The blade&rsquo;s tooth width, usually about 3&ndash;4.5mm. A scoring blade doesn&rsquo;t add to it. The <a href="/guides/saw-kerf.html">kerf guide</a> has figures for other tools.'),
+        ('Can it keep the grain running one way?', 'Yes. Untick &ldquo;Parts can turn&rdquo; and no panel is rotated. In the app, Pro can lock the grain on individual panels instead.'),
+        ('Is it free?', 'Yes, with no sign-up. The layout is worked out in your browser and nothing is uploaded.'),
+    ],
+    ld=[software_ld('Free plywood and MDF cut list calculator for 8x4 and other board sizes.')],
+    crumb=[('Home', '/'), ('Calculators', '/guides.html'), ('Plywood & MDF cut list calculator', '/plywood-cut-list-calculator.html')], demo=True, eyebrow='Free calculator'))
+
+PAGES.append(page(
+    '/bar-cutting-calculator.html',
+    'Cut Length Calculator: Fewest Bars, Tube & Timber | CutNest',
+    'Free cut length calculator for steel bar, box section, tube, extrusion and timber. Enter your stock length, saw kerf and the lengths you need: it finds the fewest bars and shows every cutting pattern.',
+    'Cut length <span>calculator</span>',
+    'Enter the length your bar, tube or timber comes in, your saw&rsquo;s kerf and the lengths you need. The calculator works out the fewest bars, shows how to cut each one, and marks the offcuts worth keeping.',
+    calc_block('barcalc', 'Bar and tube cutting calculator', 'Pick a stock length or type your own. Prices are optional. Up to 20 lengths and 400 cuts.') +
+    section('How to use it', '''<div class="prose">
+<ol>
+<li><b>Bar length.</b> The length your stock comes in, in millimetres.</li>
+<li><b>Kerf.</b> Your saw&rsquo;s cut width: about 1.5&ndash;2mm on a metal bandsaw, 2&ndash;3mm on a cold saw or mitre saw.</li>
+<li><b>Price per bar</b> (optional) gives the material cost.</li>
+<li><b>Lengths.</b> Each length you need and how many.</li>
+<li><b>Calculate.</b> Each bar is drawn with its cuts. Offcuts of 500mm or more are shown in green as worth keeping.</li>
+</ol>
+<p>This is the classic cutting stock problem. CutNest solves it and checks the answer against a lower bound, so when it says provably optimal, no plan uses fewer bars.</p>
+</div>''') +
+    section('Typical stock lengths', '''<div class="prose">
+<p>Check with your supplier. These are lengths you will commonly see in the UK.</p>
+<div style="overflow-x:auto"><table class="pg-tbl"><thead><tr><th>Material</th><th>Typical lengths</th></tr></thead><tbody>
+<tr><td>Steel box section (SHS, RHS) and tube</td><td>6m and 7.5m</td></tr>
+<tr><td>Steel angle, flat and channel</td><td>6m</td></tr>
+<tr><td>Aluminium extrusion</td><td>6m, some profiles 6.5m</td></tr>
+<tr><td>Sawn and planed timber</td><td>2.4m to 4.8m</td></tr>
+</tbody></table></div>
+</div>''') +
+    section('Need more than the calculator?', points([
+        ('Two or more stock lengths', 'The <a href="/app.html">app</a> mixes stock lengths (say 6m and 7.5m) with their prices and picks the cheapest combination.'),
+        ('End trim and per-material kerf', 'Take a damaged end off every bar, and give the bandsaw and the mitre saw their own kerf.'),
+        ('Sheet and bar in one job (Pro)', 'A frame with a sheet-metal infill panel: the box section and the sheet in the same calculation and the same quote.'),
+    ])),
+    faqs=[
+        ('How do I work out how many bars I need?', 'Enter your stock length, kerf and the lengths you need above. Adding the lengths up and dividing by the bar length gives a minimum; the real answer depends on how the lengths combine on each bar, which is what the calculator works out.'),
+        ('Does it allow for the saw kerf?', 'Yes. The kerf is taken out of every cut between pieces. Enter the width of your blade.'),
+        ('Can I use it for timber?', 'Yes. Pick a timber length such as 2.4m or 4.8m, or type your own, and use your mitre saw&rsquo;s kerf.'),
+        ('Is it free?', 'Yes, with no sign-up. Bar and tube cutting is free in the app too.'),
+    ],
+    ld=[software_ld('Free cut length calculator for bar, tube, extrusion and timber.')],
+    crumb=[('Home', '/'), ('Calculators', '/guides.html'), ('Cut length calculator', '/bar-cutting-calculator.html')], demo=True, eyebrow='Free calculator'))
+
 # ── GUIDES ────────────────────────────────────────────────────────
 PAGES.append(page(
     '/guides/how-many-sheets.html',
@@ -427,12 +555,15 @@ PAGES.append(page(
 
 PAGES.append(page(
     '/guides.html',
-    'Guides for Fabricators, Joiners and Sign Makers | CutNest',
-    'Practical guides on ordering sheet material, kerf and cut list software, from a fabricator in Newcastle upon Tyne.',
-    'Guides',
+    'Free Calculators and Guides for Fabricators and Joiners | CutNest',
+    'Free sheet, board and bar cutting calculators, and practical guides on ordering sheet material, kerf and cut list software, from a fabricator in Newcastle upon Tyne.',
+    'Calculators &amp; guides',
     'Short, practical guides on getting more out of sheet and bar, from someone who orders it for a living.',
     '<section class="pg-sec"><div class="pg-sec-inner"><div class="pg-cards">' + ''.join(
         f'<a class="pg-card" href="{u}"><div class="pg-card-k">{k}</div><h3>{t}</h3><p>{d}</p><span>Read &rarr;</span></a>' for u, k, t, d in [
+            ('/sheet-calculator.html', 'Free calculator', 'Sheet nesting calculator', 'Sheet metal and plate: the real sheet count, cost and every sheet drawn.'),
+            ('/plywood-cut-list-calculator.html', 'Free calculator', 'Plywood &amp; MDF cut list calculator', '8&times;4 or any board, with your blade kerf and grain.'),
+            ('/bar-cutting-calculator.html', 'Free calculator', 'Cut length calculator', 'The fewest bars of box section, tube, extrusion or timber.'),
             ('/guides/how-many-sheets.html', 'Guide + calculator', 'How many sheets do I need?', 'Why the area sum under-orders, and a calculator that nests your parts for the real count.'),
             ('/guides/saw-kerf.html', 'Guide', 'Kerf: the millimetres that cost you parts', 'Typical kerf and part spacing for saws, routers, laser, plasma and punch, with a worked example.'),
             ('/choosing-a-cut-list-optimiser.html', 'Checklist', 'Choosing a cut list optimiser', 'Twelve questions to ask any cut list or nesting tool before you commit.'),
