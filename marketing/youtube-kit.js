@@ -112,7 +112,7 @@ for (const v of videos) {
 }
 
 const steps = [
-  ['Create the channel', 'Sign in to youtube.com with the Google account you use for Search Console. Click your profile picture, then <b>Create a channel</b>. Name it <b>CutNest</b> and pick the handle <b>@cutnest</b> (or <b>@cutnestuk</b> if that is taken). Using a channel name creates a Brand Account, so you can add someone else to manage it later.'],
+  ['Create the channel', 'Sign in to youtube.com with the Google account you use for Search Console. You already have a personal channel there, so click your profile picture, then <b>Settings &rarr; Add or manage your channel(s) &rarr; Create a channel</b>. Name it <b>CutNest</b> and pick the handle <b>@cutnest</b> (or <b>@cutnestuk</b> if that is taken). This makes a Brand Account channel: separate from your personal one, with nothing that links the two, and you can add other owners or managers later. Before uploading or replying to comments, check the picture at the top right shows CutNest, not you.'],
   ['Verify it with your phone', 'In YouTube Studio go to <b>Settings &rarr; Channel &rarr; Feature eligibility</b> and verify with a phone number. You need this to upload your own thumbnails. It can take a day to switch on.'],
   ['Profile picture and banner', 'In Studio, <b>Customisation &rarr; Branding</b>. Upload <code>youtube-channel-avatar.png</code> as the picture and <code>youtube-channel-banner.png</code> as the banner. The banner&rsquo;s text sits in the middle strip that shows on phones, TVs and desktops.'],
   ['Description and links', 'In <b>Customisation &rarr; Basic info</b>, paste the channel description below, add a link to <b>cutnest.co.uk</b> and your LinkedIn page, and set the contact email to hello@cutnest.co.uk.'],
