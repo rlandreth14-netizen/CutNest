@@ -835,6 +835,14 @@ const tests = {
     await page.click('#watch .yt-play');
     const src = await page.getAttribute('#watch iframe', 'src');
     expect(/^https:\/\/www\.youtube-nocookie\.com\/embed\/WlbQUW9BZqM\?autoplay=1/.test(src), 'player should load the walkthrough from youtube-nocookie: ' + src);
+    // The trade, calculator and guide pages carry their own videos the same way.
+    yt.length = 0;
+    for (const [pg, id] of [['/bar-and-tube.html', 'piMSd6Yh2vM'], ['/bar-cutting-calculator.html', 'piMSd6Yh2vM'],
+                            ['/plywood-cut-list-calculator.html', 'GLol4dvwyuo'], ['/guides/how-many-sheets.html', 'GLol4dvwyuo']]) {
+      await page.goto(base + pg);
+      expect(await page.getAttribute('.yt-facade', 'data-yt') === id && !(await page.$('.yt-facade iframe')), pg + ' should show video ' + id + ' as a still');
+    }
+    expect(yt.length === 0, 'YouTube contacted without a press of play: ' + yt.join(' '));
     expect(!page.errors.length, 'page errors: ' + page.errors.join(' | '));
   },
 
