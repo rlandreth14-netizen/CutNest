@@ -41,7 +41,7 @@ done, and what is still open, as of 3 October 2026.
 
 | Channel | Where | Notes |
 |---|---|---|
-| Website | cutnest.co.uk (GitHub Pages, this repo) | Calculators, trade pages, guides; videos on 5 pages (PR #10) |
+| Website | cutnest.co.uk (GitHub Pages, this repo) | Calculators, trade pages, guides; videos on 5 pages |
 | LinkedIn | Owner's personal profile, plus linkedin.com/company/cutnest | Post from the personal profile; put the link in the first comment |
 | YouTube | youtube.com/@cutnestuk (Brand Account under the owner's Gmail) | 3 videos live, listed below |
 | Search Console | Domain property cutnest.co.uk | Sitemap submitted 3 Oct; indexing requested for new pages |
@@ -111,9 +111,9 @@ The owner has private kit pages on claude.ai:
   - `/bar-cutting-calculator.html`
 - The YouTube link is in the site footer, and the organisation data lists
   LinkedIn and YouTube under `sameAs`.
-- **PR #10** puts the videos on the site, loading YouTube only when someone
-  presses play (youtube-nocookie). It also adds VideoObject data and a
-  privacy policy line. Check whether it has been merged.
+- **Videos on the site** (PR #10, merged): they load YouTube only when someone
+  presses play (youtube-nocookie). Each page also has VideoObject data, and
+  the privacy policy has a YouTube line.
 
 ## Open, roughly in order of value
 
