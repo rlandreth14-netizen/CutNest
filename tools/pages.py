@@ -210,6 +210,42 @@ def demo_block(preset, title, sub, extra='', cls=''):
 </section>'''
 
 
+# YouTube videos on the content pages: a still until someone presses play
+# (js/site.js swaps in the youtube-nocookie player), plus VideoObject data.
+VIDEOS = {
+    'bars': ('piMSd6Yh2vM', 'Cut Box Section From the Fewest Bars: Free Cutting Plan',
+             'Box section for a frame: enter the lengths you need and CutNest finds the fewest bars, with a cutting plan for every bar and the offcuts worth keeping.',
+             '/img/video-bars.webp', 'PT48S'),
+    'calculator': ('GLol4dvwyuo', 'How Many Sheets Do I Need? Free Plywood & MDF Calculator',
+                   'Total area divided by sheet area says 2 sheets; the job needs 3. A free calculator that nests your parts on the board size you buy, with your blade kerf and grain.',
+                   '/img/video-calculator.webp', 'PT49S'),
+}
+PLAY = '<svg viewBox="0 0 68 48" width="68" height="48" aria-hidden="true"><path d="M66.5 7.7a8.5 8.5 0 0 0-6-6C55.2.3 34 .3 34 .3S12.8.3 7.5 1.7a8.5 8.5 0 0 0-6 6C.2 13 .2 24 .2 24s0 11 1.3 16.3a8.5 8.5 0 0 0 6 6c5.3 1.4 26.5 1.4 26.5 1.4s21.2 0 26.5-1.4a8.5 8.5 0 0 0 6-6C67.8 35 67.8 24 67.8 24s0-11-1.3-16.3z" fill="#f59e0b"/><path d="M27 34V14l18 10z" fill="#0a3a47"/></svg>'
+
+
+def video_block(key, h2, sub):
+    vid, name, _, thumb, _ = VIDEOS[key]
+    return f'''<section class="watch">
+  <div class="watch-inner">
+    <div class="sec-eyebrow">Watch</div>
+    <h2 class="sec-h2">{h2}</h2>
+    <p class="sec-sub">{sub}</p>
+    <div class="yt-facade" data-yt="{vid}">
+      <img src="{thumb}" width="1280" height="720" loading="lazy" alt="Video: {html.escape(name)}"/>
+      <button type="button" class="yt-play" aria-label="Play the video (loads YouTube)">{PLAY}</button>
+    </div>
+    <p class="watch-note">Plays from YouTube. <a href="https://youtu.be/{vid}" target="_blank" rel="noopener">Watch on YouTube</a> &middot; <a href="https://www.youtube.com/@cutnestuk" target="_blank" rel="noopener">More videos</a></p>
+  </div>
+</section>'''
+
+
+def video_ld(key):
+    vid, name, desc, thumb, dur = VIDEOS[key]
+    return {"@context": "https://schema.org", "@type": "VideoObject", "name": name, "description": desc,
+            "thumbnailUrl": SITE + thumb, "uploadDate": "2026-10-03", "duration": dur,
+            "embedUrl": "https://www.youtube-nocookie.com/embed/" + vid, "contentUrl": "https://youtu.be/" + vid, "publisher": ORG}
+
+
 def points(items):
     return '<div class="pg-points">' + ''.join(f'<div class="pg-point"><h3>{h}</h3><p>{p}</p></div>' for h, p in items) + '</div>'
 
@@ -318,6 +354,7 @@ PAGES.append(page(
     'Cut to length from <span>the fewest bars</span>',
     'Tell CutNest the lengths you buy and the lengths you need. It works out the fewest bars (or the cheapest mix of lengths), groups the bars cut the same way and prints a saw list.',
     demo_block('bar', 'Cut a frame from box section', 'Top rails, legs and braces from 7.5m and 6m lengths of 40&times;40&times;3 SHS with a 2mm saw kerf.') +
+    video_block('bars', 'See it in the app', 'Box section for a frame, from the lengths you need to a cutting plan for every bar, in 48 seconds.') +
     section('For the saw, not just the spreadsheet', points([
         ('Your stock lengths and prices', '6m, 6.5m, 7.5m or random lengths you have in the rack &mdash; with prices and how many you have. CutNest picks the cheapest mix.'),
         ('One saw list per pattern', 'Bars cut the same way are grouped: &ldquo;cut 4 bars like this&rdquo;, with the stop length for each cut and the marks from the bar end.'),
@@ -331,7 +368,7 @@ PAGES.append(page(
         ('Can I enter lengths in metres or feet?', 'Yes: 2.4m, 2400, 94 1/2&Prime; and 8&prime; 6 are all read. Choose inches in Settings to work in feet and inches throughout.'),
         ('Is bar cutting a Pro feature?', 'No, it works on every plan. Pro adds several materials per job (sheet and bar together), more stock lengths, stock limits and quotes.'),
     ],
-    ld=[software_ld('Linear cutting optimiser for bar, tube, angle, extrusion and timber lengths.')],
+    ld=[software_ld('Linear cutting optimiser for bar, tube, angle, extrusion and timber lengths.'), video_ld('bars')],
     crumb=[('Home', '/'), ('Bar & tube', '/bar-and-tube.html')], demo=True, eyebrow='For bar, tube &amp; extrusion'))
 
 # ── CALCULATORS ───────────────────────────────────────────────────
@@ -387,6 +424,7 @@ PAGES.append(page(
     'Plywood &amp; MDF <span>cut list calculator</span>',
     'List your panels, pick the board size and your blade&rsquo;s kerf, and the calculator lays them out on the sheets: how many boards to buy, what they cost and where every panel goes.',
     calc_block('boardcalc', 'Cut list calculator for sheet board', 'Kitchen carcass parts are loaded as an example. Change them to your own job. Untick &ldquo;Parts can turn&rdquo; when the grain must run one way.') +
+    video_block('calculator', 'How to use this calculator', 'Why the area sum comes up a sheet short, setting your size, kerf and price, and keeping the grain, in 49 seconds.') +
     section('How to use it', '''<div class="prose">
 <ol>
 <li><b>Board size.</b> 8&times;4 (2440&times;1220mm) is selected. Tap another size or type your own.</li>
@@ -416,7 +454,7 @@ PAGES.append(page(
         ('Can it keep the grain running one way?', 'Yes. Untick &ldquo;Parts can turn&rdquo; and no panel is rotated. In the app, Pro can lock the grain on individual panels instead.'),
         ('Is it free?', 'Yes, with no sign-up. The layout is worked out in your browser and nothing is uploaded.'),
     ],
-    ld=[software_ld('Free plywood and MDF cut list calculator for 8x4 and other board sizes.')],
+    ld=[software_ld('Free plywood and MDF cut list calculator for 8x4 and other board sizes.'), video_ld('calculator')],
     crumb=[('Home', '/'), ('Calculators', '/guides.html'), ('Plywood & MDF cut list calculator', '/plywood-cut-list-calculator.html')], demo=True, eyebrow='Free calculator'))
 
 PAGES.append(page(
@@ -426,6 +464,7 @@ PAGES.append(page(
     'Cut length <span>calculator</span>',
     'Enter the length your bar, tube or timber comes in, your saw&rsquo;s kerf and the lengths you need. The calculator works out the fewest bars, shows how to cut each one, and marks the offcuts worth keeping.',
     calc_block('barcalc', 'Bar and tube cutting calculator', 'Pick a stock length or type your own. Prices are optional. Up to 20 lengths and 400 cuts.') +
+    video_block('bars', 'The same job in the full app', 'Mixing 6m and 7.5m stock lengths for the cheapest plan, with a saw list for every bar.') +
     section('How to use it', '''<div class="prose">
 <ol>
 <li><b>Bar length.</b> The length your stock comes in, in millimetres.</li>
@@ -456,7 +495,7 @@ PAGES.append(page(
         ('Can I use it for timber?', 'Yes. Pick a timber length such as 2.4m or 4.8m, or type your own, and use your mitre saw&rsquo;s kerf.'),
         ('Is it free?', 'Yes, with no sign-up. Bar and tube cutting is free in the app too.'),
     ],
-    ld=[software_ld('Free cut length calculator for bar, tube, extrusion and timber.')],
+    ld=[software_ld('Free cut length calculator for bar, tube, extrusion and timber.'), video_ld('bars')],
     crumb=[('Home', '/'), ('Calculators', '/guides.html'), ('Cut length calculator', '/bar-cutting-calculator.html')], demo=True, eyebrow='Free calculator'))
 
 # ── GUIDES ────────────────────────────────────────────────────────
@@ -467,6 +506,7 @@ PAGES.append(page(
     'How many sheets do I need?',
     'The quick answer &mdash; add up the area of the parts and divide by the area of a sheet &mdash; is usually wrong, and always in the direction that costs you a second delivery. Here is why, and a calculator that does it properly.',
     demo_block('custom', 'Calculator: your sheet, your parts', 'Enter your sheet size, kerf and parts. CutNest nests them for real and shows what the area sum would have said.', 'data-compare') +
+    video_block('calculator', 'Why the area sum comes up short', 'A kitchen carcass job on 8&times;4 MDF: the area sum says 2 sheets, the real nest needs 3.') +
     section('Why the area sum under-orders', '''<div class="prose">
 <p>Area arithmetic assumes parts can be poured into a sheet like water. They can&rsquo;t. Three things break it:</p>
 <ol>
@@ -490,7 +530,7 @@ PAGES.append(page(
         ('How much should I add for waste?', 'Rather than a percentage, nest the job: the waste is whatever the real layout leaves. For rough budgeting, jobs of large panels waste more than jobs of small parts.'),
         ('What size is a standard sheet?', 'In the UK most board is 2440&times;1220mm (8&times;4 ft), with 3050&times;1220mm also common; sheet steel is commonly 2500&times;1250 or 2000&times;1000mm, with other sizes from stockholders. Use the sizes your supplier actually sells.'),
     ],
-    ld=[article_ld('/guides/how-many-sheets.html', 'How many sheets do I need?', 'Why the area sum under-orders, and a calculator that nests your parts.')],
+    ld=[article_ld('/guides/how-many-sheets.html', 'How many sheets do I need?', 'Why the area sum under-orders, and a calculator that nests your parts.'), video_ld('calculator')],
     crumb=[('Home', '/'), ('Guides', '/guides.html'), ('How many sheets do I need?', '/guides/how-many-sheets.html')], demo=True, eyebrow='Guide'))
 
 PAGES.append(page(

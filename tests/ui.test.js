@@ -54,6 +54,8 @@ async function freshPage({ pro = false, serviceWorkers = 'block', viewport } = {
   await ctx.route(url => !url.href.startsWith(base) && !url.href.startsWith('data:') &&
     url.hostname !== 'api.lemonsqueezy.com', route => route.abort());
   await ctx.addInitScript(({ pro, key }) => {
+    // Also runs in embedded frames (the YouTube player), where storage is off limits.
+    try { sessionStorage.length; } catch (e) { return; }
     if (sessionStorage.getItem('cn-test-init')) return;
     sessionStorage.setItem('cn-test-init', '1');
     localStorage.setItem('cn-cookie', 'declined');
@@ -818,6 +820,29 @@ const tests = {
     await page.goto(base + '/bar-cutting-calculator.html');
     await page.waitForSelector('.cnd-head', { timeout: 20000 });
     expect(/4\s*bars/.test(await page.textContent('.cnd-n')) && /Provably optimal/.test(await page.textContent('.cnd-out')), 'bar sample should be 4 bars, proved optimal');
+    expect(!page.errors.length, 'page errors: ' + page.errors.join(' | '));
+  },
+
+  async 'website: the walkthrough video loads YouTube only when played'() {
+    const page = await freshPage();
+    const yt = [];
+    page.on('request', r => { if (/youtube|ytimg|googlevideo/.test(r.url())) yt.push(r.url()); });
+    await page.goto(base + '/');
+    await page.locator('#watch').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(300);
+    expect(yt.length === 0, 'YouTube contacted before play: ' + yt.join(' '));
+    expect(await page.$$eval('#watch iframe', f => f.length) === 0, 'no player before play');
+    await page.click('#watch .yt-play');
+    const src = await page.getAttribute('#watch iframe', 'src');
+    expect(/^https:\/\/www\.youtube-nocookie\.com\/embed\/WlbQUW9BZqM\?autoplay=1/.test(src), 'player should load the walkthrough from youtube-nocookie: ' + src);
+    // The trade, calculator and guide pages carry their own videos the same way.
+    yt.length = 0;
+    for (const [pg, id] of [['/bar-and-tube.html', 'piMSd6Yh2vM'], ['/bar-cutting-calculator.html', 'piMSd6Yh2vM'],
+                            ['/plywood-cut-list-calculator.html', 'GLol4dvwyuo'], ['/guides/how-many-sheets.html', 'GLol4dvwyuo']]) {
+      await page.goto(base + pg);
+      expect(await page.getAttribute('.yt-facade', 'data-yt') === id && !(await page.$('.yt-facade iframe')), pg + ' should show video ' + id + ' as a still');
+    }
+    expect(yt.length === 0, 'YouTube contacted without a press of play: ' + yt.join(' '));
     expect(!page.errors.length, 'page errors: ' + page.errors.join(' | '));
   },
 
