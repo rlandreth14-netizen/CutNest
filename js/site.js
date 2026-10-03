@@ -129,6 +129,23 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
+// ── VIDEO: a still until someone presses play, then the YouTube player
+// (privacy-enhanced domain), so YouTube is never contacted on page load ──
+document.addEventListener('click', function (e) {
+  var f = e.target.closest && e.target.closest('.yt-facade');
+  if (!f || f.querySelector('iframe')) return;
+  var id = f.getAttribute('data-yt');
+  if (!/^[\w-]{11}$/.test(id)) return;
+  var ifr = document.createElement('iframe');
+  ifr.src = 'https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0&modestbranding=1';
+  ifr.title = 'CutNest walkthrough video';
+  ifr.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+  ifr.allowFullscreen = true;
+  f.innerHTML = '';
+  f.appendChild(ifr);
+  cnTrack('video_play', { video: id, source: location.pathname });
+});
+
 // ── SERVICE WORKER: offline support + installable app ──
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
