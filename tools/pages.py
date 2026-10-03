@@ -64,6 +64,7 @@ FOOTER = f'''<!-- SITE:FOOTER (written by tools/pages.py) -->
         <div class="footer-brand-desc">Cut list optimisation for sheet, bar and tube. Built by a fabricator in Newcastle upon Tyne. Used by fabricators, joiners and trades across the UK.</div>
         <div style="margin-top:14px;display:flex;gap:10px">
           <a href="https://www.linkedin.com/company/cutnest" target="_blank" rel="noopener" class="footer-social">LinkedIn</a>
+          <a href="https://www.youtube.com/@cutnestuk" target="_blank" rel="noopener" class="footer-social">YouTube</a>
         </div>
       </div>
       <div class="footer-links-group">
@@ -219,17 +220,21 @@ def section(h2, inner, cls=''):
 
 def software_ld(desc):
     return {"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "CutNest", "url": SITE,
-            "applicationCategory": "BusinessApplication", "operatingSystem": "Web", "description": desc,
+            "applicationCategory": "BusinessApplication", "operatingSystem": "Web", "description": desc, "publisher": ORG,
             "offers": [{"@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "GBP"},
                        {"@type": "Offer", "name": "Pro Monthly", "price": "12.00", "priceCurrency": "GBP",
                         "priceSpecification": {"@type": "UnitPriceSpecification", "price": "12.00", "priceCurrency": "GBP", "valueAddedTaxIncluded": False}}]}
 
 
+# The business, and the profiles that belong to it (Google links them up).
+ORG = {"@type": "Organization", "name": "CutNest", "url": SITE, "email": "hello@cutnest.co.uk",
+       "sameAs": ["https://www.linkedin.com/company/cutnest", "https://www.youtube.com/@cutnestuk"]}
+
+
 def article_ld(path, headline, desc):
     return {"@context": "https://schema.org", "@type": "Article", "headline": headline, "description": desc,
             "mainEntityOfPage": SITE + path, "dateModified": UPDATED, "datePublished": UPDATED,
-            "author": {"@type": "Organization", "name": "CutNest", "url": SITE},
-            "publisher": {"@type": "Organization", "name": "CutNest", "url": SITE}}
+            "author": ORG, "publisher": ORG}
 
 
 PAGES = []
