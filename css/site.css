@@ -373,3 +373,4 @@ footer{background:var(--teal2);padding:44px 5% 32px}
 .yt-play:focus-visible{outline:3px solid var(--amber);outline-offset:4px;border-radius:12px}
 .watch-note{font-size:13px;color:var(--text2);margin-top:12px}
 .watch-note a{color:var(--teal3);text-decoration:underline}
+.cnd-sheet select{display:block;width:100%;margin-top:3px;border:1px solid #cde4ea;background:#f4f9fb;border-radius:6px;padding:7px 6px;font:inherit;font-size:14px;color:#0d2d36;text-transform:none;letter-spacing:0}

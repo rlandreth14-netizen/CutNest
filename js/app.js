@@ -219,11 +219,11 @@ function setKerfChoice(k) {
   showToast('\u2713 Kerf set to ' + len(KERF) + ' \u2014 change it any time in Settings');
 }
 
-// Units chosen on the welcome screen. Picking inches also switches prices to
-// dollars (the starter prices are US ones) unless a currency was chosen.
+// Units chosen on the welcome screen. Unless a currency was chosen, prices
+// follow where the computer is, or dollars for inches (the imperial starter
+// prices are US ones) and pounds for mm.
 function welcomeUnits(u) {
-  if (u === 'in' && !settings.currencyTouched) settings.currency = '$';
-  if (u === 'mm' && !settings.currencyTouched) settings.currency = '\u00a3';
+  if (!settings.currencyTouched) settings.currency = guessCurrency() || (u === 'in' ? '$' : '\u00a3');
   setUnits(u);
 }
 
@@ -3392,7 +3392,7 @@ function sizeBadgesHtml(libMat) {
   return sizes.map(function(z, i){
     const locked = !isPro && i >= FREE_SHEET_SIZES;
     const extra = [];
-    if (+z.price > 0) extra.push(currency() + (+z.price));
+    if (+z.price > 0) extra.push(money(+z.price, Number.isInteger(+z.price) ? 0 : 2));
     if (z.max != null && z.max !== '') extra.push(isPro ? 'max ' + z.max : 'max ' + z.max + ' (Pro)');
     return '<div class="sz-badge"' + (locked ? ' style="opacity:.5" title="Pro: the free plan uses the first ' + FREE_SHEET_SIZES + ' sizes"' : '') + '>' +
       '<span class="sl">' + (bar ? 'Length ' : 'Size ') + (i + 1) + (extra.length ? ' · ' + esc(extra.join(' · ')) : '') + (locked ? ' · Pro' : '') + '</span>' +
@@ -4031,7 +4031,11 @@ function fillSettingsFields() {
   const os = document.getElementById('offcut-short'); if (os) os.value = lenNum(settings.minOffcutShort != null ? settings.minOffcutShort : 300);
   const ob = document.getElementById('offcut-bar');   if (ob) ob.value = lenNum(settings.minBarOffcut != null ? settings.minBarOffcut : 500);
   const us = document.getElementById('units-setting'); if (us) us.value = isInch() ? 'in' : 'mm';
-  const cs = document.getElementById('currency-setting'); if (cs) cs.value = currency();
+  const cs = document.getElementById('currency-setting');
+  if (cs) {
+    if (cs.options.length !== CURRENCY_LIST.length) cs.innerHTML = CURRENCY_LIST.map(function(c){ return '<option value="' + esc(c.s) + '">' + esc(c.s + '  ' + c.code) + '</option>'; }).join('');
+    cs.value = currency();
+  }
 }
 
 function loadSettings(){
@@ -4039,6 +4043,8 @@ function loadSettings(){
   if(settings.minOffcutLong==null)settings.minOffcutLong=1000;
   if(settings.minOffcutShort==null)settings.minOffcutShort=300;
   if(settings.minBarOffcut==null)settings.minBarOffcut=500;
+  // Nobody has picked a currency: show the one for where this computer is.
+  if(!settings.currencyTouched){ const g=guessCurrency(); if(g) settings.currency=g; }
   KERF=parseKerf(settings.kerf);
   const kd=document.getElementById('kerf-display');if(kd)kd.textContent=len(KERF);
 }

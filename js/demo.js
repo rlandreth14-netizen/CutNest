@@ -75,7 +75,26 @@
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
   }
   function num(v) { var n = parseFloat(String(v).replace(/[^\d.]/g, '')); return isFinite(n) ? n : 0; }
-  function money(n) { return '£' + (Math.round(n * 100) / 100).toFixed(2); }
+  // Calculators price in the visitor's currency: the one they chose in the app
+  // on this computer, else the one for where they are (js/units.js). The sample
+  // jobs on the home page carry UK example prices, so they stay in pounds.
+  var LIST = typeof CURRENCY_LIST !== 'undefined' ? CURRENCY_LIST : [{ s: '£', code: 'GBP' }];
+  var CUR = (function () {
+    try { var st = JSON.parse(localStorage.getItem('cutnest-settings-v1') || 'null'); if (st && st.currencyTouched && LIST.some(function (c) { return c.s === st.currency; })) return st.currency; } catch (e) {}
+    return (typeof guessCurrency === 'function' && guessCurrency()) || '£';
+  })();
+  function money(n, p) {
+    var sym = p && p.custom ? CUR : '£', c = LIST.filter(function (x) { return x.s === sym; })[0] || { s: sym }, v = (Math.round(n * 100) / 100).toFixed(2);
+    return c.after ? v + ' ' + c.s : c.s + (c.sp ? ' ' : '') + v;
+  }
+  // Remember a currency picked here for the app too (same setting, same browser).
+  function saveCurrency(sym) {
+    try {
+      var st = JSON.parse(localStorage.getItem('cutnest-settings-v1') || 'null') || {};
+      st.currency = sym; st.currencyTouched = true;
+      localStorage.setItem('cutnest-settings-v1', JSON.stringify(st));
+    } catch (e) {}
+  }
   function mm(n) { return (Math.round(n * 10) / 10) + 'mm'; }
 
   // One worker for every demo on the page, created on first use.
@@ -128,7 +147,7 @@
         var on = b.getAttribute('data-k') === k;
         b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false');
       });
-      var sizes = p.mat.sizes.map(function (z) { return (p.linear ? mm(z.w) : z.w + '×' + z.h + 'mm') + ' @ ' + money(z.price); }).join(' · ');
+      var sizes = p.mat.sizes.map(function (z) { return (p.linear ? mm(z.w) : z.w + '×' + z.h + 'mm') + ' @ ' + money(z.price, p); }).join(' · ');
       root.querySelector('.cnd-mat').innerHTML = p.custom
         ? customInputs(p)
         : '<b>' + esc(p.mat.name) + '</b> <span>' + esc(sizes) + ' \u00b7 kerf ' + p.kerf + 'mm' +
@@ -143,7 +162,10 @@
       var html = '<div class="cnd-sheet' + (p.calc ? ' calc' : '') + '">' +
         (lin ? f('Bar length (mm)', 'w', z.w) : f('Sheet width', 'w', z.w) + f('Sheet height', 'h', z.h)) +
         f('Kerf (mm)', 'k', p.kerf) +
-        (p.calc ? f('£ per ' + (lin ? 'bar' : 'sheet'), 'p', z.price || '') : '') + '</div>';
+        (p.calc ? f('Price per ' + (lin ? 'bar' : 'sheet'), 'p', z.price || '') +
+          '<label>Currency<select data-s="cur" aria-label="Currency">' + LIST.map(function (c) {
+            return '<option value="' + esc(c.s) + '"' + (c.s === CUR ? ' selected' : '') + '>' + esc(c.s + ' ' + c.code) + '</option>';
+          }).join('') + '</select></label>' : '') + '</div>';
       if (p.chips) html += '<div class="cnd-chips" role="group" aria-label="Standard sizes">' + p.chips.map(function (c) {
         var on = c[0] === z.w && (lin || c[1] === z.h);
         var text = lin ? (c[0] / 1000) + 'm' : (c[2] || c[0] + '×' + c[1]);
@@ -224,7 +246,7 @@
           (n > est ? ' \u2014 the area sum would have left you <b>' + (n - est) + ' ' + (n - est === 1 ? 'sheet' : 'sheets') + ' short</b>.' : ' \u2014 this time the estimate was right.') + '</div>';
       }
       var html = '<div class="cnd-head"><div class="cnd-n">' + n + '<span>' + word + '</span></div>' +
-        '<div class="cnd-facts"><div><b>' + esc(order) + '</b></div><div>' + (cost ? money(cost) + ' of material \u00b7 ' : '') + util + '% used · ' + (ms < 1000 ? ms + 'ms' : (ms / 1000).toFixed(1) + 's') + '</div>' +
+        '<div class="cnd-facts"><div><b>' + esc(order) + '</b></div><div>' + (cost ? money(cost, p) + ' of material \u00b7 ' : '') + util + '% used · ' + (ms < 1000 ? ms + 'ms' : (ms / 1000).toFixed(1) + 's') + '</div>' +
         compare + (optimal ? '<div class="cnd-opt">✓ Provably optimal — no layout can use fewer ' + (lin ? 'bars' : 'sheets') + '</div>' : '') + '</div></div>';
       var shown = res.sheets.slice(0, p.calc ? (lin ? 20 : 12) : (lin ? 6 : 4));
       html += '<div class="cnd-sheets' + (lin ? ' lin' : '') + (shown.length === 1 ? ' one' : '') + '">' + shown.map(function (sh, i) { return lin ? barSvg(sh, i) : sheetSvg(sh, i); }).join('') + '</div>';
@@ -279,6 +301,7 @@
       if (sk) {                                          // custom sheet size / kerf
         var P = PRESETS[state.key], v = num(t.value);
         if (sk === 'rot') { P.mat.allowRotation = t.checked; run(); return; }
+        if (sk === 'cur') { CUR = t.value; saveCurrency(CUR); run(); return; }
         if (sk === 'k') { P.kerf = Math.min(50, v); if (P.linear) P.mat.kerf = P.kerf; }
         else if (sk === 'p') P.mat.sizes[0].price = Math.min(100000, v);
         else { P.mat.sizes[0][sk] = v > 0 ? Math.min(20000, v) : 0; syncChips(); }

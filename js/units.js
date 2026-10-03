@@ -98,11 +98,58 @@ function parseLen(v) {
 }
 
 // ── CURRENCY ──
-const CURRENCIES = ['£', '$', '€'];
-function currency() {
-  const c = typeof settings !== 'undefined' && settings && settings.currency;
-  return CURRENCIES.indexOf(c) !== -1 ? c : '£';
+// Only the label changes: every price is a number the user typed, so the sums
+// are the same in any currency. `after` puts the symbol after the amount
+// (105.00 zł); `sp` puts a space after a letter symbol (CHF 105.00).
+const CURRENCY_LIST = [
+  { s: '£', code: 'GBP' }, { s: '$', code: 'USD' }, { s: '€', code: 'EUR' }, { s: '₺', code: 'TRY' },
+  { s: 'A$', code: 'AUD' }, { s: 'C$', code: 'CAD' }, { s: 'NZ$', code: 'NZD' }, { s: 'CHF', code: 'CHF', sp: true },
+  { s: 'zł', code: 'PLN', after: true }, { s: 'Kč', code: 'CZK', after: true }, { s: 'Ft', code: 'HUF', after: true },
+  { s: 'lei', code: 'RON', after: true }, { s: 'kr', code: 'SEK, NOK, DKK', after: true }, { s: 'R', code: 'ZAR' },
+  { s: '₹', code: 'INR' }, { s: 'AED', code: 'AED', sp: true }, { s: 'R$', code: 'BRL' }, { s: 'S$', code: 'SGD' },
+  { s: 'RM', code: 'MYR' }
+];
+const CURRENCIES = CURRENCY_LIST.map(function (c) { return c.s; });
+function currencyInfo(sym) {
+  const c = sym != null ? sym : (typeof settings !== 'undefined' && settings && settings.currency);
+  return CURRENCY_LIST[Math.max(0, CURRENCIES.indexOf(c))];
 }
-function money(n, dp) {
-  return currency() + (+n || 0).toFixed(dp == null ? 2 : dp);
+function currency() { return currencyInfo().s; }
+function money(n, dp, sym) {
+  const c = currencyInfo(sym), v = (+n || 0).toFixed(dp == null ? 2 : dp);
+  return c.after ? v + ' ' + c.s : c.s + (c.sp ? ' ' : '') + v;
+}
+
+// The likely currency for a first visit, or null. The time zone says where the
+// computer is (a Turkish user with an English browser is still in Istanbul);
+// the language tag's region and then the language itself are fallbacks.
+const REGION_CURRENCY = { GB: '£', IM: '£', JE: '£', GG: '£', US: '$', IE: '€', DE: '€', FR: '€', NL: '€', BE: '€', ES: '€',
+  IT: '€', PT: '€', AT: '€', FI: '€', GR: '€', SK: '€', SI: '€', EE: '€', LV: '€', LT: '€', LU: '€', MT: '€', CY: '€', HR: '€',
+  TR: '₺', AU: 'A$', CA: 'C$', NZ: 'NZ$', CH: 'CHF', LI: 'CHF', PL: 'zł', CZ: 'Kč', HU: 'Ft', RO: 'lei', SE: 'kr', NO: 'kr',
+  DK: 'kr', ZA: 'R', IN: '₹', AE: 'AED', BR: 'R$', SG: 'S$', MY: 'RM' };
+const ZONE_REGION = { London: 'GB', Isle_of_Man: 'IM', Jersey: 'JE', Guernsey: 'GG', Dublin: 'IE', Berlin: 'DE', Paris: 'FR',
+  Amsterdam: 'NL', Brussels: 'BE', Madrid: 'ES', Rome: 'IT', Lisbon: 'PT', Vienna: 'AT', Helsinki: 'FI', Athens: 'GR',
+  Bratislava: 'SK', Ljubljana: 'SI', Tallinn: 'EE', Riga: 'LV', Vilnius: 'LT', Luxembourg: 'LU', Malta: 'MT', Nicosia: 'CY',
+  Zagreb: 'HR', Istanbul: 'TR', Zurich: 'CH', Warsaw: 'PL', Prague: 'CZ', Budapest: 'HU', Bucharest: 'RO', Stockholm: 'SE',
+  Oslo: 'NO', Copenhagen: 'DK', Johannesburg: 'ZA', Kolkata: 'IN', Calcutta: 'IN', Dubai: 'AE', Sao_Paulo: 'BR',
+  Singapore: 'SG', Kuala_Lumpur: 'MY', Auckland: 'NZ', Toronto: 'CA', Vancouver: 'CA', Edmonton: 'CA', Winnipeg: 'CA',
+  Halifax: 'CA', Regina: 'CA', St_Johns: 'CA', New_York: 'US', Chicago: 'US', Denver: 'US', Los_Angeles: 'US', Phoenix: 'US',
+  Anchorage: 'US', Detroit: 'US', Boise: 'US', Honolulu: 'US' };
+const LANG_CURRENCY = { tr: '₺', pl: 'zł', cs: 'Kč', hu: 'Ft', ro: 'lei', sv: 'kr', da: 'kr', nb: 'kr', nn: 'kr', no: 'kr' };
+function guessCurrency() {
+  try {
+    const tz = String(Intl.DateTimeFormat().resolvedOptions().timeZone || '');
+    const zone = /^Australia\//.test(tz) ? 'AU' : ZONE_REGION[tz.split('/').pop()];
+    if (zone && REGION_CURRENCY[zone]) return REGION_CURRENCY[zone];
+    const langs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ''];
+    for (let i = 0; i < langs.length; i++) {
+      const m = /-([A-Za-z]{2})(\b|$)/.exec(langs[i] || '');
+      if (m && REGION_CURRENCY[m[1].toUpperCase()]) return REGION_CURRENCY[m[1].toUpperCase()];
+    }
+    for (let i = 0; i < langs.length; i++) {
+      const l = String(langs[i] || '').slice(0, 2).toLowerCase();
+      if (LANG_CURRENCY[l]) return LANG_CURRENCY[l];
+    }
+  } catch (e) {}
+  return null;
 }

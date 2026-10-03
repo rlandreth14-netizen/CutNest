@@ -7,7 +7,7 @@ const fs = require('fs'), path = require('path'), vm = require('vm');
 const ctx = { settings: { units: 'mm' } };
 vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', 'units.js'), 'utf8') +
-  '\nthis.U = { parseLen, fmtInches, len, dims, lenNum, lenCsv, money, dimKey };', ctx);
+  '\nthis.U = { parseLen, fmtInches, len, dims, lenNum, lenCsv, money, dimKey, guessCurrency };', ctx);
 const U = ctx.U;
 let checks = 0, failures = 0;
 function eq(actual, expected, what) {
@@ -67,6 +67,25 @@ ctx.settings.currency = '$';
 eq(U.money(12), '$12.00', 'money $');
 ctx.settings.currency = 'nonsense';
 eq(U.money(12, 0), '£12', 'money falls back to £');
+
+ctx.settings.currency = '₺';
+eq(U.money(1234.5), '₺1234.50', 'lira before the amount');
+ctx.settings.currency = 'zł';
+eq(U.money(105), '105.00 zł', 'złoty after the amount');
+ctx.settings.currency = 'CHF';
+eq(U.money(9.5), 'CHF 9.50', 'letter symbol gets a space');
+eq(U.money(7, 0, '€'), '€7', 'explicit symbol');
+
+// First-visit currency: time zone first, then the language tag's region, then the language.
+const guess = (tz, langs) => { ctx.Intl = { DateTimeFormat: () => ({ resolvedOptions: () => ({ timeZone: tz }) }) }; ctx.navigator = { languages: langs, language: langs[0] }; return U.guessCurrency(); };
+eq(guess('Europe/Istanbul', ['en-US']), '₺', 'Istanbul with an English browser');
+eq(guess('Europe/London', ['en-US']), '£', 'London');
+eq(guess('America/Chicago', ['en-US']), '$', 'Chicago');
+eq(guess('Australia/Sydney', ['en-AU']), 'A$', 'Sydney');
+eq(guess('Europe/Amsterdam', ['nl-NL']), '€', 'Amsterdam');
+eq(guess('UTC', ['de-CH']), 'CHF', 'no time zone: region from the language tag');
+eq(guess('UTC', ['pl']), 'zł', 'no region: the language');
+eq(guess('UTC', ['en']), null, 'nothing to go on');
 
 console.log(`units: ${checks} checks, ${failures} failed`);
 process.exit(failures ? 1 : 0);
