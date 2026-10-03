@@ -7,6 +7,58 @@ const fs = require('fs'), path = require('path'), os = require('os'), { spawnSyn
 const { chromium } = require(path.join(__dirname, '../node_modules/playwright'));
 const { serve, OUT } = require('./build.js');
 const FFMPEG = process.env.FFMPEG || 'ffmpeg';
+// Voice-over (marketing/tts.py, Kokoro). VOICE=none records silent videos.
+const VOICE = process.env.VOICE || 'bm_george';
+const crypto = require('crypto');
+
+// What the voice says at each step. A caption or card names its line; the
+// next step waits until the line has finished.
+const NARRATION = {
+  walkthrough: {
+    intro: "Welcome to CutNest. In the next minute, I'll take a real sheet metal job from a cut list to a finished customer quote.",
+    material: "First, pick the material. Your library holds the sheet sizes you buy and what you pay for them. This job is two mil, three one six brushed stainless.",
+    paste: "Next, paste in the cut list, straight from an email or a spreadsheet. CutNest reads most formats, so there's no retyping.",
+    calc: "Hit calculate. It's a brushed finish, so the grain is locked and no part gets turned.",
+    order: "Here's exactly what to order, and what it'll cost. Two sheets, and CutNest has proved that no layout can do it in fewer.",
+    sheets: "Every sheet is drawn to scale, with the parts labelled and any usable offcuts marked, ready for the shop floor.",
+    quote: "Now turn it into a quote. With Pro, the cutting time comes from the actual layout, at your own rates and markup. Add the customer, and any extras, like delivery.",
+    doc: "And there's your quote, on your own letterhead, ready to print, or send as a PDF.",
+    end: "CutNest is free to try in your browser, with no account. Head to cutnest dot co dot uk.",
+  },
+  bars: {
+    intro: "Cutting box section for a frame? Here's how CutNest gets every length out of the fewest bars.",
+    section: "Choose the section. This is forty by forty box, which comes in six metre and seven and a half metre lengths.",
+    lengths: "Paste in the lengths you need, with the quantities.",
+    calc: "Calculate. CutNest mixes the stock lengths to find the cheapest plan.",
+    order: "Here's what to order, and what it costs. And it's proved optimal. No plan uses fewer bars.",
+    plan: "Every bar gets its own cutting plan, and offcuts long enough to keep are marked, so they go on the rack, not in the skip.",
+    end: "Bar and tube cutting is free on every plan. Try it at cutnest dot co dot uk.",
+  },
+  calculator: {
+    intro: "How many sheets do you actually need? Most people divide the total area by the area of a sheet. Here's why that comes up short.",
+    short: "This is a kitchen carcass job on eight by four MDF. The area sum says two sheets. Nested properly, it needs three. Order two, and you're a sheet short on the day.",
+    yours: "Put in your own sheet size, your blade's kerf, and what you pay per sheet. Tap a standard size to compare, like ten by four.",
+    grain: "Using veneered or woodgrain board? Untick parts can turn, and every panel keeps the grain running the same way.",
+    app: "When you're happy, open the job in the full app, for cut sheets, labels and quotes.",
+    end: "The calculators are free, with no sign up, at cutnest dot co dot uk.",
+  },
+};
+
+// Make (or reuse) the clips for one video: { key: { file, dur } }.
+function voiceClips(name) {
+  const lines = NARRATION[name];
+  if (!lines || VOICE === 'none') return {};
+  const dir = path.join(OUT, 'voice', VOICE);
+  fs.mkdirSync(dir, { recursive: true });
+  const job = Object.entries(lines).map(([key, text]) => ({ key, text,
+    file: path.join(dir, crypto.createHash('sha1').update(text).digest('hex').slice(0, 16) + '.wav') }));
+  const r = spawnSync('python3', [path.join(__dirname, 'tts.py')], { input: JSON.stringify({ voice: VOICE, lines: job }), encoding: 'utf8', maxBuffer: 1 << 24 });
+  if (r.status !== 0) throw new Error('tts.py failed: ' + r.stderr);
+  const durs = JSON.parse(r.stdout.trim().split('\n').pop());
+  const out = {};
+  job.forEach(j => { out[j.key] = { file: j.file, dur: durs[j.file] }; });
+  return out;
+}
 
 const STYLE = `
   #yt-cap{position:fixed;left:24px;bottom:22px;z-index:99999;display:flex;align-items:center;gap:12px;max-width:calc(100% - 48px);
@@ -58,15 +110,38 @@ async function record(page, name, script) {
   let pos = { x: 640, y: 360 };
   const wait = ms => page.waitForTimeout(ms);
   const now = () => Date.now() / 1000;
+  const clips = voiceClips(name), spoken = [];
+  let speakUntil = 0, pending = null;
   const h = {
     wait,
-    async caption(n, text, sub) {
+    // Start a narration line; the next caption or card waits for it to end.
+    say(key) {
+      const c = clips[key];
+      if (!c) return;
+      spoken.push({ file: c.file, at: now() });
+      speakUntil = now() + c.dur;
+    },
+    async hush(gapMs) {
+      const left = speakUntil - now();
+      if (left > 0 || speakUntil) await wait(Math.max(0, left * 1000) + (gapMs == null ? 350 : gapMs));
+      speakUntil = 0;
+    },
+    async caption(n, text, sub, line) {
+      await h.hush();
+      h.mark();
+      if (line) h.say(line);
       await page.evaluate(([n, t, s]) => { document.getElementById('yt-cap').innerHTML = t ? (n ? '<b>' + n + '</b>' : '') + '<div>' + t + (s ? '<small>' + s + '</small>' : '') + '</div>' : ''; }, [n, text, sub || '']);
     },
-    chapter(title) { marks.push({ title, at: now() }); },
-    async card(c, ms) {
+    // A chapter starts when its caption or card appears (after the last line ends).
+    chapter(title) { pending = title; },
+    mark() { if (pending) { marks.push({ title: pending, at: now() }); pending = null; } },
+    async card(c, ms, line) {
+      await h.hush();
+      h.mark();
+      if (line) h.say(line);
       await page.evaluate(c => { const e = document.getElementById('yt-card'); e.innerHTML = c; e.style.display = 'flex'; }, BRAND + '<div class="k">' + c.k + '</div><h1>' + c.h + '</h1>' + (c.p ? '<p>' + c.p + '</p>' : '') + (c.url !== false ? '<div class="url">cutnest.co.uk</div>' : ''));
       await wait(ms);
+      await h.hush(700);
     },
     async hideCard() { await page.evaluate(() => { document.getElementById('yt-card').style.display = 'none'; }); },
     async point(sel, opt) {
@@ -124,6 +199,18 @@ async function record(page, name, script) {
     '-c:v', 'libx264', '-preset', 'slow', '-crf', '20', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', file], { stdio: 'inherit' });
   if (r.status !== 0) throw new Error('ffmpeg failed');
   const dur = Math.max(stopAt, frames[frames.length - 1].ts + 0.5) - first;
+  if (spoken.length) {
+    // Lay each line at the moment it was said, on the same clock as the frames.
+    const tmp = file.replace(/\.mp4$/, '.voiced.mp4');
+    const args = ['-y', '-loglevel', 'error', '-i', file];
+    spoken.forEach(s => args.push('-i', s.file));
+    const chains = spoken.map((s, i) => { const ms = Math.max(0, Math.round((s.at - first) * 1000)); return '[' + (i + 1) + ':a]adelay=' + ms + '|' + ms + '[a' + i + ']'; });
+    const mix = spoken.map((s, i) => '[a' + i + ']').join('') + 'amix=inputs=' + spoken.length + ':normalize=0:duration=longest,apad,atrim=0:' + dur.toFixed(2) + ',loudnorm=I=-16:TP=-1.5[aout]';
+    args.push('-filter_complex', chains.concat(mix).join(';'), '-map', '0:v', '-map', '[aout]', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '160k', '-ar', '48000', '-movflags', '+faststart', tmp);
+    const a = spawnSync(FFMPEG, args, { stdio: 'inherit' });
+    if (a.status !== 0) throw new Error('ffmpeg audio mix failed');
+    fs.renameSync(tmp, file);
+  }
   fs.writeFileSync(path.join(OUT, 'youtube-' + name + '.json'), JSON.stringify({ duration: Math.round(dur), chapters: marks.map(m => ({ title: m.title, t: Math.max(0, Math.round(m.at - first)) })) }, null, 1));
   console.log('  youtube-' + name + '.mp4', dur.toFixed(1) + 's', Math.round(fs.statSync(file).size / 1024) + 'KB');
   fs.rmSync(dir, { recursive: true, force: true });
@@ -156,16 +243,16 @@ const VIDEOS = {
     await setup(page);
     await record(page, 'walkthrough', async h => {
       h.chapter('Intro');
-      await h.card({ k: 'Walkthrough · sheet metal', h: 'Cut list to <em>customer quote</em>', p: 'A real job in CutNest: 316 brushed stainless, from a pasted cut list to a quote on your letterhead.', url: false }, 3800);
+      await h.card({ k: 'Walkthrough · sheet metal', h: 'Cut list to <em>customer quote</em>', p: 'A real job in CutNest: 316 brushed stainless, from a pasted cut list to a quote on your letterhead.', url: false }, 3800, 'intro');
       await h.hideCard();
       h.chapter('Choose the material');
-      await h.caption(1, 'Choose the material', 'Your library holds your sheet sizes and prices');
+      await h.caption(1, 'Choose the material', 'Your library holds your sheet sizes and prices', 'material');
       await h.wait(900);
       await h.click('select[aria-label="Material 1"]');
       await page.selectOption('select[aria-label="Material 1"]', '205');
       await h.wait(1800);
       h.chapter('Paste the cut list');
-      await h.caption(2, 'Paste the cut list', 'Straight from an email or spreadsheet. Most formats work.');
+      await h.caption(2, 'Paste the cut list', 'Straight from an email or spreadsheet. Most formats work.', 'paste');
       await h.click('text=Paste list');
       await page.evaluate(() => document.getElementById('paste-input').scrollIntoView({ block: 'center' }));
       await h.type('#paste-input', 'Door panel 715 x 497 x 4\nSide panel 900 x 420 x 4\nTop 1200 x 450 x 2\nKick plate 1200 x 150 x 2\nBracket 200 x 120 x 12', 32);
@@ -173,21 +260,21 @@ const VIDEOS = {
       await h.click('#paste-confirm');
       await h.wait(1200);
       h.chapter('Calculate');
-      await h.caption(3, 'Calculate', 'Brushed finish: the grain is locked, so no part turns');
+      await h.caption(3, 'Calculate', 'Brushed finish: the grain is locked, so no part turns', 'calc');
       await h.click('#calc-btn');
       await calcDone(page);
       await h.wait(400);
       h.chapter('What to order, and the cost');
-      await h.caption(4, 'What to order, and what it costs', 'Checked against a lower bound: proved optimal when it says so');
+      await h.caption(4, 'What to order, and what it costs', 'Checked against a lower bound: proved optimal when it says so', 'order');
       await h.scroll('#order-line', 100);
       await h.wait(3200);
       h.chapter('Every sheet drawn to scale');
-      await h.caption(5, 'Every sheet drawn to scale', 'Numbered parts, usable offcuts marked');
+      await h.caption(5, 'Every sheet drawn to scale', 'Numbered parts, usable offcuts marked', 'sheets');
       await h.scroll('#mat-visuals .sheet-vis', 80);
       await h.wait(2600);
       await h.scrollBy(380, 2200);
       h.chapter('Turn it into a quote');
-      await h.caption(6, 'Turn it into a customer quote', 'Pro: cutting time from the actual layout, your rates and markup');
+      await h.caption(6, 'Turn it into a customer quote', 'Pro: cutting time from the actual layout, your rates and markup', 'quote');
       await page.evaluate(() => scrollTo({ top: 0 }));
       await h.wait(300);
       await h.scroll('.quote-cta', 220);
@@ -204,12 +291,12 @@ const VIDEOS = {
       await page.evaluate(() => { const m = document.querySelector('#quote-modal .modal'); m.scrollTo({ top: m.scrollHeight, behavior: 'smooth' }); });
       await h.wait(2400);
       h.chapter('The finished quote');
-      await h.caption(7, 'Your quote, on your letterhead', 'Print it or save it as a PDF and send it');
+      await h.caption(7, 'Your quote, on your letterhead', 'Print it or save it as a PDF and send it', 'doc');
       await h.doc(await page.evaluate(() => buildQuoteHtml()), 2600, 3400, 560);
       await h.hideDoc();
       await h.caption(0, '');
       h.chapter('Try it free');
-      await h.card(END, 4200);
+      await h.card(END, 4200, 'end');
     });
     await page.context().close();
   },
@@ -221,16 +308,16 @@ const VIDEOS = {
     await setup(page);
     await record(page, 'bars', async h => {
       h.chapter('Intro');
-      await h.card({ k: 'Bar, tube &amp; extrusion', h: 'Cut to length from <em>the fewest bars</em>', p: 'Box section for a frame: stock lengths, saw kerf, and a saw list for every bar.', url: false }, 3600);
+      await h.card({ k: 'Bar, tube &amp; extrusion', h: 'Cut to length from <em>the fewest bars</em>', p: 'Box section for a frame: stock lengths, saw kerf, and a saw list for every bar.', url: false }, 3600, 'intro');
       await h.hideCard();
       h.chapter('Choose the section');
-      await h.caption(1, 'Choose the section', 'SHS 40×40×3 in 6m and 7.5m lengths, with prices');
+      await h.caption(1, 'Choose the section', 'SHS 40×40×3 in 6m and 7.5m lengths, with prices', 'section');
       await h.wait(800);
       await h.click('select[aria-label="Material 1"]');
       await page.selectOption('select[aria-label="Material 1"]', '801');
       await h.wait(1800);
       h.chapter('Enter the lengths');
-      await h.caption(2, 'Enter the lengths you need');
+      await h.caption(2, 'Enter the lengths you need', '', 'lengths');
       await h.click('text=Paste list');
       await page.evaluate(() => document.getElementById('paste-input').scrollIntoView({ block: 'center' }));
       await h.type('#paste-input', 'Top rail 2400 x 4\nLeg 900 x 8\nBrace 650 x 6\nStub 300 x 6', 38);
@@ -238,22 +325,22 @@ const VIDEOS = {
       await h.click('#paste-confirm');
       await h.wait(1000);
       h.chapter('Calculate');
-      await h.caption(3, 'Calculate', 'It mixes 6m and 7.5m bars to find the cheapest plan');
+      await h.caption(3, 'Calculate', 'It mixes 6m and 7.5m bars to find the cheapest plan', 'calc');
       await h.click('#calc-btn');
       await calcDone(page);
       await h.wait(300);
       h.chapter('What to order');
-      await h.caption(4, 'What to order, and the cost');
+      await h.caption(4, 'What to order, and the cost', '', 'order');
       await h.scroll('#order-line', 100);
       await h.wait(3000);
       h.chapter('The cutting plan');
-      await h.caption(5, 'A cutting plan for every bar', 'Offcuts worth keeping are marked');
+      await h.caption(5, 'A cutting plan for every bar', 'Offcuts worth keeping are marked', 'plan');
       await h.scroll('#mat-visuals', 80);
       await h.wait(2800);
       await h.scrollBy(360, 2600);
       await h.caption(0, '');
       h.chapter('Try it free');
-      await h.card({ k: 'Free on every plan', h: 'Bar &amp; tube cutting, <em>free.</em>', p: 'Box section, angle, flat bar, extrusion and timber. In your browser, no account.' }, 4200);
+      await h.card({ k: 'Free on every plan', h: 'Bar &amp; tube cutting, <em>free.</em>', p: 'Box section, angle, flat bar, extrusion and timber. In your browser, no account.' }, 4200, 'end');
     });
     await page.context().close();
   },
@@ -270,14 +357,14 @@ const VIDEOS = {
     await setup(page);
     await record(page, 'calculator', async h => {
       h.chapter('Intro');
-      await h.card({ k: 'Free calculator', h: 'How many sheets <em>do I need?</em>', p: 'Why total area &divide; sheet area comes up short, and a free calculator that nests the parts properly.', url: false }, 3800);
+      await h.card({ k: 'Free calculator', h: 'How many sheets <em>do I need?</em>', p: 'Why total area &divide; sheet area comes up short, and a free calculator that nests the parts properly.', url: false }, 3800, 'intro');
       await h.hideCard();
       h.chapter('The area sum is short');
-      await h.caption(1, 'A kitchen carcass job on 8×4 MDF', 'The area sum says 2 sheets. Nested properly, it needs 3.');
+      await h.caption(1, 'A kitchen carcass job on 8×4 MDF', 'The area sum says 2 sheets. Nested properly, it needs 3.', 'short');
       await h.point('.cnd-cmp');
       await h.wait(3600);
       h.chapter('Your sheet, your kerf, your price');
-      await h.caption(2, 'Your sheet size, kerf and price');
+      await h.caption(2, 'Your sheet size, kerf and price', '', 'yours');
       await h.type('[data-s="p"]', '32', 120);
       await h.click('.cnd-go');
       await h.wait(1600);
@@ -286,16 +373,16 @@ const VIDEOS = {
       await h.click('.cnd-chip >> text=8×4');
       await h.wait(1400);
       h.chapter('Grain');
-      await h.caption(3, 'Veneered or woodgrain board?', 'Untick “Parts can turn” and every panel keeps the grain');
+      await h.caption(3, 'Veneered or woodgrain board?', 'Untick “Parts can turn” and every panel keeps the grain', 'grain');
       await h.click('[data-s="rot"]');
       await h.wait(3000);
       h.chapter('Open it in the app');
-      await h.caption(4, 'Open the job in the full app', 'Cut sheets for the saw, labels and quotes');
+      await h.caption(4, 'Open the job in the full app', 'Cut sheets for the saw, labels and quotes', 'app');
       await h.point('.cnd-open');
       await h.wait(2400);
       await h.caption(0, '');
       h.chapter('Try it free');
-      await h.card({ k: 'Free · no sign-up', h: 'Nest it <em>before you order it.</em>', p: 'Sheet, board and bar calculators at cutnest.co.uk' }, 4200);
+      await h.card({ k: 'Free · no sign-up', h: 'Nest it <em>before you order it.</em>', p: 'Sheet, board and bar calculators at cutnest.co.uk' }, 4200, 'end');
     });
     await ctx.close();
   },

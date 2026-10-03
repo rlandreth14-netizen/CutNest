@@ -27,8 +27,9 @@ const videos = [
   {
     id: 'walkthrough', file: 'youtube-walkthrough.mp4', thumb: 'youtube-walkthrough-thumbnail.png',
     when: 'Upload day', kind: 'Video, 16:9',
-    title: 'Sheet Metal Cut List to Customer Quote in Under a Minute | CutNest',
-    chapters: [[0, 'Paste a cut list'], [16, 'What to order and what it costs'], [28, 'Build the customer quote'], [40, 'The finished quote']],
+    title: 'Sheet Metal Cut List to Customer Quote, Step by Step | CutNest',
+    chapters: [['Choose the material', 'Pick the material and paste the cut list'], ['Calculate', 'What to order, the cost and every sheet'],
+      ['Turn it into a quote', 'Build the customer quote'], ['The finished quote', 'The finished quote']],
     desc: `A real sheet metal job in CutNest: 316 brushed stainless, from a pasted cut list to a quote on your letterhead.
 
 Try it free, no account: ${link('walkthrough')}
@@ -48,10 +49,13 @@ ${FOOT}`,
   {
     id: 'bars', file: 'youtube-bars.mp4', thumb: 'youtube-bars-thumbnail.png',
     when: 'Upload day', kind: 'Video, 16:9',
+    chapters: [['Choose the section', 'Choose the section and enter the lengths'], ['Calculate', 'What to order and the cost'], ['The cutting plan', 'A cutting plan for every bar']],
     title: 'Cut Box Section From the Fewest Bars: Free Cutting Plan | CutNest',
     desc: `Box section for a frame: enter the lengths you need and CutNest finds the fewest bars, with a cutting plan for every bar and the offcuts worth keeping.
 
 Try the free cut length calculator: ${link('bars', '/bar-cutting-calculator.html')}
+
+{chapters}
 
 In this video:
 1. Choose the section (SHS 40×40×3 in 6m and 7.5m lengths)
@@ -67,11 +71,14 @@ ${FOOT}`,
   {
     id: 'calculator', file: 'youtube-calculator.mp4', thumb: 'youtube-calculator-thumbnail.png',
     when: 'Upload day', kind: 'Video, 16:9',
+    chapters: [['The area sum is short', 'Why the area sum comes up short'], ['Your sheet, your kerf, your price', 'Your sheet size, kerf, price and grain'], ['Open it in the app', 'Open it in the full app']],
     title: 'How Many Sheets Do I Need? Free Plywood & MDF Calculator',
     desc: `Total area ÷ sheet area says 2 sheets. The job needs 3. This free calculator nests your parts on the board size you buy, with your blade kerf and grain, and gives the real number.
 
 Free calculator: ${link('calculator', '/plywood-cut-list-calculator.html')}
 Sheet metal version: ${link('calculator', '/sheet-calculator.html')}
+
+{chapters}
 
 In this video:
 1. A kitchen carcass job on 8×4 MDF: the area sum is a sheet short
@@ -105,10 +112,19 @@ Free: ${link('short-walkthrough')}
     tags: 'shorts, cut list, quoting, fabrication',
   },
 ];
+// Chapter times come from the recording (youtube-<id>.json). A chapter shorter
+// than 10 seconds is folded into the one before; fewer than three, none at all.
 for (const v of videos) {
   const m = meta(v.id);
-  if (v.chapters && m) v.chapters = v.chapters.filter(c => c[0] < m.duration - 10);
-  v.desc = v.desc.replace('{chapters}', v.chapters ? v.chapters.map(c => mmss(c[0]) + ' ' + c[1]).join('\n') : '');
+  let ch = [];
+  if (v.chapters && m) {
+    v.chapters.forEach(([from, label]) => { const c = m.chapters.find(x => x.title === from); if (c) ch.push([c.t, label]); });
+    if (ch.length) ch[0][0] = 0;
+    for (let i = 1; i < ch.length; i++) if ((i + 1 < ch.length ? ch[i + 1][0] : m.duration) - ch[i][0] < 10 || ch[i][0] - ch[i - 1][0] < 10) { ch.splice(i, 1); i--; }
+    if (ch.length < 3) ch = [];
+  }
+  v.chapters = ch;
+  v.desc = v.desc.replace('{chapters}\n\n', ch.length ? ch.map(c => mmss(c[0]) + ' ' + c[1]).join('\n') + '\n\n' : '');
 }
 
 const steps = [
@@ -117,7 +133,7 @@ const steps = [
   ['Profile picture and banner', 'In Studio, <b>Customisation &rarr; Branding</b>. Upload <code>youtube-channel-avatar.png</code> as the picture and <code>youtube-channel-banner.png</code> as the banner. The banner&rsquo;s text sits in the middle strip that shows on phones, TVs and desktops.'],
   ['Description and links', 'In <b>Customisation &rarr; Basic info</b>, paste the channel description below, add a link to <b>cutnest.co.uk</b> and your LinkedIn page, and set the contact email to hello@cutnest.co.uk.'],
   ['Upload the three videos', 'Upload all three on the same day so the channel has something to watch from the start. For each one: the title, description and tags below, the matching thumbnail, <b>No, it&rsquo;s not made for kids</b>, category <b>Science &amp; Technology</b>, and a playlist called <b>How to use CutNest</b>.'],
-  ['Add music (optional, recommended)', 'The videos are silent, with captions on screen. In Studio open the video, choose <b>Editor &rarr; Audio</b>, and pick a calm track from the free Audio Library. Tracks from there are cleared for YouTube and will not get a copyright claim.'],
+  ['Voice-over is built in', 'Each video has a British male voice-over talking through the steps, made with an AI voice, plus captions on screen for people watching with the sound off. If you want quiet background music under the voice, add it in Studio under <b>Editor &rarr; Audio</b> from the free Audio Library, at a low volume.'],
   ['End screen', 'In <b>Editor &rarr; End screen</b>, add a Subscribe button and &ldquo;Best for viewer&rdquo; video over the closing cutnest.co.uk card.'],
   ['Shorts', 'Upload the two vertical LinkedIn videos as Shorts on the weeks shown. Any vertical video under a minute counts as a Short.'],
 ];
@@ -166,7 +182,7 @@ ${CSS}
 <header>
   <div class="brand">Cut<b>Nest</b> &middot; YouTube</div>
   <h1>Your channel, <em>ready to upload.</em></h1>
-  <p class="lede">Three walkthroughs recorded from the real app and the free calculators, two Shorts from the LinkedIn kit, thumbnails, channel art, and the text for every upload. The set-up takes about half an hour.</p>
+  <p class="lede">Three narrated walkthroughs recorded from the real app and the free calculators, two Shorts from the LinkedIn kit, thumbnails, channel art, and the text for every upload. The set-up takes about half an hour.</p>
 </header>
 
 <section>
