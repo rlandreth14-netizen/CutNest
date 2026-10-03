@@ -28,7 +28,7 @@ NAV = f'''<!-- SITE:NAV (written by tools/pages.py) -->
 <nav class="nav">
   <a class="brand" href="/">
     {LOGO}
-    <div class="brand-name">Cut<span>Nest</span></div>
+    <div class="brand-name" translate="no">Cut<span>Nest</span></div>
   </a>
   <div class="nav-links">
     <a href="/#demo" class="nav-link">Live demo</a>
@@ -60,7 +60,7 @@ FOOTER = f'''<!-- SITE:FOOTER (written by tools/pages.py) -->
   <div class="footer-inner">
     <div class="footer-top">
       <div>
-        <div class="footer-brand-name">Cut<span>Nest</span></div>
+        <div class="footer-brand-name" translate="no">Cut<span>Nest</span></div>
         <div class="footer-brand-desc">Cut list optimisation for sheet, bar and tube. Built by a fabricator in Newcastle upon Tyne. Used by fabricators, joiners and trades across the UK.</div>
         <div style="margin-top:14px;display:flex;gap:10px">
           <a href="https://www.linkedin.com/company/cutnest" target="_blank" rel="noopener" class="footer-social">LinkedIn</a>
@@ -192,7 +192,7 @@ def page(path, title, desc, h1, lead, body, faqs=None, ld=None, crumb=None, demo
 {faq_html(faqs) if faqs else ''}
 {cta()}
 </main>
-''' + FOOTER + ('\n<script src="/js/demo.js" defer></script>' if demo else '') + '\n</body>\n</html>\n'
+''' + FOOTER + ('\n<script src="/js/units.js" defer></script>\n<script src="/js/demo.js" defer></script>' if demo else '') + '\n</body>\n</html>\n'
     fp = os.path.join(ROOT, path.lstrip('/'))
     os.makedirs(os.path.dirname(fp), exist_ok=True)
     with open(fp, 'w') as f:

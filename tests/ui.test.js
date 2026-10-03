@@ -42,8 +42,9 @@ const results = [];
 
 // A fresh browser context per test: empty storage, cookie banner answered,
 // kerf question answered, Lemon Squeezy faked. `pro` pre-activates a licence.
-async function freshPage({ pro = false, serviceWorkers = 'block', viewport } = {}) {
-  const ctx = await browser.newContext({ serviceWorkers, viewport, acceptDownloads: true });
+async function freshPage({ pro = false, serviceWorkers = 'block', viewport, timezoneId = 'Europe/London', locale = 'en-GB' } = {}) {
+  // The app picks a first-visit currency from the time zone, so tests pin one.
+  const ctx = await browser.newContext({ serviceWorkers, viewport, acceptDownloads: true, timezoneId, locale });
   await ctx.route('https://api.lemonsqueezy.com/**', route => route.fulfill({
     status: 200, contentType: 'application/json',
     body: JSON.stringify({ valid: true, activated: true, instance: { id: 'i1' },
@@ -426,7 +427,7 @@ const tests = {
   },
 
   async 'inches: welcome choice, fractions, exact fits, exports'() {
-    const page = await freshPage({ pro: true });
+    const page = await freshPage({ pro: true, timezoneId: 'America/New_York', locale: 'en-US' });
     await page.addInitScript(() => {
       if (sessionStorage.getItem('cn-units-init')) return;
       sessionStorage.setItem('cn-units-init', '1');
@@ -843,6 +844,36 @@ const tests = {
       expect(await page.getAttribute('.yt-facade', 'data-yt') === id && !(await page.$('.yt-facade iframe')), pg + ' should show video ' + id + ' as a still');
     }
     expect(yt.length === 0, 'YouTube contacted without a press of play: ' + yt.join(' '));
+    expect(!page.errors.length, 'page errors: ' + page.errors.join(' | '));
+  },
+
+  async 'currency follows where the computer is, and a choice sticks'() {
+    // A first visit from Istanbul with an English browser: lira, in the app and the calculators.
+    const page = await freshPage({ timezoneId: 'Europe/Istanbul', locale: 'en-US' });
+    await startWithMetal(page);
+    expect(await page.evaluate(() => currency()) === '₺', 'Istanbul should get lira, got ' + await page.evaluate(() => currency()));
+    expect(await page.evaluate(() => money(1234.5)) === '₺1234.50', 'lira goes before the amount');
+    await page.click('button[aria-label="Settings"]');
+    expect(await page.$$eval('#currency-setting option', o => o.length) >= 15, 'settings should list the currencies');
+    await page.selectOption('#currency-setting', 'zł');
+    await page.click('#settings-modal >> text=Save');
+    expect(await page.evaluate(() => money(105)) === '105.00 zł', 'złoty goes after the amount');
+    await page.reload();
+    await page.waitForFunction(() => library.length > 0);
+    expect(await page.evaluate(() => currency()) === 'zł', 'a chosen currency should stick over the guess');
+    // The calculators use the same choice, and can change it.
+    await page.goto(base + '/sheet-calculator.html');
+    await page.waitForSelector('.cnd-head', { timeout: 20000 });
+    expect(await page.inputValue('[data-s="cur"]') === 'zł', 'calculator should use the app currency');
+    await page.selectOption('[data-s="cur"]', '₺');
+    await page.fill('[data-s="p"]', '2500');
+    await page.click('.cnd-go');
+    await page.waitForFunction(() => /₺(2500|5000|7500)\.00 of material/.test(document.querySelector('.cnd-facts').textContent), null, { timeout: 20000 });
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('cutnest-settings-v1')).currency) === '₺', 'calculator choice should carry to the app');
+    // The home page samples carry UK example prices, so they stay in pounds.
+    await page.goto(base + '/');
+    await page.waitForSelector('#demo .cnd-head', { timeout: 20000 });
+    expect(/@ £105\.00/.test(await page.textContent('#demo .cnd-mat')), 'home demo prices stay in pounds');
     expect(!page.errors.length, 'page errors: ' + page.errors.join(' | '));
   },
 
