@@ -19,7 +19,7 @@ It does bar and tube too: box section, angle, flat bar, extrusion.
 
 It runs in your browser. No account, no install, and your cut lists stay on your computer.
 
-It's free to use. If you price jobs, Pro turns the layout into a customer quote on your letterhead for £12 a month.
+It's free to use. If you price jobs, Pro turns the layout into a customer quote on your letterhead for £12 a month plus VAT.
 
 I'd really value feedback from anyone who cuts sheet or bar for a living. Try it on your last job and tell me what it gets wrong.
 
@@ -136,7 +136,7 @@ CutNest Pro prices it from the actual layout:
 
 It comes out as a PDF on your letterhead, ready to send.
 
-£12 a month per company, and the whole team can use it.
+£12 a month plus VAT per company, and the whole team can use it.
 
 ${TAGS}`,
     comment: `The nesting is free. Pro adds quotes, labels, DXF and more: ${link('quote')}`,
@@ -178,7 +178,7 @@ Free, in your browser, no account:
 • Paste a cut list or open an Excel file, in mm or inches
 • Cut sheets and saw lists for the shop floor
 
-Pro is £12 a month per company:
+Pro is £12 a month plus VAT, per company:
 • Customer quotes on your letterhead
 • Up to 5 materials per job, DXF export, part labels, stock limits
 

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en-GB"><head><meta charset="utf-8"/><meta name="robots" content="noindex"/>
+<link rel="stylesheet" href="/fonts/fonts.css"/>
+<style>
+  :root{--t2:#0a3a47;--t:#0f4c5c;--a:#f59e0b}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#222}
+  .th{position:relative;overflow:hidden;color:#fff;font-family:"Barlow Condensed",sans-serif;
+    background:radial-gradient(110% 100% at 90% 0%,#17627a 0%,#0a3a47 55%,#06252e 100%)}
+  .yt{width:1280px;height:720px}
+  .brand{position:absolute;left:56px;top:44px;display:flex;align-items:center;gap:12px;font-size:36px;font-weight:900}
+  .brand span{color:var(--a)}
+  .k{font-size:28px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--a)}
+  h1{font-weight:900;line-height:.9;letter-spacing:-.5px}
+  h1 em{font-style:normal;color:var(--a)}
+  .txt{position:absolute;left:56px;top:150px;width:600px;display:flex;flex-direction:column;gap:18px}
+  .shot{position:absolute;border-radius:14px;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,.55);border:4px solid rgba(255,255,255,.9);background:#fff}
+  .shot img{display:block;width:100%}
+  .pill{align-self:flex-start;background:var(--a);color:var(--t2);font-size:34px;font-weight:900;padding:6px 18px;border-radius:10px}
+  .big{display:flex;align-items:flex-end;gap:26px}
+  .big div{text-align:center}
+  .big b{display:block;font-size:250px;line-height:.8;font-weight:900}
+  .big span{font-size:30px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+  .big .x b{color:rgba(255,255,255,.35);text-decoration:line-through;text-decoration-thickness:14px;text-decoration-color:#f87171}
+  .big .y b{color:var(--a)}
+  .big i{font-style:normal;font-size:120px;font-weight:900;color:rgba(255,255,255,.5);padding-bottom:70px}
+  .grid{position:absolute;inset:0;opacity:.07;background-image:linear-gradient(#fff 2px,transparent 2px),linear-gradient(90deg,#fff 2px,transparent 2px);background-size:120px 120px}
+</style></head><body>
+<script>
+const LOGO = s => '<svg width="' + s + '" height="' + s + '" viewBox="0 0 36 36"><rect width="36" height="36" rx="8" fill="#0f4c5c"/><rect x="4" y="4" width="13" height="9" rx="2" fill="#f59e0b"/><rect x="19" y="4" width="13" height="15" rx="2" fill="#fff" opacity=".92"/><rect x="4" y="15" width="13" height="17" rx="2" fill="#fff" opacity=".92"/><rect x="19" y="21" width="13" height="11" rx="2" fill="#f59e0b" opacity=".85"/></svg>';
+const brand = () => '<div class="brand">' + LOGO(46) + '<div>Cut<span>Nest</span></div></div>';
+const T = {
+  walkthrough: () => '<div class="th yt">' + brand() +
+    '<div class="txt"><div class="k">Sheet metal walkthrough</div><h1 style="font-size:132px">Cut list<br>to <em>quote</em></h1><div class="pill">Step by step</div></div>' +
+    '<div class="shot" style="right:-40px;top:96px;width:640px;transform:rotate(3deg)"><img src="/img/app-results.webp"/></div>' +
+    '<div class="shot" style="right:330px;top:380px;width:330px;transform:rotate(-4deg)"><img src="/img/app-quote.webp"/></div></div>',
+  bars: () => '<div class="th yt">' + brand() +
+    '<div class="txt" style="width:560px"><div class="k">Bar, tube &amp; box section</div><h1 style="font-size:150px">The <em>fewest</em> bars</h1><div class="pill">Free cutting plan</div></div>' +
+    '<div class="shot" style="right:-30px;top:120px;width:680px;transform:rotate(2.5deg)"><img src="/img/app-bars.webp"/></div></div>',
+  calculator: () => '<div class="th yt">' + brand() +
+    '<div class="txt" style="top:140px;width:640px"><div class="k">Free calculator</div><h1 style="font-size:118px">How many sheets do I <em>need?</em></h1></div>' +
+    '<div class="big" style="position:absolute;right:70px;top:170px"><div class="x"><b>2</b><span>Area sum</span></div><i>&rarr;</i><div class="y"><b>3</b><span>Real nest</span></div></div></div>',
+  // Channel art: 2560x1440, everything that matters inside the 1546x423 centre that shows on every device.
+  banner: () => '<div class="th" style="width:2560px;height:1440px"><div class="grid"></div>' +
+    '<div style="position:absolute;left:507px;top:508px;width:1546px;height:423px;display:flex;align-items:center;gap:56px">' + LOGO(260) +
+    '<div style="display:flex;flex-direction:column;gap:14px"><div style="font-size:150px;font-weight:900;line-height:.9">Cut<span style="color:#f59e0b">Nest</span></div>' +
+    '<div style="font-size:58px;font-weight:800">Cut lists for sheet, bar &amp; tube</div>' +
+    '<div style="font-family:Barlow,sans-serif;font-size:40px;color:rgba(255,255,255,.8)">Free in your browser &middot; cutnest.co.uk</div></div></div></div>',
+  avatar: () => '<div class="th" style="width:800px;height:800px;display:flex;align-items:center;justify-content:center">' + LOGO(520) + '</div>',
+};
+const id = new URLSearchParams(location.search).get('t') || 'walkthrough';
+document.body.innerHTML = T[id]();
+Promise.all([document.fonts.ready, ...[...document.images].map(i => i.complete ? 1 : new Promise(r => { i.onload = i.onerror = r; }))])
+  .then(() => document.body.setAttribute('data-ready', ''));
+</script>
+</body></html>

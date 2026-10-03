@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Sheet Metal Nesting &amp; Cut Lists for Fabricators | CutNest</title>
-<meta name="description" content="Nest parts on steel, stainless, aluminium and galv sheet before you order. Real sheet counts, your prices, grain lock for brushed finishes, DXF for the laser, and a customer quote from the layout."/>
-<link rel="canonical" href="https://cutnest.co.uk/sheet-metal.html"/>
+<title>Free Sheet Nesting Calculator: Sheet Metal &amp; Plate | CutNest</title>
+<meta name="description" content="Free online sheet nesting calculator. Enter your sheet size, kerf and parts, and it nests them on the sheet to give the real number of sheets, the cost and a drawing of every sheet. No sign-up."/>
+<link rel="canonical" href="https://cutnest.co.uk/sheet-calculator.html"/>
 <meta name="robots" content="index,follow"/>
 <meta property="og:type" content="website"/>
 <meta property="og:site_name" content="CutNest"/>
-<meta property="og:title" content="Sheet Metal Nesting &amp; Cut Lists for Fabricators | CutNest"/>
-<meta property="og:description" content="Nest parts on steel, stainless, aluminium and galv sheet before you order. Real sheet counts, your prices, grain lock for brushed finishes, DXF for the laser, and a customer quote from the layout."/>
-<meta property="og:url" content="https://cutnest.co.uk/sheet-metal.html"/>
+<meta property="og:title" content="Free Sheet Nesting Calculator: Sheet Metal &amp; Plate | CutNest"/>
+<meta property="og:description" content="Free online sheet nesting calculator. Enter your sheet size, kerf and parts, and it nests them on the sheet to give the real number of sheets, the cost and a drawing of every sheet. No sign-up."/>
+<meta property="og:url" content="https://cutnest.co.uk/sheet-calculator.html"/>
 <meta property="og:image" content="https://cutnest.co.uk/og-image.png"/>
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://cutnest.co.uk/og-image.png"/>
@@ -32,7 +32,7 @@
  "url": "https://cutnest.co.uk",
  "applicationCategory": "BusinessApplication",
  "operatingSystem": "Web",
- "description": "Sheet metal nesting and cut list optimisation for fabricators.",
+ "description": "Free online sheet nesting calculator for sheet metal and plate.",
  "offers": [
   {
    "@type": "Offer",
@@ -69,8 +69,14 @@
   {
    "@type": "ListItem",
    "position": 2,
-   "name": "Sheet metal",
-   "item": "https://cutnest.co.uk/sheet-metal.html"
+   "name": "Calculators",
+   "item": "https://cutnest.co.uk/guides.html"
+  },
+  {
+   "@type": "ListItem",
+   "position": 3,
+   "name": "Sheet nesting calculator",
+   "item": "https://cutnest.co.uk/sheet-calculator.html"
   }
  ]
 }
@@ -82,34 +88,34 @@
  "mainEntity": [
   {
    "@type": "Question",
-   "name": "Does CutNest replace my nesting software?",
+   "name": "Is the sheet nesting calculator free?",
    "acceptedAnswer": {
     "@type": "Answer",
-    "text": "No. CutNest is for the office: knowing how many sheets to order and what the job will cost, before production. Your programmer keeps using their nesting and NC software for the machine; CutNest’s DXF can help them start from the same layout."
+    "text": "Yes. No sign-up, no limit on how often you use it, and nothing is uploaded: the nesting runs in your browser. It takes up to 400 parts; the free app takes more."
    }
   },
   {
    "@type": "Question",
-   "name": "What gap should I leave between parts on a laser?",
+   "name": "Does it nest irregular shapes from a DXF?",
    "acceptedAnswer": {
     "@type": "Answer",
-    "text": "The beam itself removes well under a millimetre, but most shops leave a few millimetres between parts for heat and a stable skeleton. Use the gap you actually leave. The kerf guide has typical figures for laser, plasma, punch and saw."
+    "text": "No. CutNest nests each part as a rectangle, which is what you need for ordering and quoting: how many sheets, and what they cost. Your CAM or nesting software still programs the machine."
    }
   },
   {
    "@type": "Question",
-   "name": "Can it handle brushed stainless where the grain matters?",
+   "name": "Why is the answer more than total area divided by sheet area?",
    "acceptedAnswer": {
     "@type": "Answer",
-    "text": "Yes, with Pro. Lock the grain on the material (every part keeps its orientation) or on individual parts, so hidden parts can still turn to fill gaps."
+    "text": "Because parts don’t tessellate perfectly and every cut takes a kerf. On jobs with large parts the area sum is often a whole sheet short. See how many sheets do I need?"
    }
   },
   {
    "@type": "Question",
-   "name": "Does it work for bar and box section too?",
+   "name": "What does “provably optimal” mean?",
    "acceptedAnswer": {
     "@type": "Answer",
-    "text": "Yes. Add the section as a bar material with your stock lengths and CutNest cuts parts to length, in the same job as the sheet with Pro. See bar and tube."
+    "text": "CutNest works out the fewest sheets any layout could possibly use. When its own layout matches that number, nothing can do better. When it can’t prove it, it doesn’t say so."
    }
   }
  ]
@@ -152,19 +158,37 @@
 <main>
 <header class="pg-hero">
   <div class="pg-hero-inner">
-    <div class="sec-eyebrow pg-eyebrow">For sheet metal fabricators</div>
-    <h1>Know the sheet count <span>before the steel arrives</span></h1>
-    <p class="pg-lead">CutNest nests your parts on the sheet sizes you actually buy, tells you exactly what to order, and prices the job &mdash; in the browser, in seconds, without touching your CAM.</p>
+    <div class="sec-eyebrow pg-eyebrow">Free calculator</div>
+    <h1>Free sheet <span>nesting calculator</span></h1>
+    <p class="pg-lead">Enter your sheet size, the gap you leave between parts and your parts list. The calculator nests the parts on the sheet and tells you how many sheets to order, what they cost, and whether the answer is provably the minimum.</p>
   </div>
 </header>
-<section class="pg-demo ">
+<section class="pg-demo pg-calc">
   <div class="pg-demo-inner">
-    <h2>Nest a real sheet-metal job</h2>
-    <p>Covers, brackets, base plates and gussets on 2450&times;1150 and 2050&times;900 mild steel. Change any part and calculate.</p>
-    <div class="cn-demo" data-preset="metal" data-only ><noscript><p>The live demo needs JavaScript. <a href="/app.html">Open the app</a> instead.</p></noscript></div>
+    <h2>Sheet nesting calculator</h2>
+    <p>Pick a standard size or type your own. Prices are optional. Up to 20 part sizes and 400 parts.</p>
+    <div class="cn-demo" data-preset="sheetcalc" data-only data-compare><noscript><p>The live demo needs JavaScript. <a href="/app.html">Open the app</a> instead.</p></noscript></div>
   </div>
-</section><section class="pg-sec "><div class="pg-sec-inner"><h2 class="sec-h2">Built for how a fab shop quotes</h2><div class="pg-points"><div class="pg-point"><h3>Your sheet sizes, your prices</h3><p>Enter 2500&times;1250, 3000&times;1500 or whatever your stockholder sends, with the price per sheet. CutNest picks the cheapest mix and can be told you only have six of a size.</p></div><div class="pg-point"><h3>Brushed and polished finishes (Pro)</h3><p>Lock the grain on brushed stainless or on individual parts, so a door face never ends up running the wrong way on the nest.</p></div><div class="pg-point"><h3>Laser, plasma, punch or guillotine</h3><p>Set the gap between parts to suit the machine (a few millimetres on a laser, more on plasma or a punch), or switch a material to guillotine for shear work with a numbered cut sequence.</p></div><div class="pg-point"><h3>DXF straight to CAM (Pro)</h3><p>Export the nest as a DXF with every part on its own layer. CutNest sits at the quoting stage; your programmer keeps using the nesting software they already run.</p></div><div class="pg-point"><h3>Quote from the layout (Pro)</h3><p>Cut length and pierces come from the actual nest, at your machine rate, plus handling, markup and VAT &mdash; printed as a quote with your logo.</p></div><div class="pg-point"><h3>Offcuts that come back (Pro)</h3><p>Usable offcuts are measured on every sheet. Save them to stock and CutNest offers them back on the next job in that material before you buy another sheet.</p></div></div></div></section>
-<section class="faq pg-faq"><div class="sec-eyebrow">Questions</div><h2 class="sec-h2" style="margin-bottom:18px">Straight answers</h2><div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">Does CutNest replace my nesting software?</button><div class="faq-a">No. CutNest is for the office: knowing how many sheets to order and what the job will cost, before production. Your programmer keeps using their nesting and NC software for the machine; CutNest&rsquo;s DXF can help them start from the same layout.</div></div><div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">What gap should I leave between parts on a laser?</button><div class="faq-a">The beam itself removes well under a millimetre, but most shops leave a few millimetres between parts for heat and a stable skeleton. Use the gap you actually leave. The <a href="/guides/saw-kerf.html">kerf guide</a> has typical figures for laser, plasma, punch and saw.</div></div><div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">Can it handle brushed stainless where the grain matters?</button><div class="faq-a">Yes, with Pro. Lock the grain on the material (every part keeps its orientation) or on individual parts, so hidden parts can still turn to fill gaps.</div></div><div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">Does it work for bar and box section too?</button><div class="faq-a">Yes. Add the section as a bar material with your stock lengths and CutNest cuts parts to length, in the same job as the sheet with Pro. See <a href="/bar-and-tube.html">bar and tube</a>.</div></div></section>
+</section><section class="pg-sec "><div class="pg-sec-inner"><h2 class="sec-h2">How to use it</h2><div class="prose">
+<ol>
+<li><b>Sheet size.</b> Tap a standard size or type the width and height in millimetres.</li>
+<li><b>Kerf.</b> The gap you leave between parts: a few millimetres on a laser, more on plasma. The <a href="/guides/saw-kerf.html">kerf guide</a> has typical figures for each process.</li>
+<li><b>Price per sheet</b> (optional) gives the material cost of the job.</li>
+<li><b>Parts.</b> Width, height and quantity for each part. Untick &ldquo;Parts can turn&rdquo; for brushed or grained finishes.</li>
+<li><b>Calculate.</b> You get the sheet count, the material cost, how much of each sheet is used, and every sheet drawn to scale.</li>
+</ol>
+<p>The answer is checked against a mathematical lower bound. When it says <b>provably optimal</b>, no layout from any software uses fewer sheets. The yellow line shows what the usual &ldquo;total area &divide; sheet area&rdquo; sum would have said.</p>
+</div></div></section><section class="pg-sec "><div class="pg-sec-inner"><h2 class="sec-h2">Common sheet and plate sizes</h2><div class="prose">
+<p>Sizes that UK stockholders commonly carry. Always use the sizes your supplier actually sells.</p>
+<div style="overflow-x:auto"><table class="pg-tbl"><thead><tr><th>Size (mm)</th><th>Often called</th><th>Common for</th></tr></thead><tbody>
+<tr><td>2500 &times; 1250</td><td>&ldquo;8 by 4&rdquo; metric</td><td>Mild steel, galvanised, aluminium</td></tr>
+<tr><td>2440 &times; 1220</td><td>8 &times; 4 ft</td><td>Stainless, aluminium, also board</td></tr>
+<tr><td>3000 &times; 1500</td><td>10 &times; 5</td><td>Steel and stainless sheet and plate</td></tr>
+<tr><td>2000 &times; 1000</td><td>&nbsp;</td><td>Thinner steel and aluminium sheet</td></tr>
+<tr><td>4000 &times; 2000</td><td>&nbsp;</td><td>Heavier plate</td></tr>
+</tbody></table></div>
+</div></div></section><section class="pg-sec "><div class="pg-sec-inner"><h2 class="sec-h2">Need more than the calculator?</h2><div class="pg-points"><div class="pg-point"><h3>Several sheet sizes at once</h3><p>The <a href="/app.html">app</a> mixes sizes and picks the cheapest combination, for example full sheets plus a smaller size for the last few parts.</p></div><div class="pg-point"><h3>Grain on individual parts (Pro)</h3><p>Lock the grain on the door faces of a brushed stainless job and let the hidden parts turn to fill gaps.</p></div><div class="pg-point"><h3>Quotes and DXF (Pro)</h3><p>Cut length and pierces from the actual nest, priced at your machine rate, and the layout as a DXF for your programmer.</p></div></div></div></section>
+<section class="faq pg-faq"><div class="sec-eyebrow">Questions</div><h2 class="sec-h2" style="margin-bottom:18px">Straight answers</h2><div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">Is the sheet nesting calculator free?</button><div class="faq-a">Yes. No sign-up, no limit on how often you use it, and nothing is uploaded: the nesting runs in your browser. It takes up to 400 parts; the free app takes more.</div></div><div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">Does it nest irregular shapes from a DXF?</button><div class="faq-a">No. CutNest nests each part as a rectangle, which is what you need for ordering and quoting: how many sheets, and what they cost. Your CAM or nesting software still programs the machine.</div></div><div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">Why is the answer more than total area divided by sheet area?</button><div class="faq-a">Because parts don&rsquo;t tessellate perfectly and every cut takes a kerf. On jobs with large parts the area sum is often a whole sheet short. See <a href="/guides/how-many-sheets.html">how many sheets do I need?</a></div></div><div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">What does &ldquo;provably optimal&rdquo; mean?</button><div class="faq-a">CutNest works out the fewest sheets any layout could possibly use. When its own layout matches that number, nothing can do better. When it can&rsquo;t prove it, it doesn&rsquo;t say so.</div></div></section>
 <section class="cta-band">
   <h2>Try it on your own job</h2>
   <p>Free, in your browser, no account. Your cut list stays on your computer.</p>

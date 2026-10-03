@@ -44,9 +44,32 @@
     mat: { name: 'Your sheet', cuttingMethod: 'free', allowRotation: true, sizes: [{ w: 2440, h: 1220, price: 0 }] },
     pieces: [{ label: 'Desk top', w: 1400, h: 700, qty: 2 }, { label: 'Leg panel', w: 720, h: 680, qty: 4 }, { label: 'Modesty panel', w: 1300, h: 400, qty: 2 }]
   };
+  // Calculators (their own pages): the visitor's stock size, price and kerf,
+  // quick buttons for the standard sizes, and room for a real job.
+  PRESETS.sheetcalc = {
+    tab: 'Sheet calculator', kerf: 4, custom: true, calc: true,
+    chips: [[2500, 1250], [3000, 1500], [2000, 1000], [2440, 1220], [4000, 2000]],
+    mat: { name: 'Your sheet', cuttingMethod: 'free', allowRotation: true, sizes: [{ w: 2500, h: 1250, price: 0 }] },
+    pieces: [{ label: 'Cover', w: 600, h: 400, qty: 6 }, { label: 'Bracket', w: 300, h: 200, qty: 12 },
+             { label: 'Base plate', w: 450, h: 450, qty: 4 }, { label: 'Gusset', w: 150, h: 150, qty: 20 }]
+  };
+  PRESETS.boardcalc = {
+    tab: 'Board calculator', kerf: 4, custom: true, calc: true, grainWord: true,
+    chips: [[2440, 1220, '8×4'], [3050, 1220, '10×4'], [2800, 2070, 'MFC 2800×2070'], [1220, 607, 'Quarter']],
+    mat: { name: 'Your board', cuttingMethod: 'free', allowRotation: true, sizes: [{ w: 2440, h: 1220, price: 0 }] },
+    pieces: [{ label: 'Side', w: 720, h: 560, qty: 6 }, { label: 'Base', w: 564, h: 560, qty: 3 },
+             { label: 'Shelf', w: 564, h: 520, qty: 3 }, { label: 'Rail', w: 564, h: 100, qty: 6 }, { label: 'Door', w: 715, h: 497, qty: 3 }]
+  };
+  PRESETS.barcalc = {
+    tab: 'Bar calculator', kerf: 3, custom: true, calc: true, linear: true,
+    chips: [[6000], [6500], [7500], [2400], [4800]],
+    mat: { name: 'Your bar', kind: 'linear', kerf: 3, cuttingMethod: 'free', allowRotation: false, sizes: [{ w: 6000, h: 1, price: 0 }] },
+    pieces: [{ label: 'Top rail', w: 2400, qty: 4 }, { label: 'Leg', w: 900, qty: 8 }, { label: 'Brace', w: 650, qty: 6 }, { label: 'Stub', w: 300, qty: 6 }]
+  };
   var ORDER = ['metal', 'kitchen', 'bar', 'signs'];
   var COLORS = ['#1a6bbf', '#0c9e6a', '#e8960a', '#c03050', '#7c4ddb', '#d9600a', '#0891b2', '#65a30d'];
   var MAX_ROWS = 8, MAX_QTY = 40;
+  var CALC_ROWS = 20, CALC_QTY = 200, CALC_PARTS = 400;
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
@@ -107,14 +130,32 @@
       });
       var sizes = p.mat.sizes.map(function (z) { return (p.linear ? mm(z.w) : z.w + '×' + z.h + 'mm') + ' @ ' + money(z.price); }).join(' · ');
       root.querySelector('.cnd-mat').innerHTML = p.custom
-        ? '<div class="cnd-sheet"><label>Sheet width<input data-s="w" inputmode="decimal" value="' + p.mat.sizes[0].w + '"/></label>' +
-          '<label>Sheet height<input data-s="h" inputmode="decimal" value="' + p.mat.sizes[0].h + '"/></label>' +
-          '<label>Kerf (mm)<input data-s="k" inputmode="decimal" value="' + p.kerf + '"/></label></div>'
+        ? customInputs(p)
         : '<b>' + esc(p.mat.name) + '</b> <span>' + esc(sizes) + ' \u00b7 kerf ' + p.kerf + 'mm' +
           (p.mat.cuttingMethod === 'guillotine' ? ' \u00b7 saw cuts' : '') + '</span>';
       draw();
       run();
     }
+    // Stock size, kerf and (calculators) price, size buttons and rotation.
+    function customInputs(p) {
+      var z = p.mat.sizes[0], lin = !!p.linear;
+      var f = function (label, key, val) { return '<label>' + label + '<input data-s="' + key + '" inputmode="decimal" value="' + esc(val) + '"/></label>'; };
+      var html = '<div class="cnd-sheet' + (p.calc ? ' calc' : '') + '">' +
+        (lin ? f('Bar length (mm)', 'w', z.w) : f('Sheet width', 'w', z.w) + f('Sheet height', 'h', z.h)) +
+        f('Kerf (mm)', 'k', p.kerf) +
+        (p.calc ? f('£ per ' + (lin ? 'bar' : 'sheet'), 'p', z.price || '') : '') + '</div>';
+      if (p.chips) html += '<div class="cnd-chips" role="group" aria-label="Standard sizes">' + p.chips.map(function (c) {
+        var on = c[0] === z.w && (lin || c[1] === z.h);
+        var text = lin ? (c[0] / 1000) + 'm' : (c[2] || c[0] + '×' + c[1]);
+        return '<button type="button" class="cnd-chip' + (on ? ' on' : '') + '" data-chip="' + c[0] + 'x' + (c[1] || 1) + '" aria-pressed="' + on + '">' + esc(text) + '</button>';
+      }).join('') + '</div>';
+      if (p.calc && !lin) html += '<label class="cnd-rot"><input type="checkbox" data-s="rot"' + (p.mat.allowRotation ? ' checked' : '') + '/> ' +
+        (p.grainWord ? 'Parts can turn 90° (untick for grain)' : 'Parts can turn 90° (untick for brushed or grain)') + '</label>';
+      return html;
+    }
+    function rowsMax() { return PRESETS[state.key].calc ? CALC_ROWS : MAX_ROWS; }
+    function qtyMax() { return PRESETS[state.key].calc ? CALC_QTY : MAX_QTY; }
+
     function draw() {
       var lin = !!PRESETS[state.key].linear;
       thead.innerHTML = '<tr><th>Part</th><th>' + (lin ? 'Length' : 'W') + '</th>' + (lin ? '' : '<th>H</th>') + '<th>Qty</th><th></th></tr>';
@@ -126,18 +167,22 @@
           '<td><input aria-label="Part ' + (i + 1) + ' quantity" inputmode="numeric" data-i="' + i + '" data-f="qty" value="' + esc(r.qty) + '"/></td>' +
           '<td><button type="button" class="cnd-x" data-del="' + i + '" aria-label="Remove part ' + (i + 1) + '">✕</button></td></tr>';
       }).join('');
-      root.querySelector('.cnd-add').disabled = state.rows.length >= MAX_ROWS;
+      root.querySelector('.cnd-add').disabled = state.rows.length >= rowsMax();
     }
     function pieces() {
       var lin = !!PRESETS[state.key].linear;
       return state.rows.map(function (r) {
-        return { label: String(r.label || '').slice(0, 24), w: num(r.w), h: lin ? 1 : num(r.h), qty: Math.max(1, Math.min(MAX_QTY, Math.round(num(r.qty)) || 1)) };
+        return { label: String(r.label || '').slice(0, 24), w: num(r.w), h: lin ? 1 : num(r.h), qty: Math.max(1, Math.min(qtyMax(), Math.round(num(r.qty)) || 1)) };
       }).filter(function (p) { return p.w > 0 && p.h > 0; });
     }
 
     function run() {
       var p = PRESETS[state.key], ps = pieces();
       if (!ps.length) { out.innerHTML = '<div class="cnd-msg">Add a part with a size to calculate.</div>'; return; }
+      var z0 = p.mat.sizes[0];
+      if (!(z0.w > 0) || (!p.linear && !(z0.h > 0))) { out.innerHTML = '<div class="cnd-msg">Enter the ' + (p.linear ? 'bar length' : 'sheet size') + ' to calculate.</div>'; return; }
+      var total = ps.reduce(function (a, q) { return a + q.qty; }, 0);
+      if (p.calc && total > CALC_PARTS) { out.innerHTML = '<div class="cnd-msg">That is ' + total + ' parts. The calculator takes up to ' + CALC_PARTS + '; <a href="' + esc(appLink(p, ps)) + '">open the job in the app</a> for bigger jobs.</div>'; return; }
       // Parts that cannot fit any stock size are reported, not sent to the packer.
       var maxW = 0, maxH = 0;
       p.mat.sizes.forEach(function (z) { maxW = Math.max(maxW, z.w); maxH = Math.max(maxH, z.h); });
@@ -181,7 +226,7 @@
       var html = '<div class="cnd-head"><div class="cnd-n">' + n + '<span>' + word + '</span></div>' +
         '<div class="cnd-facts"><div><b>' + esc(order) + '</b></div><div>' + (cost ? money(cost) + ' of material \u00b7 ' : '') + util + '% used · ' + (ms < 1000 ? ms + 'ms' : (ms / 1000).toFixed(1) + 's') + '</div>' +
         compare + (optimal ? '<div class="cnd-opt">✓ Provably optimal — no layout can use fewer ' + (lin ? 'bars' : 'sheets') + '</div>' : '') + '</div></div>';
-      var shown = res.sheets.slice(0, lin ? 6 : 4);
+      var shown = res.sheets.slice(0, p.calc ? (lin ? 20 : 12) : (lin ? 6 : 4));
       html += '<div class="cnd-sheets' + (lin ? ' lin' : '') + (shown.length === 1 ? ' one' : '') + '">' + shown.map(function (sh, i) { return lin ? barSvg(sh, i) : sheetSvg(sh, i); }).join('') + '</div>';
       if (res.sheets.length > shown.length) html += '<div class="cnd-more">+ ' + (res.sheets.length - shown.length) + ' more ' + (lin ? 'bars' : 'sheets') + ' in the full plan</div>';
       html += '<a class="cnd-open" href="' + esc(appLink(p, ps)) + '" data-placement="demo">Open this job in the app →</a>';
@@ -219,7 +264,7 @@
     // as a normal shared job: materials are added for this session only.
     function appLink(p, ps) {
       var m = p.mat;
-      var state2 = { v: 3, jobRef: 'Demo — ' + p.tab, jobQty: '1', mats: [{
+      var state2 = { v: 3, jobRef: (p.calc ? '' : 'Demo — ') + p.tab, jobQty: '1', mats: [{
         name: m.name, kind: m.kind, kerf: m.kerf, cuttingMethod: m.cuttingMethod, allowRotation: m.allowRotation,
         sizes: m.sizes, trim: 0,
         pieces: ps.map(function (q) { return p.linear ? { w: q.w, h: '', qty: q.qty, label: q.label } : { w: q.w, h: q.h, qty: q.qty, label: q.label }; })
@@ -233,21 +278,39 @@
       var t = e.target, sk = t.getAttribute('data-s');
       if (sk) {                                          // custom sheet size / kerf
         var P = PRESETS[state.key], v = num(t.value);
-        if (sk === 'k') P.kerf = Math.min(50, v); else if (v > 0) P.mat.sizes[0][sk] = Math.min(20000, v);
+        if (sk === 'rot') { P.mat.allowRotation = t.checked; run(); return; }
+        if (sk === 'k') { P.kerf = Math.min(50, v); if (P.linear) P.mat.kerf = P.kerf; }
+        else if (sk === 'p') P.mat.sizes[0].price = Math.min(100000, v);
+        else { P.mat.sizes[0][sk] = v > 0 ? Math.min(20000, v) : 0; syncChips(); }
         return;
       }
       var i = +t.getAttribute('data-i'), f = t.getAttribute('data-f');
       if (!f || !state.rows[i]) return;
       state.rows[i][f] = t.value;
     });
+    function syncChips() {
+      var z = PRESETS[state.key].mat.sizes[0];
+      root.querySelectorAll('.cnd-chip').forEach(function (b) {
+        var wh = b.getAttribute('data-chip').split('x'), on = +wh[0] === z.w && (PRESETS[state.key].linear || +wh[1] === z.h);
+        b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    }
+
     root.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); run(); } });
     root.addEventListener('click', function (e) {
       var t = e.target.closest('button');
       if (!t) return;
       if (t.classList.contains('cnd-tab')) load(t.getAttribute('data-k'));
+      else if (t.classList.contains('cnd-chip')) {
+        var P = PRESETS[state.key], wh = t.getAttribute('data-chip').split('x');
+        P.mat.sizes[0].w = +wh[0]; if (!P.linear) P.mat.sizes[0].h = +wh[1];
+        var iw = root.querySelector('[data-s="w"]'), ih = root.querySelector('[data-s="h"]');
+        if (iw) iw.value = wh[0]; if (ih) ih.value = wh[1];
+        syncChips(); run();
+      }
       else if (t.classList.contains('cnd-go')) run();
       else if (t.classList.contains('cnd-add')) {
-        if (state.rows.length < MAX_ROWS) { state.rows.push({ label: 'Part ' + (state.rows.length + 1), w: '', h: '', qty: 1 }); draw(); var ins = tbody.querySelectorAll('tr:last-child input'); if (ins[1]) ins[1].focus(); }
+        if (state.rows.length < rowsMax()) { state.rows.push({ label: 'Part ' + (state.rows.length + 1), w: '', h: '', qty: 1 }); draw(); var ins = tbody.querySelectorAll('tr:last-child input'); if (ins[1]) ins[1].focus(); }
       } else if (t.hasAttribute('data-del')) {
         state.rows.splice(+t.getAttribute('data-del'), 1); draw(); run();
       }

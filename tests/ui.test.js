@@ -792,6 +792,35 @@ const tests = {
     expect(!page.errors.length, 'page errors: ' + page.errors.join(' | '));
   },
 
+  async 'website: calculators take your sheet size, price and grain'() {
+    const page = await freshPage();
+    await page.goto(base + '/sheet-calculator.html');
+    await page.waitForSelector('.cnd-head', { timeout: 20000 });
+    // A standard-size button sets the sheet and recalculates.
+    await page.click('.cnd-chip >> text=3000×1500');
+    await page.waitForFunction(() => /3000×1500mm/.test(document.querySelector('.cnd-facts').textContent), null, { timeout: 20000 });
+    expect(await page.inputValue('[data-s="w"]') === '3000', 'size button should fill the width');
+    await page.fill('[data-s="p"]', '150');
+    await page.click('.cnd-go');
+    await page.waitForFunction(() => /£150\.00 of material/.test(document.querySelector('.cnd-facts').textContent), null, { timeout: 20000 });
+    // More rows than the home page demo allows.
+    for (let i = 0; i < 8; i++) await page.click('.cnd-add');
+    expect(await page.$$eval('.cnd-tbl tbody tr', r => r.length) === 12, 'calculator should take more than 8 rows');
+    // Untick rotation: the job is recalculated without turning parts.
+    await page.goto(base + '/plywood-cut-list-calculator.html');
+    await page.waitForSelector('.cnd-head', { timeout: 20000 });
+    await page.uncheck('[data-s="rot"]');
+    await page.waitForFunction(() => document.querySelector('.cnd-out:not(.busy) .cnd-head'), null, { timeout: 20000 });
+    const href = await page.getAttribute('.cnd-open', 'href');
+    const job = JSON.parse(Buffer.from(decodeURIComponent(href.split('job=')[1]), 'base64').toString());
+    expect(job.mats[0].allowRotation === false && job.mats[0].sizes[0].w === 2440, 'grain setting should carry into the app link: ' + JSON.stringify(job.mats[0]));
+    // Bar calculator: the sample is proved optimal on 6m bars.
+    await page.goto(base + '/bar-cutting-calculator.html');
+    await page.waitForSelector('.cnd-head', { timeout: 20000 });
+    expect(/4\s*bars/.test(await page.textContent('.cnd-n')) && /Provably optimal/.test(await page.textContent('.cnd-out')), 'bar sample should be 4 bars, proved optimal');
+    expect(!page.errors.length, 'page errors: ' + page.errors.join(' | '));
+  },
+
   async 'website: analytics only after consent'() {
     const ctx = await browser.newContext({ serviceWorkers: 'block' });
     const gaHits = [];
