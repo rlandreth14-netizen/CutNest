@@ -101,7 +101,8 @@ The owner has private kit pages on claude.ai:
 
 ## Done
 
-- The LinkedIn kit is made, and the owner is posting from it.
+- The LinkedIn kit is made, and the owner is posting from it. The narrated
+  walkthrough is posted on LinkedIn too.
 - The YouTube channel is set up and all 3 videos are uploaded.
 - Prices show "+ VAT" everywhere: the site, the app, the terms, and the
   LinkedIn images and text.
@@ -111,38 +112,32 @@ The owner has private kit pages on claude.ai:
   - `/bar-cutting-calculator.html`
 - The YouTube link is in the site footer, and the organisation data lists
   LinkedIn and YouTube under `sameAs`.
+- **Subtitles** for the 3 YouTube videos: `marketing/subtitles/*.srt`, timed
+  against the uploaded files (each line within 0.1s). Upload them in YouTube
+  Studio (Subtitles, English (UK), Upload file, With timing), and add them to
+  LinkedIn video posts. New renders write their own `.srt` (`srt.js`).
+- **Press release:** the owner turned it down (it reads as fake). Don't
+  suggest it again.
 - **Videos on the site** (PR #10, merged): they load YouTube only when someone
   presses play (youtube-nocookie). Each page also has VideoObject data, and
   the privacy policy has a YouTube line.
 
 ## Open, roughly in order of value
 
-1. **Subtitle files (.srt) for the 3 YouTube videos.** These show the
-   voice-over as text, for muted viewers on LinkedIn and YouTube, and help
-   YouTube search.
-   - This needs the time each line was spoken.
-   - `youtube.js` keeps those times in `spoken` but doesn't save them yet.
-     Save them, then write an SRT per video.
-2. **Post the narrated walkthrough on LinkedIn.** Upload the video file
-   itself. The owner already has post text for it, with the campaign
-   `walkthrough-yt`.
-3. **A press release:** "Newcastle fabricator builds free tool that stops
-   shops over-ordering steel". For local business news and the fabrication,
-   woodworking and sign trade press.
-4. **Facebook groups** (UK welders, fabricators, joiners, sign makers): help
+1. **Facebook groups** (UK welders, fabricators, joiners, sign makers): help
    people with genuine answers that link the free calculators. Read each
    group's rules first.
-5. **Instagram Reels / TikTok** using the two vertical videos.
-6. **A testimonial** from the first customer, added to the home page. The
+2. **Instagram Reels / TikTok** using the two vertical videos.
+3. **A testimonial** from the first customer, added to the home page. The
    owner asks; we add it.
-7. **Free directory listings:** AlternativeTo, SaaSHub, Capterra, G2. Also
+4. **Free directory listings:** AlternativeTo, SaaSHub, Capterra, G2. Also
    Bing Webmaster Tools, using "Import from Google Search Console".
-8. **Supplier outreach:** steel stockholders, timber merchants and
+5. **Supplier outreach:** steel stockholders, timber merchants and
    sign-material suppliers, asking them to link to the calculators.
-9. **An email signature and LinkedIn banner line:** "Free cut list
+6. **An email signature and LinkedIn banner line:** "Free cut list
    calculators: cutnest.co.uk".
-10. **A small Google Ads test (£5/day)**, but only once Analytics shows how
-    many visitors become paying customers.
+7. **A small Google Ads test (£5/day)**, but only once Analytics shows how
+   many visitors become paying customers.
 
 ## Working in this repo
 

@@ -1,0 +1,95 @@
+1
+00:00:00,290 --> 00:00:01,569
+Welcome to CutNest.
+
+2
+00:00:01,569 --> 00:00:02,848
+In the next minute,
+
+3
+00:00:02,848 --> 00:00:08,098
+I'll take a real sheet metal job from a
+cut list to a finished customer quote.
+
+4
+00:00:08,810 --> 00:00:10,490
+First, pick the material.
+
+5
+00:00:10,490 --> 00:00:15,126
+Your library holds the sheet sizes
+you buy and what you pay for them.
+
+6
+00:00:15,126 --> 00:00:18,687
+This job is 2mm 316 brushed stainless.
+
+7
+00:00:19,030 --> 00:00:23,692
+Next, paste in the cut list, straight
+from an email or a spreadsheet.
+
+8
+00:00:23,692 --> 00:00:27,137
+CutNest reads most formats,
+so there's no retyping.
+
+9
+00:00:28,470 --> 00:00:29,394
+Hit calculate.
+
+10
+00:00:29,394 --> 00:00:34,017
+It's a brushed finish, so the grain
+is locked and no part gets turned.
+
+11
+00:00:34,370 --> 00:00:37,713
+Here's exactly what to
+order, and what it'll cost.
+
+12
+00:00:37,713 --> 00:00:42,327
+2 sheets, and CutNest has proved
+that no layout can do it in fewer.
+
+13
+00:00:42,680 --> 00:00:44,600
+Every sheet is drawn to scale,
+
+14
+00:00:44,600 --> 00:00:49,720
+with the parts labelled and any usable
+offcuts marked, ready for the shop floor.
+
+15
+00:00:50,070 --> 00:00:51,761
+Now turn it into a quote.
+
+16
+00:00:51,761 --> 00:00:55,549
+With Pro, the cutting time
+comes from the actual layout,
+
+17
+00:00:55,549 --> 00:00:57,511
+at your own rates and markup.
+
+18
+00:00:57,511 --> 00:01:00,758
+Add the customer, and any
+extras, like delivery.
+
+19
+00:01:03,070 --> 00:01:08,723
+And there's your quote, on your own
+letterhead, ready to print, or send as a PDF.
+
+20
+00:01:09,450 --> 00:01:13,714
+CutNest is free to try in your
+browser, with no account.
+
+21
+00:01:13,714 --> 00:01:15,999
+Head to cutnest.co.uk.
