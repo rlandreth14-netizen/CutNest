@@ -1,0 +1,64 @@
+1
+00:00:00,290 --> 00:00:02,434
+Cutting box section for a frame?
+
+2
+00:00:02,434 --> 00:00:06,455
+Here's how CutNest gets every
+length out of the fewest bars.
+
+3
+00:00:07,160 --> 00:00:08,456
+Choose the section.
+
+4
+00:00:08,456 --> 00:00:10,298
+This is 40×40 box,
+
+5
+00:00:10,298 --> 00:00:14,392
+which comes in 6m and 7.5m lengths.
+
+6
+00:00:14,740 --> 00:00:17,748
+Paste in the lengths you
+need, with the quantities.
+
+7
+00:00:21,940 --> 00:00:22,633
+Calculate.
+
+8
+00:00:22,633 --> 00:00:26,655
+CutNest mixes the stock lengths
+to find the cheapest plan.
+
+9
+00:00:27,010 --> 00:00:29,793
+Here's what to order, and what it costs.
+
+10
+00:00:29,793 --> 00:00:31,463
+And it's proved optimal.
+
+11
+00:00:31,463 --> 00:00:33,133
+No plan uses fewer bars.
+
+12
+00:00:33,480 --> 00:00:38,472
+Every bar gets its own cutting plan, and
+offcuts long enough to keep are marked,
+
+13
+00:00:38,472 --> 00:00:40,968
+so they go on the rack, not in the skip.
+
+14
+00:00:41,320 --> 00:00:44,488
+Bar and tube cutting
+is free on every plan.
+
+15
+00:00:44,488 --> 00:00:46,845
+Try it at cutnest.co.uk.

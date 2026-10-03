@@ -1,11 +1,13 @@
 // YouTube walkthroughs: real screen recordings of the app and the website at
 // 1920x1080, with a visible pointer, step captions, title and end cards.
-// Writes marketing/out/youtube-<id>.mp4 and youtube-<id>.json (chapter times).
+// Writes marketing/out/youtube-<id>.mp4, youtube-<id>.json (chapter and line
+// times) and youtube-<id>.srt (subtitles, from marketing/srt.js).
 // Run: FFMPEG=/path/to/ffmpeg node marketing/youtube.js [id ...]
 'use strict';
 const fs = require('fs'), path = require('path'), os = require('os'), { spawnSync } = require('child_process');
 const { chromium } = require(path.join(__dirname, '../node_modules/playwright'));
 const { serve, OUT } = require('./build.js');
+const srt = require('./srt.js');
 const FFMPEG = process.env.FFMPEG || 'ffmpeg';
 // Voice-over (marketing/tts.py, Kokoro). VOICE=none records silent videos.
 const VOICE = process.env.VOICE || 'bm_george';
@@ -56,7 +58,7 @@ function voiceClips(name) {
   if (r.status !== 0) throw new Error('tts.py failed: ' + r.stderr);
   const durs = JSON.parse(r.stdout.trim().split('\n').pop());
   const out = {};
-  job.forEach(j => { out[j.key] = { file: j.file, dur: durs[j.file] }; });
+  job.forEach(j => { out[j.key] = { file: j.file, dur: durs[j.file], text: j.text }; });
   return out;
 }
 
@@ -118,7 +120,7 @@ async function record(page, name, script) {
     say(key) {
       const c = clips[key];
       if (!c) return;
-      spoken.push({ file: c.file, at: now() });
+      spoken.push({ file: c.file, at: now(), dur: c.dur, text: c.text });
       speakUntil = now() + c.dur;
     },
     async hush(gapMs) {
@@ -211,7 +213,9 @@ async function record(page, name, script) {
     if (a.status !== 0) throw new Error('ffmpeg audio mix failed');
     fs.renameSync(tmp, file);
   }
-  fs.writeFileSync(path.join(OUT, 'youtube-' + name + '.json'), JSON.stringify({ duration: Math.round(dur), chapters: marks.map(m => ({ title: m.title, t: Math.max(0, Math.round(m.at - first)) })) }, null, 1));
+  fs.writeFileSync(path.join(OUT, 'youtube-' + name + '.json'), JSON.stringify({ duration: Math.round(dur), chapters: marks.map(m => ({ title: m.title, t: Math.max(0, Math.round(m.at - first)) })),
+    lines: spoken.map(s => ({ text: s.text, t: +Math.max(0, s.at - first).toFixed(3), dur: +s.dur.toFixed(3) })) }, null, 1));
+  srt.write(OUT, name);
   console.log('  youtube-' + name + '.mp4', dur.toFixed(1) + 's', Math.round(fs.statSync(file).size / 1024) + 'KB');
   fs.rmSync(dir, { recursive: true, force: true });
 }
